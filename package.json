@@ -14,10 +14,13 @@
     "rimraf": "^6.1.2"
   },
   "scripts": {
-    "contributor": "pip install -r requirements.txt --require-hashes && git config core.hooksPath .share/git/hooks",
+    "contribute": "uv sync --frozen && git config core.hooksPath .share/git/hooks",
     "merge": "yarn merge:kimi",
     "merge:copilot": "make merge ENGINE=copilot",
     "merge:junie": "make merge ENGINE=junie",
     "merge:kimi": "make merge ENGINE=kimi"
-  }
+  },
+  "workspaces": [
+    "node/packages/*"
+  ]
 }

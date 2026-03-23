@@ -14,9 +14,6 @@
 **/*lockfile         text linguist-generated
 yarn.lock            text linguist-generated
 
-# subtree
-/.ai/**              text linguist-vendored
-
 # ours
 *.sh                 text eol=lf
 *                    text=auto eol=lf
