@@ -10,6 +10,7 @@
   "scripts": {
     "merge:copilot": "ENGINE=copilot tsx merge.ts",
     "merge:junie": "ENGINE=junie tsx merge.ts",
-    "merge:kimi": "ENGINE=kimi tsx merge.ts"
+    "merge:kimi": "ENGINE=kimi tsx merge.ts",
+    "test": "tsc --noEmit merge.ts"
   }
 }

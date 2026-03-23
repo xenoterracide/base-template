@@ -15,10 +15,13 @@
   },
   "scripts": {
     "contribute": "uv sync --frozen && git config core.hooksPath .share/git/hooks",
-    "merge": "yarn merge:kimi",
-    "merge:copilot": "make merge ENGINE=copilot",
-    "merge:junie": "make merge ENGINE=junie",
-    "merge:kimi": "make merge ENGINE=kimi"
+    "merge:copilot": "yarn workspace merge run merge:copilot",
+    "merge:junie": "yarn workspace merge run merge:junie",
+    "merge:kimi": "yarn workspace merge run merge:kimi",
+    "lint:prettier": "prettier --ignore-unknown --cache --check '**'",
+    "lint:reuse": "uv run --frozen --group dev reuse lint",
+    "lint": "yarn lint:prettier && yarn lint:reuse",
+    "test": "yarn workspaces foreach --all run test"
   },
   "workspaces": [
     "node/packages/*"
