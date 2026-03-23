@@ -1,4 +1,7 @@
 # SPDX-FileCopyrightText: Copyright © 2026 Caleb Cushing
 # SPDX-License-Identifier: CC0-1.0
 
-# Standalone Yarn project for subtree-share
+.pnp.cjs
+.pnp.loader.mjs
+.yarn/unplugged/
+.yarn/install-state.gz
