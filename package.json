@@ -1,0 +1,9 @@
+{
+  "name": "@xenoterracide/share",
+  "packageManager": "yarn@4.13.0",
+  "private": true,
+  "license": "GPL-3.0-or-later",
+  "workspaces": [
+    "node/*"
+  ]
+}
