@@ -121,9 +121,6 @@ ${diff}`;
       // This avoids command injection while handling large prompts
 
       execSync(`kimi ${kimiArgs.join(" ")} < "${promptFile}" > "${kimiOut}" 2>&1 || true`, {
-
-      execSync(`kimi ${kimiArgs.join(" ")} < "${promptFile}" > "${kimiOut}" 2>&1 || true`, {
-
         encoding: "utf8",
         shell: "/bin/bash",
       });
