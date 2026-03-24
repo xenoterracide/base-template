@@ -14,7 +14,7 @@
     "rimraf": "^6.1.2"
   },
   "scripts": {
-    "contribute": "uv sync --frozen && git config core.hooksPath .share/git/hooks",
+    "contribute": "git submodule update --init --recursive && uv sync --frozen && git config core.hooksPath .share/git/hooks",
     "merge:copilot": "yarn workspace merge run merge:copilot",
     "merge:junie": "yarn workspace merge run merge:junie",
     "merge:kimi": "yarn workspace merge run merge:kimi",
