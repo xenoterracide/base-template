@@ -119,13 +119,10 @@ ${diff}`;
     try {
       // Use shell to redirect file content to kimi via stdin
       // This avoids command injection while handling large prompts
-      execSync(
-        `kimi ${kimiArgs.join(" ")} --prompt "$(cat '${promptFile.replace(/'/g, "'\"'\"'")}')" > "${kimiOut}" 2>&1 || true`,
-        {
-          encoding: "utf8",
-          shell: "/bin/bash",
-        },
-      );
+      execSync(`kimi ${kimiArgs.join(" ")} --prompt - < "${promptFile}" > "${kimiOut}" 2>&1 || true`, {
+        encoding: "utf8",
+        shell: "/bin/bash",
+      });
     } catch {
       // Ignore errors, check output below
     }
