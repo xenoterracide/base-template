@@ -483,7 +483,7 @@ async function main(): Promise<void> {
     console.warn("WARNING: Uncommitted changes detected. Review before merge.");
   }
 
-  process.stdout.write("Proceed with squash squash merge? [Y/n] ");
+  process.stdout.write("Proceed with squash merge? [Y/n] ");
 
   if (!process.stdin.isTTY) {
     console.error("Interactive confirmation required, but no TTY is available. Aborting squash merge.");
