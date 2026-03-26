@@ -64,7 +64,7 @@ function getBranch(): string {
 
 function hasPR(branch?: string): boolean {
   try {
-    const branchArg = branch ? `--branch ${branch}` : "";
+    const branchArg = branch ? `"${branch}"` : "";
     run(`gh pr view --json number ${branchArg}`);
     return true;
   } catch {
@@ -461,9 +461,9 @@ async function createOrUpdatePR(branch: string): Promise<void> {
     const title = readFileSync(titleFile, "utf8").trim();
 
     if (hasPR(branch)) {
-      run(`gh pr edit --branch "${branch}" --title "${title.replace(/"/g, '\\"')}" --body-file "${bodyFile}"`);
+      run(`gh pr edit "${branch}" --title "${title.replace(/"/g, '\\"')}" --body-file "${bodyFile}"`);
       try {
-        run(`GH_PAGER=cat gh pr view --branch "${branch}"`);
+        run(`GH_PAGER=cat gh pr view "${branch}"`);
       } catch (e) {
         console.warn("Warning: Could not view PR after edit:", e instanceof Error ? e.message : String(e));
       }
@@ -477,7 +477,7 @@ async function createOrUpdatePR(branch: string): Promise<void> {
       run(`gh pr create --title "${title.replace(/"/g, '\\"')}" --body-file "${bodyFile}"`);
       console.log("PR created with generated message.");
       try {
-        run(`GH_PAGER=cat gh pr view --branch "${branch}"`);
+        run(`GH_PAGER=cat gh pr view "${branch}"`);
       } catch (e) {
         console.warn("Warning: Could not view PR after creation:", e instanceof Error ? e.message : String(e));
       }
