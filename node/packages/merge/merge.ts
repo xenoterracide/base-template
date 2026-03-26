@@ -11,28 +11,40 @@ import { join } from "path";
 
 const ENGINE = process.env.ENGINE || "kimi";
 
+export interface CommandRunner {
+  run(cmd: string, opts?: { cwd?: string; env?: Record<string, string> }): string;
+  runSilent(cmd: string, args: string[], opts?: { cwd?: string }): string;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type FileSystem = any;
+
 /**
  * Find the main git repository root (not a submodule).
  * This is needed because the script may run from within a submodule.
  */
-function findMainRepoRoot(): string {
+export function findMainRepoRoot(
+  cwd: string = process.cwd(),
+  fs: Pick<FileSystem, "existsSync"> = { existsSync },
+): string {
   // Walk up to find the top-level git directory that is not a submodule
-  let currentDir = process.cwd();
+  let currentDir = cwd;
   while (currentDir !== "/") {
     const gitDir = join(currentDir, ".git");
-    if (existsSync(gitDir)) {
+    if (fs.existsSync(gitDir)) {
       // Check if this is a submodule by looking for .gitmodules in parent
       const parentDir = join(currentDir, "..");
       const parentGitmodules = join(parentDir, ".gitmodules");
       // If parent has .gitmodules, we're likely in a submodule, go up
-      if (existsSync(parentGitmodules)) {
+      if (fs.existsSync(parentGitmodules)) {
         currentDir = parentDir;
-        continue;
+      } else {
+        // Found the main repo root
+        return currentDir;
       }
-      // Found the main repo root
-      return currentDir;
+    } else {
+      currentDir = join(currentDir, "..");
     }
-    currentDir = join(currentDir, "..");
   }
   // Fallback: use git rev-parse to find the top-level
   return execSync("git rev-parse --show-toplevel", { encoding: "utf8" }).trim();
@@ -40,56 +52,64 @@ function findMainRepoRoot(): string {
 
 const MAIN_REPO_ROOT = findMainRepoRoot();
 
-function run(cmd: string, opts?: { cwd?: string; env?: Record<string, string> }): string {
-  // Default to main repo root for git commands if no cwd specified
-  const isGitCommand = cmd.startsWith("git ") || cmd.startsWith("gh ");
-  const cwd = opts?.cwd ?? (isGitCommand ? MAIN_REPO_ROOT : undefined);
-  return execSync(cmd, { encoding: "utf8", cwd, env: { ...process.env, ...opts?.env } }).trim();
+function createDefaultCommandRunner(repoRoot: string = MAIN_REPO_ROOT): CommandRunner {
+  return {
+    run(cmd: string, opts?: { cwd?: string; env?: Record<string, string> }): string {
+      const isGitCommand = cmd.startsWith("git ") || cmd.startsWith("gh ");
+      const cwd = opts?.cwd ?? (isGitCommand ? repoRoot : undefined);
+      return execSync(cmd, { encoding: "utf8", cwd, env: { ...process.env, ...opts?.env } }).trim();
+    },
+    runSilent(cmd: string, args: string[], opts?: { cwd?: string }): string {
+      try {
+        const isGitCommand = cmd === "git" || cmd === "gh";
+        const cwd = opts?.cwd ?? (isGitCommand ? repoRoot : undefined);
+        return execFileSync(cmd, args, { encoding: "utf8", cwd }).trim();
+      } catch {
+        return "";
+      }
+    },
+  };
 }
 
-function runSilent(cmd: string, args: string[], opts?: { cwd?: string }): string {
-  try {
-    // Default to main repo root for git commands if no cwd specified
-    const isGitCommand = cmd === "git" || cmd === "gh";
-    const cwd = opts?.cwd ?? (isGitCommand ? MAIN_REPO_ROOT : undefined);
-    return execFileSync(cmd, args, { encoding: "utf8", cwd }).trim();
-  } catch {
-    return "";
-  }
+const defaultRunner = createDefaultCommandRunner();
+
+export function getBranch(runner: CommandRunner = defaultRunner): string {
+  return runner.run("git branch --show-current");
 }
 
-function getBranch(): string {
-  return run("git branch --show-current");
-}
-
-function hasPR(branch?: string): boolean {
+export function hasPR(branch?: string, runner: CommandRunner = defaultRunner): boolean {
   try {
     const branchArg = branch ? `"${branch}"` : "";
-    run(`gh pr view --json number ${branchArg}`);
+    runner.run(`gh pr view --json number ${branchArg}`);
     return true;
   } catch {
     return false;
   }
 }
 
-function getHead(): string {
-  return run("git rev-parse --verify HEAD");
+export function getHead(runner: CommandRunner = defaultRunner): string {
+  return runner.run("git rev-parse --verify HEAD");
 }
 
-async function generateMessage(titleFile: string, bodyFile: string, tmpDir: string): Promise<void> {
+export async function generateMessage(
+  titleFile: string,
+  bodyFile: string,
+  tmpDir: string,
+  runner: CommandRunner = defaultRunner,
+): Promise<void> {
   const diffRange = "origin/HEAD...HEAD";
 
   // Check for changes
   try {
-    run(`git diff --quiet --exit-code ${diffRange}`);
+    runner.run(`git diff --quiet --exit-code ${diffRange}`);
     console.log("No changes to generate message for");
     process.exit(2);
   } catch {
     // Has changes, continue
   }
 
-  const changedFiles = run(`git diff --name-only ${diffRange}`).split("\n").slice(0, 400).join("\n");
-  const changedDiff = run(`git diff ${diffRange}`).split("\n").slice(0, 2000).join("\n");
+  const changedFiles = runner.run(`git diff --name-only ${diffRange}`).split("\n").slice(0, 400).join("\n");
+  const changedDiff = runner.run(`git diff ${diffRange}`).split("\n").slice(0, 2000).join("\n");
 
   if (ENGINE === "kimi") {
     await generateWithKimi(titleFile, bodyFile, changedDiff, tmpDir);
@@ -109,7 +129,6 @@ async function generateWithKimi(titleFile: string, bodyFile: string, diff: strin
 Diff:
 ${diff}`;
 
-  // Write prompt to temp file and use shell redirection to avoid command line length limits
   const promptFile = join(tmpDir, "kimi-prompt.txt");
   writeFileSync(promptFile, prompt, "utf8");
 
@@ -122,9 +141,6 @@ ${diff}`;
 
   try {
     try {
-      // Use shell to redirect file content to kimi via stdin
-      // This avoids command injection while handling large prompts
-
       execSync(`kimi ${kimiArgs.join(" ")} < "${promptFile}" > "${kimiOut}" 2>&1 || true`, {
         encoding: "utf8",
         shell: "/bin/bash",
@@ -133,13 +149,11 @@ ${diff}`;
       // Ignore errors, check output below
     }
 
-    // Check if kimi wrote directly to files
     try {
       readFileSync(titleFile, "utf8");
       console.log("kimi wrote title/body directly");
       return;
     } catch {
-      // Didn't write directly, use captured output if available
       if (!existsSync(kimiOut)) {
         throw new Error("kimi failed to generate message");
       }
@@ -166,11 +180,9 @@ ${diff}`;
     execFileSync("junie", ["--skip-update-check", "--cache-dir=.junie/cache", "--prompt-file", promptFile], {
       encoding: "utf8",
     });
-    // Check if junie wrote directly
     readFileSync(titleFile, "utf8");
     return;
   } catch {
-    // Try to capture output
     try {
       const output = execFileSync(
         "junie",
@@ -239,7 +251,6 @@ ${diff}`;
       });
       writeFileSync(copilotOut, result, "utf8");
     } catch (e: unknown) {
-      // Capture stderr on error
       const stderr = e && typeof e === "object" && "stderr" in e ? String((e as { stderr: unknown }).stderr) : "";
       writeFileSync(copilotErr, stderr, "utf8");
     }
@@ -254,7 +265,7 @@ ${diff}`;
           encoding: "utf8",
         });
         writeFileSync(copilotOut, result, "utf8");
-      } catch (e: unknown) {
+      } catch {
         // Ignore errors
       }
       output = readFileSync(copilotOut, "utf8");
@@ -270,14 +281,18 @@ ${diff}`;
   }
 }
 
-async function parseAndWriteMessage(aiOutput: string, titleFile: string, bodyFile: string): Promise<void> {
+export async function parseAndWriteMessage(
+  aiOutput: string,
+  titleFile: string,
+  bodyFile: string,
+  fs: FileSystem = { existsSync, readFileSync, writeFileSync, unlinkSync, mkdtempSync, rmSync },
+): Promise<void> {
   const allowedTypes = "ci feat fix perf refactor style test build ops docs chore merge revert";
   const lines = aiOutput.replace(/\r/g, "").split("\n");
 
   // Find subject line matching conventional commit pattern
   let subject = "";
   const allowedTypesAlt = allowedTypes.replace(/ /g, "|");
-  // Match: type(scope): ..., type!: ..., or type(scope)!: ...
   const pattern = new RegExp(`^(${allowedTypesAlt})(\\(([^)]+)\\))?(!)?: .+`);
 
   for (const line of lines) {
@@ -296,7 +311,7 @@ async function parseAndWriteMessage(aiOutput: string, titleFile: string, bodyFil
   if (!subject) {
     // Check if there's an existing valid PR message to preserve
     try {
-      const existing = readFileSync(titleFile, "utf8").trim();
+      const existing = fs.readFileSync(titleFile, { encoding: "utf8" }).trim();
       if (existing && !existing.match(/^error\([^)]+\):/)) {
         console.log("Preserving existing PR message");
         process.exit(0);
@@ -335,22 +350,73 @@ async function parseAndWriteMessage(aiOutput: string, titleFile: string, bodyFil
     .join("\n")
     .trim();
 
-  writeFileSync(titleFile, subject.substring(0, 72) + "\n", "utf8");
-  writeFileSync(bodyFile, body, "utf8");
+  fs.writeFileSync(titleFile, subject.substring(0, 72) + "\n", { encoding: "utf8" });
+  fs.writeFileSync(bodyFile, body, { encoding: "utf8" });
 }
 
-async function waitForChecks(): Promise<void> {
+async function waitForChecks(repoRoot: string = MAIN_REPO_ROOT): Promise<void> {
   console.log("Waiting for PR checks to complete...");
 
   try {
-    // gh pr checks --fail-fast --watch will:
-    // - Wait for checks to appear if none exist yet
-    // - Watch all checks and exit with error if any fail
-    // - Exit successfully when all checks pass
-    execFileSync("gh", ["pr", "checks", "--fail-fast", "--watch"], { stdio: "inherit", cwd: MAIN_REPO_ROOT });
+    execFileSync("gh", ["pr", "checks", "--fail-fast", "--watch"], { stdio: "inherit", cwd: repoRoot });
   } catch {
     console.error("Error: PR checks failed or timed out.");
     process.exit(1);
+  }
+}
+
+export async function createOrUpdatePR(
+  branch: string,
+  runner: CommandRunner = defaultRunner,
+  fs: FileSystem = { existsSync, readFileSync, writeFileSync, unlinkSync, mkdtempSync, rmSync },
+): Promise<void> {
+  const tmpDir = fs.mkdtempSync(join(tmpdir(), "pr-"));
+  const titleFile = join(tmpDir, "title.txt");
+  const bodyFile = join(tmpDir, "body.txt");
+
+  const headBefore = getHead(runner);
+
+  try {
+    if (hasPR(branch, runner)) {
+      console.log("Updating PR message...");
+    }
+
+    await generateMessage(titleFile, bodyFile, tmpDir, runner);
+    const headAfter = getHead(runner);
+
+    // Regenerate if HEAD changed during generation
+    if (headBefore !== headAfter) {
+      await generateMessage(titleFile, bodyFile, tmpDir, runner);
+    }
+
+    const title = fs.readFileSync(titleFile, "utf8").trim();
+
+    if (hasPR(branch, runner)) {
+      runner.run(`gh pr edit "${branch}" --title "${title.replace(/"/g, '\\"')}" --body-file "${bodyFile}"`);
+      try {
+        runner.run(`GH_PAGER=cat gh pr view "${branch}"`);
+      } catch (e) {
+        console.warn("Warning: Could not view PR after edit:", e instanceof Error ? e.message : String(e));
+      }
+    } else {
+      // Verify we're still on the expected branch before creating PR
+      const currentBranch = getBranch(runner);
+      if (currentBranch !== branch) {
+        console.error(`Error: Branch changed from "${branch}" to "${currentBranch}". Aborting PR creation.`);
+        process.exit(1);
+      }
+      runner.run(`gh pr create --title "${title.replace(/"/g, '\\"')}" --body-file "${bodyFile}"`);
+      console.log("PR created with generated message.");
+      try {
+        runner.run(`GH_PAGER=cat gh pr view "${branch}"`);
+      } catch (e) {
+        console.warn("Warning: Could not view PR after creation:", e instanceof Error ? e.message : String(e));
+      }
+    }
+  } finally {
+    try {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    } catch {}
   }
 }
 
@@ -360,7 +426,6 @@ async function main(): Promise<void> {
   const dryRun = args.includes("--dry-run");
 
   if (command === "pr-message") {
-    // CLI mode for pr-message
     let titleFile = "";
     let bodyFile = "";
 
@@ -386,16 +451,15 @@ async function main(): Promise<void> {
   }
 
   // Full merge workflow
-  // Capture branch name BEFORE any git operations that might change it
   const currentBranch = getBranch();
   console.log(`Current branch: ${currentBranch}`);
 
   console.log("Fetching and merging origin/HEAD...");
-  run("git fetch --all --prune --prune-tags --tags --force");
-  run("git merge origin/HEAD");
+  defaultRunner.run("git fetch --all --prune --prune-tags --tags --force");
+  defaultRunner.run("git merge origin/HEAD");
 
   console.log("Pushing...");
-  run("git push");
+  defaultRunner.run("git push");
 
   const hasExistingPR = hasPR(currentBranch);
 
@@ -413,7 +477,7 @@ async function main(): Promise<void> {
   }
 
   // Merge squash
-  const hasUncommitted = runSilent("git", ["status", "--porcelain=1"]) !== "";
+  const hasUncommitted = defaultRunner.runSilent("git", ["status", "--porcelain=1"]) !== "";
   if (hasUncommitted) {
     console.warn("WARNING: Uncommitted changes detected. Review before merge.");
   }
@@ -434,62 +498,16 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  run("gh pr merge --squash --delete-branch");
+  defaultRunner.run("gh pr merge --squash --delete-branch");
   process.exit(0);
 }
 
-async function createOrUpdatePR(branch: string): Promise<void> {
-  const tmpDir = mkdtempSync(join(tmpdir(), "pr-"));
-  const titleFile = join(tmpDir, "title.txt");
-  const bodyFile = join(tmpDir, "body.txt");
-
-  const headBefore = getHead();
-
-  try {
-    if (hasPR(branch)) {
-      console.log("Updating PR message...");
-    }
-
-    await generateMessage(titleFile, bodyFile, tmpDir);
-    const headAfter = getHead();
-
-    // Regenerate if HEAD changed during generation
-    if (headBefore !== headAfter) {
-      await generateMessage(titleFile, bodyFile, tmpDir);
-    }
-
-    const title = readFileSync(titleFile, "utf8").trim();
-
-    if (hasPR(branch)) {
-      run(`gh pr edit "${branch}" --title "${title.replace(/"/g, '\\"')}" --body-file "${bodyFile}"`);
-      try {
-        run(`GH_PAGER=cat gh pr view "${branch}"`);
-      } catch (e) {
-        console.warn("Warning: Could not view PR after edit:", e instanceof Error ? e.message : String(e));
-      }
-    } else {
-      // Verify we're still on the expected branch before creating PR
-      const currentBranch = getBranch();
-      if (currentBranch !== branch) {
-        console.error(`Error: Branch changed from "${branch}" to "${currentBranch}". Aborting PR creation.`);
-        process.exit(1);
-      }
-      run(`gh pr create --title "${title.replace(/"/g, '\\"')}" --body-file "${bodyFile}"`);
-      console.log("PR created with generated message.");
-      try {
-        run(`GH_PAGER=cat gh pr view "${branch}"`);
-      } catch (e) {
-        console.warn("Warning: Could not view PR after creation:", e instanceof Error ? e.message : String(e));
-      }
-    }
-  } finally {
-    try {
-      rmSync(tmpDir, { recursive: true, force: true });
-    } catch {}
-  }
+// Only run main if this file is executed directly (not imported for testing)
+// Check if we're the entry point by comparing process.argv[1]
+const isMainModule = process.argv[1]?.endsWith("merge.ts") || process.argv[1]?.endsWith("merge.js");
+if (isMainModule) {
+  main().catch((e) => {
+    console.error(e);
+    process.exit(1);
+  });
 }
-
-main().catch((e) => {
-  console.error(e);
-  process.exit(1);
-});
