@@ -221,6 +221,7 @@ describe("getBranch", () => {
     const runner: CommandRunner = {
       run: vi.fn(() => "feature/test-branch"),
       runSilent: vi.fn(),
+      runArgv: vi.fn(),
     };
 
     const result = getBranch(runner);
@@ -232,21 +233,23 @@ describe("getBranch", () => {
 describe("hasPR", () => {
   it("should return true when PR exists for branch", () => {
     const runner: CommandRunner = {
-      run: vi.fn(() => '{"number": 42}'),
+      run: vi.fn(),
       runSilent: vi.fn(),
+      runArgv: vi.fn(() => '{"number": 42}'),
     };
 
     const result = hasPR("feature/test", runner);
     expect(result).toBe(true);
-    expect(runner.run).toHaveBeenCalledWith('gh pr view --json number "feature/test"');
+    expect(runner.runArgv).toHaveBeenCalledWith("gh", ["pr", "view", "--json", "number", "feature/test"]);
   });
 
   it("should return false when no PR exists for branch", () => {
     const runner: CommandRunner = {
-      run: vi.fn(() => {
+      run: vi.fn(),
+      runSilent: vi.fn(),
+      runArgv: vi.fn(() => {
         throw new Error("no pull requests found");
       }),
-      runSilent: vi.fn(),
     };
 
     const result = hasPR("feature/test", runner);
@@ -255,13 +258,14 @@ describe("hasPR", () => {
 
   it("should work without branch argument (uses current branch)", () => {
     const runner: CommandRunner = {
-      run: vi.fn(() => '{"number": 42}'),
+      run: vi.fn(),
       runSilent: vi.fn(),
+      runArgv: vi.fn(() => '{"number": 42}'),
     };
 
     const result = hasPR(undefined, runner);
     expect(result).toBe(true);
-    expect(runner.run).toHaveBeenCalledWith("gh pr view --json number ");
+    expect(runner.runArgv).toHaveBeenCalledWith("gh", ["pr", "view", "--json", "number"]);
   });
 });
 
@@ -270,6 +274,7 @@ describe("getHead", () => {
     const runner: CommandRunner = {
       run: vi.fn(() => "abc123def456"),
       runSilent: vi.fn(),
+      runArgv: vi.fn(),
     };
 
     const result = getHead(runner);
@@ -284,10 +289,11 @@ describe("Integration: PR workflow state machine", () => {
     const runner: CommandRunner = {
       run: vi.fn(),
       runSilent: vi.fn(),
+      runArgv: vi.fn(),
     };
 
     // First call: no PR
-    (runner.run as ReturnType<typeof vi.fn>)
+    (runner.runArgv as ReturnType<typeof vi.fn>)
       .mockImplementationOnce(() => {
         throw new Error("no pull requests found");
       })

@@ -14,6 +14,8 @@ const ENGINE = process.env.ENGINE || "kimi";
 export interface CommandRunner {
   run(cmd: string, opts?: { cwd?: string; env?: Record<string, string> }): string;
   runSilent(cmd: string, args: string[], opts?: { cwd?: string }): string;
+  // Safer argv-based execution to avoid shell injection
+  runArgv(cmd: string, args: string[], opts?: { cwd?: string; env?: Record<string, string> }): string;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -29,7 +31,7 @@ export function findMainRepoRoot(
 ): string {
   // Walk up to find the top-level git directory that is not a submodule
   let currentDir = cwd;
-  while (currentDir !== "/") {
+  while (true) {
     const gitDir = join(currentDir, ".git");
     if (fs.existsSync(gitDir)) {
       // Check if this is a submodule by looking for .gitmodules in parent
@@ -43,11 +45,16 @@ export function findMainRepoRoot(
         return currentDir;
       }
     } else {
-      currentDir = join(currentDir, "..");
+      const parentDir = join(currentDir, "..");
+      // Stop if we've reached the filesystem root (handles Windows and Unix)
+      if (parentDir === currentDir) {
+        break;
+      }
+      currentDir = parentDir;
     }
   }
   // Fallback: use git rev-parse to find the top-level
-  return execSync("git rev-parse --show-toplevel", { encoding: "utf8" }).trim();
+  return execSync("git rev-parse --show-toplevel", { encoding: "utf8", cwd }).trim();
 }
 
 const MAIN_REPO_ROOT = findMainRepoRoot();
@@ -68,6 +75,11 @@ function createDefaultCommandRunner(repoRoot: string = MAIN_REPO_ROOT): CommandR
         return "";
       }
     },
+    runArgv(cmd: string, args: string[], opts?: { cwd?: string; env?: Record<string, string> }): string {
+      const isGitCommand = cmd === "git" || cmd === "gh";
+      const cwd = opts?.cwd ?? (isGitCommand ? repoRoot : undefined);
+      return execFileSync(cmd, args, { encoding: "utf8", cwd, env: { ...process.env, ...opts?.env } }).trim();
+    },
   };
 }
 
@@ -79,8 +91,11 @@ export function getBranch(runner: CommandRunner = defaultRunner): string {
 
 export function hasPR(branch?: string, runner: CommandRunner = defaultRunner): boolean {
   try {
-    const branchArg = branch ? `"${branch}"` : "";
-    runner.run(`gh pr view --json number ${branchArg}`);
+    const args = ["pr", "view", "--json", "number"];
+    if (branch) {
+      args.push(branch);
+    }
+    runner.runArgv("gh", args);
     return true;
   } catch {
     return false;
@@ -265,8 +280,8 @@ ${diff}`;
           encoding: "utf8",
         });
         writeFileSync(copilotOut, result, "utf8");
-      } catch {
-        // Ignore errors
+      } catch (e) {
+        console.warn("Warning: Fallback model also failed:", e instanceof Error ? e.message : String(e));
       }
       output = readFileSync(copilotOut, "utf8");
     }
@@ -392,9 +407,11 @@ export async function createOrUpdatePR(
     const title = fs.readFileSync(titleFile, { encoding: "utf8" }).trim();
 
     if (hasPR(branch, runner)) {
-      runner.run(`gh pr edit "${branch}" --title "${title.replace(/"/g, '\\"')}" --body-file "${bodyFile}"`);
+      // Use runArgv to avoid shell injection with title
+      runner.runArgv("gh", ["pr", "edit", branch, "--title", title, "--body-file", bodyFile]);
       try {
-        runner.run(`GH_PAGER=cat gh pr view "${branch}"`);
+        // Use env option instead of inline shell variable
+        runner.runArgv("gh", ["pr", "view", branch], { env: { GH_PAGER: "cat" } });
       } catch (e) {
         console.warn("Warning: Could not view PR after edit:", e instanceof Error ? e.message : String(e));
       }
@@ -405,10 +422,12 @@ export async function createOrUpdatePR(
         console.error(`Error: Branch changed from "${branch}" to "${currentBranch}". Aborting PR creation.`);
         process.exit(1);
       }
-      runner.run(`gh pr create --title "${title.replace(/"/g, '\\"')}" --body-file "${bodyFile}"`);
+      // Use runArgv to avoid shell injection with title
+      runner.runArgv("gh", ["pr", "create", "--title", title, "--body-file", bodyFile]);
       console.log("PR created with generated message.");
       try {
-        runner.run(`GH_PAGER=cat gh pr view "${branch}"`);
+        // Use env option instead of inline shell variable
+        runner.runArgv("gh", ["pr", "view", branch], { env: { GH_PAGER: "cat" } });
       } catch (e) {
         console.warn("Warning: Could not view PR after creation:", e instanceof Error ? e.message : String(e));
       }
