@@ -453,11 +453,19 @@ async function createOrUpdatePR(): Promise<void> {
 
     if (hasPR()) {
       run(`gh pr edit --title "${title.replace(/"/g, '\\"')}" --body-file "${bodyFile}"`);
-      run("GH_PAGER=cat gh pr view");
+      try {
+        run("GH_PAGER=cat gh pr view");
+      } catch {
+        // Ignore errors viewing PR after edit
+      }
     } else {
       run(`gh pr create --title "${title.replace(/"/g, '\\"')}" --body-file "${bodyFile}"`);
       console.log("PR created with generated message.");
-      run("GH_PAGER=cat gh pr view");
+      try {
+        run("GH_PAGER=cat gh pr view");
+      } catch {
+        // Ignore errors viewing PR after creation
+      }
     }
   } finally {
     try {
