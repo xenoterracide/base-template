@@ -389,7 +389,7 @@ export async function createOrUpdatePR(
       await generateMessage(titleFile, bodyFile, tmpDir, runner);
     }
 
-    const title = fs.readFileSync(titleFile, "utf8").trim();
+    const title = fs.readFileSync(titleFile, { encoding: "utf8" }).trim();
 
     if (hasPR(branch, runner)) {
       runner.run(`gh pr edit "${branch}" --title "${title.replace(/"/g, '\\"')}" --body-file "${bodyFile}"`);
@@ -451,6 +451,7 @@ async function main(): Promise<void> {
   }
 
   // Full merge workflow
+  // Capture branch name BEFORE any git operations that might change it
   const currentBranch = getBranch();
   console.log(`Current branch: ${currentBranch}`);
 
@@ -482,7 +483,7 @@ async function main(): Promise<void> {
     console.warn("WARNING: Uncommitted changes detected. Review before merge.");
   }
 
-  process.stdout.write("Proceed with squash merge? [Y/n] ");
+  process.stdout.write("Proceed with squash squash merge? [Y/n] ");
 
   if (!process.stdin.isTTY) {
     console.error("Interactive confirmation required, but no TTY is available. Aborting squash merge.");
