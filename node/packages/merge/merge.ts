@@ -58,9 +58,14 @@ function runSilent(cmd: string, args: string[], opts?: { cwd?: string }): string
   }
 }
 
-function hasPR(): boolean {
+function getBranch(): string {
+  return run("git branch --show-current");
+}
+
+function hasPR(branch?: string): boolean {
   try {
-    run("gh pr view --json number");
+    const branchArg = branch ? `--branch ${branch}` : "";
+    run(`gh pr view --json number ${branchArg}`);
     return true;
   } catch {
     return false;
@@ -381,6 +386,10 @@ async function main(): Promise<void> {
   }
 
   // Full merge workflow
+  // Capture branch name BEFORE any git operations that might change it
+  const currentBranch = getBranch();
+  console.log(`Current branch: ${currentBranch}`);
+
   console.log("Fetching and merging origin/HEAD...");
   run("git fetch --all --prune --prune-tags --tags --force");
   run("git merge origin/HEAD");
@@ -388,13 +397,13 @@ async function main(): Promise<void> {
   console.log("Pushing...");
   run("git push");
 
-  const hasExistingPR = hasPR();
+  const hasExistingPR = hasPR(currentBranch);
 
   if (hasExistingPR) {
     await waitForChecks();
-    await createOrUpdatePR();
+    await createOrUpdatePR(currentBranch);
   } else {
-    await createOrUpdatePR();
+    await createOrUpdatePR(currentBranch);
     await waitForChecks();
   }
 
@@ -429,7 +438,7 @@ async function main(): Promise<void> {
   process.exit(0);
 }
 
-async function createOrUpdatePR(): Promise<void> {
+async function createOrUpdatePR(branch: string): Promise<void> {
   const tmpDir = mkdtempSync(join(tmpdir(), "pr-"));
   const titleFile = join(tmpDir, "title.txt");
   const bodyFile = join(tmpDir, "body.txt");
@@ -437,7 +446,7 @@ async function createOrUpdatePR(): Promise<void> {
   const headBefore = getHead();
 
   try {
-    if (hasPR()) {
+    if (hasPR(branch)) {
       console.log("Updating PR message...");
     }
 
@@ -451,13 +460,27 @@ async function createOrUpdatePR(): Promise<void> {
 
     const title = readFileSync(titleFile, "utf8").trim();
 
-    if (hasPR()) {
-      run(`gh pr edit --title "${title.replace(/"/g, '\\"')}" --body-file "${bodyFile}"`);
-      run("GH_PAGER=cat gh pr view");
+    if (hasPR(branch)) {
+      run(`gh pr edit --branch "${branch}" --title "${title.replace(/"/g, '\\"')}" --body-file "${bodyFile}"`);
+      try {
+        run(`GH_PAGER=cat gh pr view --branch "${branch}"`);
+      } catch (e) {
+        console.warn("Warning: Could not view PR after edit:", e instanceof Error ? e.message : String(e));
+      }
     } else {
+      // Verify we're still on the expected branch before creating PR
+      const currentBranch = getBranch();
+      if (currentBranch !== branch) {
+        console.error(`Error: Branch changed from "${branch}" to "${currentBranch}". Aborting PR creation.`);
+        process.exit(1);
+      }
       run(`gh pr create --title "${title.replace(/"/g, '\\"')}" --body-file "${bodyFile}"`);
       console.log("PR created with generated message.");
-      run("GH_PAGER=cat gh pr view");
+      try {
+        run(`GH_PAGER=cat gh pr view --branch "${branch}"`);
+      } catch (e) {
+        console.warn("Warning: Could not view PR after creation:", e instanceof Error ? e.message : String(e));
+      }
     }
   } finally {
     try {
