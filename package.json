@@ -18,6 +18,7 @@
     "merge:copilot": "yarn workspace merge run merge:copilot",
     "merge:junie": "yarn workspace merge run merge:junie",
     "merge:kimi": "yarn workspace merge run merge:kimi",
+    "secrets-sync": "yarn workspace secrets-sync run secrets-sync",
     "lint:prettier": "prettier --ignore-unknown --cache --check '**'",
     "lint:reuse": "uv run --frozen --group dev reuse lint",
     "lint": "yarn lint:prettier && yarn lint:reuse",
