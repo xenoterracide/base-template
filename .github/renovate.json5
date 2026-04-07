@@ -40,6 +40,13 @@
     },
     {
       matchManagers: ["github-actions"],
+      automerge: true,
+    },
+    {
+      // Pin xenoterracide org actions to commit SHAs for build reproducibility
+      // Only these get digest pins; other actions get normal version tag updates
+      matchManagers: ["github-actions"],
+      matchDepNames: ["xenoterracide/**"],
       extends: ["helpers:pinGitHubActionDigests"],
       automerge: true,
     },
