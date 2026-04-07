@@ -6,8 +6,8 @@
 
 import { execFileSync } from "child_process";
 import { existsSync, readFileSync, statSync, writeFileSync, chmodSync } from "fs";
-import { createInterface } from "readline";
 import { resolve, dirname } from "path";
+import { Command, Option, Cli, BaseContext } from "clipanion";
 
 export interface CommandRunner {
   runArgv(cmd: string, args: string[], opts?: { cwd?: string; env?: Record<string, string> }): string;
@@ -48,38 +48,6 @@ function createDefaultCommandRunner(): CommandRunner {
 
 const defaultRunner = createDefaultCommandRunner();
 
-interface SyncArgs {
-  from: string;
-  to: string[];
-  exclude?: string[];
-  include?: string[];
-  fromEnvFile?: string;
-  interactive: boolean;
-  dryRun: boolean;
-}
-
-interface BulkSetArgs {
-  owner: string;
-  label: string;
-  secretName?: string;
-  secretValue?: string;
-  fromEnvFile?: string;
-  dryRun: boolean;
-}
-
-interface PullArgs {
-  from: string;
-  output: string;
-  format: "env" | "file";
-  dryRun?: boolean;
-}
-
-interface UpdateArgs {
-  file: string;
-  key: string;
-  value: string;
-}
-
 interface EnvEntry {
   type: "value" | "env" | "file";
   value: string;
@@ -112,8 +80,8 @@ function parseEnvFile(filePath: string): Record<string, EnvEntry> {
 
     // Check for file:// prefix
     if (value.startsWith("file://")) {
-      const filePath = value.slice(7);
-      const resolvedFilePath = resolve(baseDir, filePath);
+      const referencedPath = value.slice(7);
+      const resolvedFilePath = resolve(baseDir, referencedPath);
       entries[key] = { type: "file", value: resolvedFilePath };
     }
     // Check for env:// prefix
@@ -134,11 +102,10 @@ function resolveSecretValue(
   name: string,
   envFileEntries?: Record<string, EnvEntry>,
   explicitValue?: string,
-  interactive?: boolean,
-): Promise<string | undefined> {
+): string | undefined {
   // Priority 1: Explicit value
   if (explicitValue !== undefined) {
-    return Promise.resolve(explicitValue);
+    return explicitValue;
   }
 
   // Priority 2: From env file entry
@@ -146,22 +113,22 @@ function resolveSecretValue(
     const entry = envFileEntries[name];
 
     if (entry.type === "value") {
-      return Promise.resolve(entry.value);
+      return entry.value;
     }
 
     if (entry.type === "env") {
       const envValue = process.env[entry.value];
       if (envValue !== undefined) {
-        return Promise.resolve(envValue);
+        return envValue;
       }
       console.warn(`Warning: Environment variable "${entry.value}" not found for secret "${name}"`);
-      return Promise.resolve(undefined);
+      return undefined;
     }
 
     if (entry.type === "file") {
       if (!existsSync(entry.value)) {
         console.warn(`Warning: File "${entry.value}" not found for secret "${name}"`);
-        return Promise.resolve(undefined);
+        return undefined;
       }
       // Check file permissions
       try {
@@ -176,61 +143,17 @@ function resolveSecretValue(
         // Ignore permission check errors
       }
       const content = readFileSync(entry.value, "utf8");
-      return Promise.resolve(content);
+      return content;
     }
   }
 
   // Priority 3: Environment variable matching secret name
   const envValue = process.env[name];
   if (envValue !== undefined) {
-    return Promise.resolve(envValue);
+    return envValue;
   }
 
-  // Priority 4: Interactive prompt
-  if (interactive) {
-    return promptForSecret(name);
-  }
-
-  return Promise.resolve(undefined);
-}
-
-function promptForSecret(name: string): Promise<string | undefined> {
-  const rl = createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
-
-  return new Promise((resolve) => {
-    // For multi-line secrets like GPG keys, allow empty line to finish
-    console.log(`Enter value for secret "${name}" (press Ctrl+D or enter an empty line twice to finish):`);
-
-    const lines: string[] = [];
-    let emptyLineCount = 0;
-
-    rl.on("line", (line) => {
-      if (line === "") {
-        emptyLineCount++;
-        if (emptyLineCount >= 2 || lines.length === 0) {
-          rl.close();
-          return;
-        }
-      } else {
-        emptyLineCount = 0;
-      }
-      lines.push(line);
-    });
-
-    rl.on("close", () => {
-      const value = lines.join("\n");
-      resolve(value || undefined);
-    });
-
-    // Handle Ctrl+D gracefully
-    rl.on("SIGINT", () => {
-      rl.close();
-      resolve(undefined);
-    });
-  });
+  return undefined;
 }
 
 function listSecretNames(repo: string, runner: CommandRunner = defaultRunner): string[] {
@@ -284,558 +207,397 @@ function getCurrentUser(runner: CommandRunner = defaultRunner): string {
   }
 }
 
-async function syncCommand(args: SyncArgs): Promise<void> {
-  console.log(`Syncing secrets from ${args.from}...`);
+// Sync Command
+class SyncCommand extends Command<BaseContext> {
+  static paths = [["sync"]];
 
-  // Get secret names from source repo
-  const secretNames = listSecretNames(args.from);
-  console.log(`Found ${secretNames.length} secrets in source repo`);
+  from = Option.String("--from,-f", {
+    required: true,
+    description: "Source repository (OWNER/REPO format)",
+  });
 
-  // Apply include/exclude filters
-  let filteredNames = secretNames;
+  to = Option.String("--to,-t", {
+    required: true,
+    description: "Target repo(s), comma-separated",
+  });
 
-  if (args.include && args.include.length > 0) {
-    const includeSet = new Set(args.include);
-    filteredNames = filteredNames.filter((n) => includeSet.has(n));
-    console.log(`Included ${filteredNames.length} secrets based on --include filter`);
-  }
+  include = Option.String("--include,-i", {
+    description: "Only sync specific secrets (comma-separated)",
+  });
 
-  if (args.exclude && args.exclude.length > 0) {
-    const excludeSet = new Set(args.exclude);
-    filteredNames = filteredNames.filter((n) => !excludeSet.has(n));
-    console.log(`Excluded secrets, ${filteredNames.length} remaining`);
-  }
+  exclude = Option.String("--exclude,-e", {
+    description: "Exclude specific secrets (comma-separated)",
+  });
 
-  if (filteredNames.length === 0) {
-    console.log("No secrets to sync after filtering");
-    return;
-  }
+  fromEnvFile = Option.String("--from-env-file", {
+    description: "Load values from env file",
+  });
 
-  // Parse env file if provided
-  let envFileEntries: Record<string, EnvEntry> | undefined;
-  if (args.fromEnvFile) {
-    envFileEntries = parseEnvFile(args.fromEnvFile);
-  }
+  dryRun = Option.Boolean("--dry-run", false, {
+    description: "Show what would be done",
+  });
 
-  // Resolve all secret values
-  const secretsToSync: Array<{ name: string; value: string }> = [];
+  async execute() {
+    console.log(`Syncing secrets from ${this.from}...`);
 
-  for (const name of filteredNames) {
-    const value = await resolveSecretValue(name, envFileEntries, undefined, args.interactive);
-    if (value === undefined) {
-      console.warn(`Warning: Could not resolve value for secret "${name}", skipping`);
-      continue;
+    // Parse target repos
+    const targetRepos = this.to
+      .split(",")
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+
+    if (targetRepos.length === 0) {
+      console.error("Error: No target repos specified");
+      return 1;
     }
-    secretsToSync.push({ name, value });
-  }
 
-  if (secretsToSync.length === 0) {
-    console.log("No secrets to sync (could not resolve any values)");
-    return;
-  }
+    // Get secret names from source repo
+    const secretNames = listSecretNames(this.from);
+    console.log(`Found ${secretNames.length} secrets in source repo`);
 
-  console.log(`\nWill sync ${secretsToSync.length} secrets to ${args.to.length} repo(s):`);
-  console.log(`  Repos: ${args.to.join(", ")}`);
-  console.log(`  Secrets: ${secretsToSync.map((s) => s.name).join(", ")}`);
+    // Apply include/exclude filters
+    let filteredNames = secretNames;
 
-  if (args.dryRun) {
-    console.log("\n[Dry Run] No changes made");
-    return;
-  }
-
-  // Confirm if interactive
-  if (process.stdin.isTTY) {
-    process.stdout.write("\nProceed? [Y/n] ");
-    const reply = await new Promise<string>((resolve) => {
-      process.stdin.once("data", (data) => resolve(data.toString().trim().toLowerCase()));
-    });
-    if (reply === "n" || reply === "no") {
-      console.log("Cancelled");
-      return;
+    if (this.include) {
+      const includeSet = new Set(this.include.split(",").map((s) => s.trim()));
+      filteredNames = filteredNames.filter((n) => includeSet.has(n));
+      console.log(`Included ${filteredNames.length} secrets based on --include filter`);
     }
-  }
 
-  // Sync to each target repo
-  for (const repo of args.to) {
-    console.log(`\nSyncing to ${repo}...`);
-    for (const { name, value } of secretsToSync) {
-      try {
-        setSecret(repo, name, value);
-        console.log(`  ✓ ${name}`);
-      } catch (e) {
-        console.error(`  ✗ ${name}: ${e instanceof Error ? e.message : String(e)}`);
+    if (this.exclude) {
+      const excludeSet = new Set(this.exclude.split(",").map((s) => s.trim()));
+      filteredNames = filteredNames.filter((n) => !excludeSet.has(n));
+      console.log(`Excluded secrets, ${filteredNames.length} remaining`);
+    }
+
+    if (filteredNames.length === 0) {
+      console.log("No secrets to sync after filtering");
+      return 0;
+    }
+
+    // Parse env file if provided
+    const envFileEntries = this.fromEnvFile ? parseEnvFile(this.fromEnvFile) : undefined;
+
+    // Resolve all secret values
+    const secretsToSync: Array<{ name: string; value: string }> = [];
+
+    for (const name of filteredNames) {
+      const value = resolveSecretValue(name, envFileEntries);
+      if (value === undefined) {
+        console.warn(`Warning: Could not resolve value for secret "${name}", skipping`);
+        continue;
+      }
+      secretsToSync.push({ name, value });
+    }
+
+    if (secretsToSync.length === 0) {
+      console.log("No secrets to sync (could not resolve any values)");
+      return 0;
+    }
+
+    console.log(`\nWill sync ${secretsToSync.length} secrets to ${targetRepos.length} repo(s):`);
+    console.log(`  Repos: ${targetRepos.join(", ")}`);
+    console.log(`  Secrets: ${secretsToSync.map((s) => s.name).join(", ")}`);
+
+    if (this.dryRun) {
+      console.log("\n[Dry Run] No changes made");
+      return 0;
+    }
+
+    // Confirm if interactive
+    if (process.stdin.isTTY) {
+      process.stdout.write("\nProceed? [Y/n] ");
+      const reply = await new Promise<string>((resolve) => {
+        process.stdin.once("data", (data) => resolve(data.toString().trim().toLowerCase()));
+      });
+      if (reply === "n" || reply === "no") {
+        console.log("Cancelled");
+        return 0;
       }
     }
-  }
 
-  console.log("\nSync complete!");
+    // Sync to each target repo
+    for (const repo of targetRepos) {
+      console.log(`\nSyncing to ${repo}...`);
+      for (const { name, value } of secretsToSync) {
+        try {
+          setSecret(repo, name, value);
+          console.log(`  ✓ ${name}`);
+        } catch (e) {
+          console.error(`  ✗ ${name}: ${e instanceof Error ? e.message : String(e)}`);
+        }
+      }
+    }
+
+    console.log("\nSync complete!");
+    return 0;
+  }
 }
 
-async function bulkSetCommand(args: BulkSetArgs): Promise<void> {
-  console.log(`Finding repos for owner "${args.owner}" with label "${args.label}"...`);
+// Bulk Set Command
+class BulkSetCommand extends Command<BaseContext> {
+  static paths = [["bulk-set"]];
 
-  const repos = findReposByLabel(args.owner, args.label);
-  console.log(`Found ${repos.length} non-archived repos with label "${args.label}"`);
+  owner = Option.String("--owner,-o", {
+    description: "GitHub owner/organization (defaults to current user)",
+  });
 
-  if (repos.length === 0) {
-    console.log("No repos to update");
-    return;
-  }
+  label = Option.String("--label,-l", {
+    required: true,
+    description: "Repository topic/label to filter by",
+  });
 
-  // Collect secrets to set
-  const secretsToSet: Array<{ name: string; value: string }> = [];
+  secretName = Option.String("--secret-name,-n", {
+    description: "Secret name to set",
+  });
 
-  if (args.fromEnvFile) {
-    const envFileEntries = parseEnvFile(args.fromEnvFile);
+  secretValue = Option.String("--secret-value,-v", {
+    description: "Secret value",
+  });
 
-    for (const [name, entry] of Object.entries(envFileEntries)) {
-      let value: string | undefined;
+  fromEnvFile = Option.String("--from-env-file", {
+    description: "Load secrets from env file",
+  });
 
-      if (entry.type === "value") {
-        value = entry.value;
-      } else if (entry.type === "env") {
-        value = process.env[entry.value];
-        if (value === undefined) {
-          console.warn(`Warning: Environment variable "${entry.value}" not found, skipping "${name}"`);
-          continue;
+  dryRun = Option.Boolean("--dry-run", false, {
+    description: "Show what would be done",
+  });
+
+  async execute() {
+    const owner = this.owner ?? getCurrentUser();
+    console.log(`Finding repos for owner "${owner}" with label "${this.label}"...`);
+
+    const repos = findReposByLabel(owner, this.label);
+    console.log(`Found ${repos.length} non-archived repos with label "${this.label}"`);
+
+    if (repos.length === 0) {
+      console.log("No repos to update");
+      return 0;
+    }
+
+    // Collect secrets to set
+    const secretsToSet: Array<{ name: string; value: string }> = [];
+
+    if (this.fromEnvFile) {
+      const envFileEntries = parseEnvFile(this.fromEnvFile);
+
+      for (const name of Object.keys(envFileEntries)) {
+        const value = resolveSecretValue(name, envFileEntries);
+        if (value !== undefined) {
+          secretsToSet.push({ name, value });
         }
-      } else if (entry.type === "file") {
-        if (!existsSync(entry.value)) {
-          console.warn(`Warning: File "${entry.value}" not found, skipping "${name}"`);
-          continue;
-        }
-        value = readFileSync(entry.value, "utf8");
       }
-
+    } else if (this.secretName) {
+      const value = resolveSecretValue(this.secretName, undefined, this.secretValue);
       if (value !== undefined) {
-        secretsToSet.push({ name, value });
+        secretsToSet.push({ name: this.secretName, value });
+      } else {
+        console.error(`Error: Could not resolve value for secret "${this.secretName}"`);
+        return 1;
       }
-    }
-  } else if (args.secretName && args.secretValue !== undefined) {
-    secretsToSet.push({ name: args.secretName, value: args.secretValue });
-  } else if (args.secretName) {
-    // Try to get from environment
-    const envValue = process.env[args.secretName];
-    if (envValue !== undefined) {
-      secretsToSet.push({ name: args.secretName, value: envValue });
     } else {
-      console.error(`Error: Secret value not provided for "${args.secretName}"`);
-      process.exit(1);
+      console.error("Error: Must provide either --from-env-file or --secret-name");
+      return 1;
     }
-  } else {
-    console.error("Error: Must provide either --from-env-file or --secret-name (with --secret-value or env var)");
-    process.exit(1);
-  }
 
-  if (secretsToSet.length === 0) {
-    console.log("No secrets to set");
-    return;
-  }
-
-  console.log(`\nWill set ${secretsToSet.length} secret(s) on ${repos.length} repo(s):`);
-  console.log(`  Repos: ${repos.join(", ")}`);
-  console.log(`  Secrets: ${secretsToSet.map((s) => s.name).join(", ")}`);
-
-  if (args.dryRun) {
-    console.log("\n[Dry Run] No changes made");
-    return;
-  }
-
-  // Confirm if interactive
-  if (process.stdin.isTTY) {
-    process.stdout.write("\nProceed? [Y/n] ");
-    const reply = await new Promise<string>((resolve) => {
-      process.stdin.once("data", (data) => resolve(data.toString().trim().toLowerCase()));
-    });
-    if (reply === "n" || reply === "no") {
-      console.log("Cancelled");
-      return;
+    if (secretsToSet.length === 0) {
+      console.log("No secrets to set");
+      return 0;
     }
-  }
 
-  // Set secrets on each repo
-  for (const repo of repos) {
-    console.log(`\nSetting secrets on ${repo}...`);
-    for (const { name, value } of secretsToSet) {
-      try {
-        setSecret(repo, name, value);
-        console.log(`  ✓ ${name}`);
-      } catch (e) {
-        console.error(`  ✗ ${name}: ${e instanceof Error ? e.message : String(e)}`);
+    console.log(`\nWill set ${secretsToSet.length} secret(s) on ${repos.length} repo(s):`);
+    console.log(`  Repos: ${repos.join(", ")}`);
+    console.log(`  Secrets: ${secretsToSet.map((s) => s.name).join(", ")}`);
+
+    if (this.dryRun) {
+      console.log("\n[Dry Run] No changes made");
+      return 0;
+    }
+
+    // Confirm if interactive
+    if (process.stdin.isTTY) {
+      process.stdout.write("\nProceed? [Y/n] ");
+      const reply = await new Promise<string>((resolve) => {
+        process.stdin.once("data", (data) => resolve(data.toString().trim().toLowerCase()));
+      });
+      if (reply === "n" || reply === "no") {
+        console.log("Cancelled");
+        return 0;
       }
     }
-  }
 
-  console.log("\nBulk set complete!");
+    // Set secrets on each repo
+    for (const repo of repos) {
+      console.log(`\nSetting secrets on ${repo}...`);
+      for (const { name, value } of secretsToSet) {
+        try {
+          setSecret(repo, name, value);
+          console.log(`  ✓ ${name}`);
+        } catch (e) {
+          console.error(`  ✗ ${name}: ${e instanceof Error ? e.message : String(e)}`);
+        }
+      }
+    }
+
+    console.log("\nBulk set complete!");
+    return 0;
+  }
 }
 
-async function pullCommand(args: PullArgs): Promise<void> {
-  console.log(`Fetching secrets from ${args.from}...`);
+// Pull Command
+class PullCommand extends Command<BaseContext> {
+  static paths = [["pull"]];
 
-  const secretNames = listSecretNames(args.from);
-  console.log(`Found ${secretNames.length} secrets`);
+  from = Option.String("--from,-f", {
+    required: true,
+    description: "Source repository (OWNER/REPO format)",
+  });
 
-  if (secretNames.length === 0) {
-    console.log("No secrets to write");
-    return;
-  }
+  output = Option.String("--output,-o", "secrets.env", {
+    description: "Output file path",
+  });
 
-  // Sort names for consistent output
-  secretNames.sort();
+  format = Option.String("--format", "env", {
+    description: "Output format: env or file",
+  });
 
-  const lines: string[] = [
-    "# Secrets pulled from " + args.from,
-    "#",
-    "# Format options:",
-    "#   KEY=env://ENV_VAR_NAME     - Read from environment variable",
-    "#   KEY=file://./path/to/file  - Read from file (for GPG keys, certs)",
-    "#   KEY=value                  - Direct value (not recommended for secrets)",
-    "",
-  ];
+  dryRun = Option.Boolean("--dry-run", false, {
+    description: "Show what would be done",
+  });
 
-  for (const name of secretNames) {
-    if (args.format === "file") {
-      // Suggest file paths based on common patterns
-      if (name.toLowerCase().includes("gpg") || name.toLowerCase().includes("key")) {
-        lines.push(`${name}=file://./keys/${name.toLowerCase().replace(/_/g, "-")}.asc`);
+  async execute() {
+    if (this.format !== "env" && this.format !== "file") {
+      console.error("Error: Format must be 'env' or 'file'");
+      return 1;
+    }
+    console.log(`Fetching secrets from ${this.from}...`);
+
+    const secretNames = listSecretNames(this.from);
+    console.log(`Found ${secretNames.length} secrets`);
+
+    if (secretNames.length === 0) {
+      console.log("No secrets to write");
+      return 0;
+    }
+
+    // Sort names for consistent output
+    secretNames.sort();
+
+    const lines: string[] = [
+      "# Secrets pulled from " + this.from,
+      "#",
+      "# Format options:",
+      "#   KEY=env://ENV_VAR_NAME     - Read from environment variable",
+      "#   KEY=file://./path/to/file  - Read from file (for GPG keys, certs)",
+      "#   KEY=value                  - Direct value (not recommended for secrets)",
+      "",
+    ];
+
+    for (const name of secretNames) {
+      if (this.format === "file") {
+        // Suggest file paths based on common patterns
+        if (name.toLowerCase().includes("gpg") || name.toLowerCase().includes("key")) {
+          lines.push(`${name}=file://./keys/${name.toLowerCase().replace(/_/g, "-")}.asc`);
+        } else {
+          lines.push(`${name}=env://${name}`);
+        }
       } else {
         lines.push(`${name}=env://${name}`);
       }
-    } else {
-      lines.push(`${name}=env://${name}`);
     }
+
+    const content = lines.join("\n") + "\n";
+
+    if (this.dryRun) {
+      console.log("\n[Dry Run] Would write to " + this.output + ":");
+      console.log(content);
+      return 0;
+    }
+
+    writeFileSync(this.output, content, "utf8");
+    setSecurePermissions(this.output);
+    console.log(`\nWrote ${secretNames.length} secret entries to ${this.output} (permissions: 600)`);
+    return 0;
   }
-
-  const content = lines.join("\n") + "\n";
-
-  if (args.dryRun) {
-    console.log("\n[Dry Run] Would write to " + args.output + ":");
-    console.log(content);
-    return;
-  }
-
-  writeFileSync(args.output, content, "utf8");
-  setSecurePermissions(args.output);
-  console.log(`\nWrote ${secretNames.length} secret entries to ${args.output} (permissions: 600)`);
 }
 
-async function updateCommand(args: UpdateArgs): Promise<void> {
-  const resolvedPath = resolve(args.file);
+// Update Command
+class UpdateCommand extends Command<BaseContext> {
+  static paths = [["update"]];
 
-  // Check/fix existing file permissions
-  if (existsSync(resolvedPath)) {
-    checkFilePermissions(resolvedPath);
-  }
+  file = Option.String("--file,-f", "secrets.env", {
+    description: "Secrets env file path",
+  });
 
-  // Read existing content or start fresh
-  let content = "";
-  if (existsSync(resolvedPath)) {
-    content = readFileSync(resolvedPath, "utf8");
-  }
+  key = Option.String("--key,-k", {
+    required: true,
+    description: "Secret name to update",
+  });
 
-  const lines = content.split("\n");
-  let found = false;
-  let inMultiline = false;
-  let multilineKey = "";
-  let multilineLines: string[] = [];
-  const newLines: string[] = [];
+  value = Option.String("--value,-v", {
+    required: true,
+    description: "Secret value",
+  });
 
-  for (const line of lines) {
-    // Handle multiline values (lines between key= and next key= or blank line)
-    if (inMultiline) {
-      // Check if this line starts a new key
-      const keyMatch = line.match(/^([A-Za-z_][A-Za-z0-9_]*)=/);
-      if (keyMatch || line.trim() === "" || line.startsWith("#")) {
-        // End of multiline, process what we collected
-        if (multilineKey === args.key) {
-          newLines.push(`${args.key}=${args.value}`);
-          found = true;
-        } else {
-          newLines.push(`${multilineKey}=${multilineLines.join("\n")}`);
-        }
-        inMultiline = false;
-        multilineLines = [];
-        // Don't skip this line, process it normally
-      } else {
-        multilineLines.push(line);
-        continue;
-      }
+  async execute() {
+    const resolvedPath = resolve(this.file);
+
+    // Check/fix existing file permissions
+    if (existsSync(resolvedPath)) {
+      checkFilePermissions(resolvedPath);
     }
 
-    // Check if this is a key=value line
-    const eqIndex = line.indexOf("=");
-    if (eqIndex > 0 && !line.startsWith("#")) {
-      const key = line.slice(0, eqIndex).trim();
-      const value = line.slice(eqIndex + 1);
+    // Read existing content or start fresh
+    let content = "";
+    if (existsSync(resolvedPath)) {
+      content = readFileSync(resolvedPath, "utf8");
+    }
 
-      if (key === args.key) {
-        // Check if value continues on next lines (no file:// or env:// prefix)
-        if (!value.startsWith("file://") && !value.startsWith("env://")) {
-          // Might be multiline, check next line
-          inMultiline = true;
-          multilineKey = key;
-          multilineLines = [value];
+    const lines = content.split("\n");
+    let found = false;
+    const newLines: string[] = [];
+
+    for (const line of lines) {
+      // Check if this is a key=value line
+      const eqIndex = line.indexOf("=");
+      if (eqIndex > 0 && !line.startsWith("#")) {
+        const lineKey = line.slice(0, eqIndex).trim();
+        if (lineKey === this.key) {
+          newLines.push(`${this.key}=${this.value}`);
+          found = true;
           continue;
         }
-        newLines.push(`${key}=${args.value}`);
-        found = true;
-      } else {
-        newLines.push(line);
       }
-    } else {
       newLines.push(line);
     }
-  }
 
-  // Handle case where multiline value was at end of file
-  if (inMultiline) {
-    if (multilineKey === args.key) {
-      newLines.push(`${args.key}=${args.value}`);
-      found = true;
-    } else {
-      newLines.push(`${multilineKey}=${multilineLines.join("\n")}`);
-    }
-  }
-
-  // If key not found, append it
-  if (!found) {
-    // Add a blank line if file doesn't end with one
-    if (newLines.length > 0 && newLines[newLines.length - 1] !== "") {
-      newLines.push("");
-    }
-    newLines.push(`${args.key}=${args.value}`);
-    console.log(`Added ${args.key} to ${args.file}`);
-  } else {
-    console.log(`Updated ${args.key} in ${args.file}`);
-  }
-
-  writeFileSync(resolvedPath, newLines.join("\n") + "\n", "utf8");
-  setSecurePermissions(resolvedPath);
-}
-
-function printUsage(): void {
-  console.log(`
-Usage: secrets-sync <command> [options]
-
-Commands:
-  sync       Sync secrets from one repo to another
-  bulk-set   Set secrets on all repos with a specific label
-  pull       Fetch secret names from a repo and create env file template
-  update     Update a key in secrets.env file
-
-Sync Options:
-  --from, -f <repo>          Source repository (OWNER/REPO format)
-  --to, -t <repos>           Target repo(s), comma-separated
-  --include, -i <names>      Only sync specific secrets (comma-separated)
-  --exclude, -e <names>      Exclude specific secrets (comma-separated)
-  --from-env-file <path>     Load values from env file
-  --interactive              Prompt for missing values
-  --dry-run                  Show what would be done
-
-Bulk Set Options:
-  --owner, -o <owner>        GitHub owner/organization (defaults to current user)
-  --label, -l <label>        Repository topic/label to filter by
-  --secret-name, -n <name>   Secret name to set
-  --secret-value, -v <value> Secret value
-  --from-env-file <path>     Load secrets from env file
-  --dry-run                  Show what would be done
-
-Pull Options:
-  --from, -f <repo>          Source repository (OWNER/REPO format)
-  --output, -o <path>        Output file path (default: secrets.env)
-  --format <format>          Output format: env (default) or file
-
-Update Options:
-  --file, -f <path>          Secrets env file path (default: secrets.env)
-  --key, -k <name>           Secret name to update
-  --value, -v <value>        Secret value
-
-Env File Format:
-  # Simple values
-  API_KEY=env://API_KEY                    # Read from environment variable
-  DATABASE_URL=env://DATABASE_URL
-  
-  # Multi-line values (GPG keys, certificates)
-  GPG_KEY=file://./keys/signing.asc        # Read from file
-  
-  # Direct values (not recommended for sensitive data)
-  DEBUG_MODE=true
-
-Examples:
-  # Pull secrets from remote repo to create template
-  secrets-sync pull --from org/source-repo
-  
-  # Pull with file references for GPG keys
-  secrets-sync pull --from org/source-repo --format file
-  
-  # Update a key in secrets.env
-  secrets-sync update --key API_KEY --value "new-value"
-  secrets-sync update --file ./my-secrets.env --key GPG_KEY --value "file://./keys/new.asc"
-  
-  # Sync all secrets (values from environment)
-  secrets-sync sync --from org/source --to org/target
-  
-  # Sync with interactive prompting
-  secrets-sync sync --from org/source --to org/target --interactive
-  
-  # Sync from env file with file references
-  secrets-sync sync --from org/source --to org/target --from-env-file ./secrets.env
-  
-  # Bulk set on repos with label
-  secrets-sync bulk-set --owner org --label production --from-env-file ./secrets.env
-`);
-}
-
-function parseArgs(): { command: string; args: SyncArgs | BulkSetArgs | PullArgs | UpdateArgs } | null {
-  const args = process.argv.slice(2);
-  if (args.length === 0) {
-    return null;
-  }
-
-  const command = args[0];
-  const opts: Record<string, string | boolean> = {};
-
-  for (let i = 1; i < args.length; i++) {
-    const arg = args[i];
-    if (arg === "--dry-run") {
-      opts.dryRun = true;
-    } else if (arg === "--interactive") {
-      opts.interactive = true;
-    } else if (arg.startsWith("--") || arg.startsWith("-")) {
-      const key = arg.replace(/^-+/, "");
-      const value = args[i + 1];
-      if (value && !value.startsWith("-")) {
-        opts[key] = value;
-        i++;
-      } else {
-        opts[key] = true;
+    // If key not found, append it
+    if (!found) {
+      // Add a blank line if file doesn't end with one
+      if (newLines.length > 0 && newLines[newLines.length - 1] !== "") {
+        newLines.push("");
       }
-    }
-  }
-
-  if (command === "sync") {
-    if (!opts.from || !opts.to) {
-      console.error("Error: sync command requires --from and --to");
-      return null;
+      newLines.push(`${this.key}=${this.value}`);
+      console.log(`Added ${this.key} to ${this.file}`);
+    } else {
+      console.log(`Updated ${this.key} in ${this.file}`);
     }
 
-    return {
-      command,
-      args: {
-        from: String(opts.from),
-        to: String(opts.to)
-          .split(",")
-          .map((s) => s.trim()),
-        exclude: opts.exclude
-          ? String(opts.exclude)
-              .split(",")
-              .map((s) => s.trim())
-          : undefined,
-        include: opts.include
-          ? String(opts.include)
-              .split(",")
-              .map((s) => s.trim())
-          : undefined,
-        fromEnvFile: opts["from-env-file"] ? String(opts["from-env-file"]) : undefined,
-        interactive: opts.interactive === true,
-        dryRun: opts.dryRun === true,
-      },
-    };
-  }
-
-  if (command === "bulk-set") {
-    if (!opts.label) {
-      console.error("Error: bulk-set command requires --label");
-      return null;
-    }
-
-    const owner = opts.owner ? String(opts.owner) : getCurrentUser();
-
-    return {
-      command,
-      args: {
-        owner,
-        label: String(opts.label),
-        secretName: opts["secret-name"] || opts.n ? String(opts["secret-name"] || opts.n) : undefined,
-        secretValue: opts["secret-value"] || opts.v ? String(opts["secret-value"] || opts.v) : undefined,
-        fromEnvFile: opts["from-env-file"] ? String(opts["from-env-file"]) : undefined,
-        dryRun: opts.dryRun === true,
-      },
-    };
-  }
-
-  if (command === "pull") {
-    if (!opts.from) {
-      console.error("Error: pull command requires --from");
-      return null;
-    }
-
-    const format = opts.format === "file" ? "file" : "env";
-
-    return {
-      command,
-      args: {
-        from: String(opts.from),
-        output: opts.output ? String(opts.output) : "secrets.env",
-        format,
-        dryRun: opts.dryRun === true,
-      },
-    };
-  }
-
-  if (command === "update") {
-    if (!opts.key) {
-      console.error("Error: update command requires --key");
-      return null;
-    }
-    if (opts.value === undefined) {
-      console.error("Error: update command requires --value");
-      return null;
-    }
-
-    return {
-      command,
-      args: {
-        file: opts.file ? String(opts.file) : "secrets.env",
-        key: String(opts.key),
-        value: String(opts.value),
-      },
-    };
-  }
-
-  console.error(`Error: Unknown command "${command}"`);
-  return null;
-}
-
-async function main(): Promise<void> {
-  const parsed = parseArgs();
-
-  if (!parsed) {
-    printUsage();
-    process.exit(1);
-  }
-
-  try {
-    if (parsed.command === "sync") {
-      await syncCommand(parsed.args as SyncArgs);
-    } else if (parsed.command === "bulk-set") {
-      await bulkSetCommand(parsed.args as BulkSetArgs);
-    } else if (parsed.command === "pull") {
-      await pullCommand(parsed.args as PullArgs);
-    } else if (parsed.command === "update") {
-      await updateCommand(parsed.args as UpdateArgs);
-    }
-  } catch (e) {
-    console.error(e instanceof Error ? e.message : String(e));
-    process.exit(1);
+    writeFileSync(resolvedPath, newLines.join("\n") + "\n", "utf8");
+    setSecurePermissions(resolvedPath);
+    return 0;
   }
 }
 
-// Only run main if this file is executed directly
-const isMainModule = process.argv[1]?.endsWith("secrets-sync.ts") || process.argv[1]?.endsWith("secrets-sync.js");
-if (isMainModule) {
-  main().catch((e) => {
-    console.error(e);
-    process.exit(1);
-  });
-}
+// Main CLI
+const cli = new Cli({
+  binaryLabel: "secrets-sync",
+  binaryName: "secrets-sync",
+});
+
+cli.register(SyncCommand);
+cli.register(BulkSetCommand);
+cli.register(PullCommand);
+cli.register(UpdateCommand);
+
+cli.runExit(process.argv.slice(2), Cli.defaultContext);
