@@ -1,0 +1,24 @@
+# SPDX-FileCopyrightText: Copyright © 2026 Caleb Cushing
+#
+# SPDX-License-Identifier: MIT
+
+name: test.yml
+on:
+  push:
+jobs:
+  yarn:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6.0.2
+      - uses: actions/setup-node@v6.3.0
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - run: corepack enable
+      - uses: actions/setup-node@v6.3.0
+        with:
+          node-version: 24
+          cache: "yarn"
+      - run: yarn install --immutable --inline-builds --check-resolutions
+      - run: yarn test

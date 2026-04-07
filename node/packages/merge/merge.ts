@@ -518,7 +518,7 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  defaultRunner.run("gh pr merge --squash --delete-branch");
+  defaultRunner.run("gh pr merge --squash --delete-branch --admin");
   process.exit(0);
 }
 

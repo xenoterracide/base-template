@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright © 2024 - 2025 Caleb Cushing
+// SPDX-FileCopyrightText: Copyright © 2024-2026 Caleb Cushing
 //
 // SPDX-License-Identifier: CC0-1.0
 
@@ -7,8 +7,15 @@
   extends: ["config:recommended"],
   dependencyDashboard: true,
   timezone: "UTC",
+  platformAutomerge: true,
   automergeStrategy: "rebase",
-  // Managers config will be applied via packageRules below
+  // Rebase whenever PR falls behind base branch to keep them mergeable
+  rebaseWhen: "behind-base-branch",
+  // Subtrees are excluded - updates should be pulled via git subtree pull, not Renovate
+  // Squash merges break subtree history
+  ignorePaths: [".share/**", ".agents/**"],
+  // Remove the 'controls' section from PR body to avoid config noise in squash commits
+  prBodyTemplate: "{{{header}}}{{{table}}}{{{notes}}}{{{changelogs}}}{{{footer}}}",
   hostRules: [
     {
       hostType: "maven",
@@ -17,38 +24,30 @@
   ],
   packageRules: [
     {
-      // Runs during the 03:00 UTC hour daily (scheduled after update-java at 03:00)
-      schedule: ["* 3 * * *"],
-      // Use pip-compile with PEP 621 pyproject at repo root
-      matchManagers: ["pip-compile"],
-      managerFilePatterns: ["^pyproject\\.toml$"],
-    },
-    {
-      // Disable legacy requirements manager; we use pip-compile with PEP 621
-      matchManagers: ["pip_requirements"],
-      enabled: false,
-    },
-    {
-      // remember to sync with update-java
-      // Runs during the 04:00 UTC hour daily (scheduled after update-java at 03:00)
-      schedule: ["* 4 * * *"],
-      matchManagers: ["gradle", "gradle-wrapper"],
-      // Open PRs for MAJOR updates only; minor/patch are handled elsewhere
-      matchUpdateTypes: ["major"],
-      automerge: false,
-    },
-    {
-      // Ensure Gradle plugin versions in settings files are considered
-      // Match all Java update types; run weekly and not concurrently with dev deps
-      // Weekly on Wednesday during the 05:00 UTC hour (devDependencies window is 04:00)
-      schedule: ["* 5 * * 3"],
-      matchManagers: ["gradle"],
-      matchFileNames: ["**/settings.gradle", "**/settings.gradle.kts"],
+      matchManagers: ["maven"],
       matchUpdateTypes: ["major", "minor", "patch"],
       automerge: true,
     },
     {
+      // Python deps via uv: Run daily at 03:00 UTC (after update-java)
+      schedule: ["* 3 * * *"],
+      matchManagers: ["pep621"],
+      automerge: true,
+    },
+    {
+      matchManagers: ["pyenv"],
+      automerge: true,
+    },
+    {
       matchManagers: ["github-actions"],
+      automerge: true,
+    },
+    {
+      // Pin xenoterracide org actions to commit SHAs for build reproducibility
+      // Only these get digest pins; other actions get normal version tag updates
+      matchManagers: ["github-actions"],
+      matchDepNames: ["xenoterracide/**"],
+      extends: ["helpers:pinGitHubActionDigests"],
       automerge: true,
     },
     {
