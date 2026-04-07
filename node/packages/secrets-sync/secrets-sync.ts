@@ -8,6 +8,18 @@ import { execFileSync } from "child_process";
 import { existsSync, readFileSync, statSync, writeFileSync, chmodSync } from "fs";
 import { resolve, dirname } from "path";
 import { Command, Option, Cli, BaseContext } from "clipanion";
+const pino = require("pino");
+
+const logger = pino({
+  transport: {
+    target: "pino-pretty",
+    options: {
+      colorize: true,
+      translateTime: false,
+      ignore: "pid,hostname",
+    },
+  },
+});
 
 export interface CommandRunner {
   runArgv(cmd: string, args: string[], opts?: { cwd?: string; env?: Record<string, string> }): string;
@@ -17,7 +29,7 @@ function setSecurePermissions(filePath: string): void {
   try {
     chmodSync(filePath, 0o600);
   } catch (e) {
-    console.warn(`Warning: Could not set permissions on ${filePath}: ${e instanceof Error ? e.message : String(e)}`);
+    logger.warn(`Could not set permissions on ${filePath}: ${e instanceof Error ? e.message : String(e)}`);
   }
 }
 
@@ -26,7 +38,7 @@ function checkFilePermissions(filePath: string): void {
     const stats = statSync(filePath);
     const mode = stats.mode & 0o777;
     if (mode !== 0o600) {
-      console.warn(`Warning: ${filePath} has permissions ${mode.toString(8)}, setting to 600`);
+      logger.warn(`${filePath} has permissions ${mode.toString(8)}, setting to 600`);
       setSecurePermissions(filePath);
     }
   } catch {
@@ -121,13 +133,13 @@ function resolveSecretValue(
       if (envValue !== undefined) {
         return envValue;
       }
-      console.warn(`Warning: Environment variable "${entry.value}" not found for secret "${name}"`);
+      logger.warn(`Warning: Environment variable "${entry.value}" not found for secret "${name}"`);
       return undefined;
     }
 
     if (entry.type === "file") {
       if (!existsSync(entry.value)) {
-        console.warn(`Warning: File "${entry.value}" not found for secret "${name}"`);
+        logger.warn(`Warning: File "${entry.value}" not found for secret "${name}"`);
         return undefined;
       }
       // Check file permissions
@@ -135,7 +147,7 @@ function resolveSecretValue(
         const stats = statSync(entry.value);
         const mode = stats.mode & 0o777;
         if (mode & 0o044) {
-          console.warn(
+          logger.warn(
             `Warning: File "${entry.value}" has permissive permissions (${mode.toString(8)}), should be 0400 or 0600`,
           );
         }
@@ -238,7 +250,7 @@ class SyncCommand extends Command<BaseContext> {
   });
 
   async execute() {
-    console.log(`Syncing secrets from ${this.from}...`);
+    logger.info(`Syncing secrets from ${this.from}...`);
 
     // Parse target repos
     const targetRepos = this.to
@@ -247,13 +259,13 @@ class SyncCommand extends Command<BaseContext> {
       .filter((s) => s.length > 0);
 
     if (targetRepos.length === 0) {
-      console.error("Error: No target repos specified");
+      logger.error("Error: No target repos specified");
       return 1;
     }
 
     // Get secret names from source repo
     const secretNames = listSecretNames(this.from);
-    console.log(`Found ${secretNames.length} secrets in source repo`);
+    logger.info(`Found ${secretNames.length} secrets in source repo`);
 
     // Apply include/exclude filters
     let filteredNames = secretNames;
@@ -261,17 +273,17 @@ class SyncCommand extends Command<BaseContext> {
     if (this.include) {
       const includeSet = new Set(this.include.split(",").map((s) => s.trim()));
       filteredNames = filteredNames.filter((n) => includeSet.has(n));
-      console.log(`Included ${filteredNames.length} secrets based on --include filter`);
+      logger.info(`Included ${filteredNames.length} secrets based on --include filter`);
     }
 
     if (this.exclude) {
       const excludeSet = new Set(this.exclude.split(",").map((s) => s.trim()));
       filteredNames = filteredNames.filter((n) => !excludeSet.has(n));
-      console.log(`Excluded secrets, ${filteredNames.length} remaining`);
+      logger.info(`Excluded secrets, ${filteredNames.length} remaining`);
     }
 
     if (filteredNames.length === 0) {
-      console.log("No secrets to sync after filtering");
+      logger.info("No secrets to sync after filtering");
       return 0;
     }
 
@@ -284,23 +296,23 @@ class SyncCommand extends Command<BaseContext> {
     for (const name of filteredNames) {
       const value = resolveSecretValue(name, envFileEntries);
       if (value === undefined) {
-        console.warn(`Warning: Could not resolve value for secret "${name}", skipping`);
+        logger.warn(`Warning: Could not resolve value for secret "${name}", skipping`);
         continue;
       }
       secretsToSync.push({ name, value });
     }
 
     if (secretsToSync.length === 0) {
-      console.log("No secrets to sync (could not resolve any values)");
+      logger.info("No secrets to sync (could not resolve any values)");
       return 0;
     }
 
-    console.log(`\nWill sync ${secretsToSync.length} secrets to ${targetRepos.length} repo(s):`);
-    console.log(`  Repos: ${targetRepos.join(", ")}`);
-    console.log(`  Secrets: ${secretsToSync.map((s) => s.name).join(", ")}`);
+    logger.info(`\nWill sync ${secretsToSync.length} secrets to ${targetRepos.length} repo(s):`);
+    logger.info(`  Repos: ${targetRepos.join(", ")}`);
+    logger.info(`  Secrets: ${secretsToSync.map((s) => s.name).join(", ")}`);
 
     if (this.dryRun) {
-      console.log("\n[Dry Run] No changes made");
+      logger.info("\n[Dry Run] No changes made");
       return 0;
     }
 
@@ -311,25 +323,25 @@ class SyncCommand extends Command<BaseContext> {
         process.stdin.once("data", (data) => resolve(data.toString().trim().toLowerCase()));
       });
       if (reply === "n" || reply === "no") {
-        console.log("Cancelled");
+        logger.info("Cancelled");
         return 0;
       }
     }
 
     // Sync to each target repo
     for (const repo of targetRepos) {
-      console.log(`\nSyncing to ${repo}...`);
+      logger.info(`\nSyncing to ${repo}...`);
       for (const { name, value } of secretsToSync) {
         try {
           setSecret(repo, name, value);
-          console.log(`  ✓ ${name}`);
+          logger.info(`  ✓ ${name}`);
         } catch (e) {
-          console.error(`  ✗ ${name}: ${e instanceof Error ? e.message : String(e)}`);
+          logger.error(`  ✗ ${name}: ${e instanceof Error ? e.message : String(e)}`);
         }
       }
     }
 
-    console.log("\nSync complete!");
+    logger.info("\nSync complete!");
     return 0;
   }
 }
@@ -365,13 +377,13 @@ class BulkSetCommand extends Command<BaseContext> {
 
   async execute() {
     const owner = this.owner ?? getCurrentUser();
-    console.log(`Finding repos for owner "${owner}" with label "${this.label}"...`);
+    logger.info(`Finding repos for owner "${owner}" with label "${this.label}"...`);
 
     const repos = findReposByLabel(owner, this.label);
-    console.log(`Found ${repos.length} non-archived repos with label "${this.label}"`);
+    logger.info(`Found ${repos.length} non-archived repos with label "${this.label}"`);
 
     if (repos.length === 0) {
-      console.log("No repos to update");
+      logger.info("No repos to update");
       return 0;
     }
 
@@ -392,25 +404,25 @@ class BulkSetCommand extends Command<BaseContext> {
       if (value !== undefined) {
         secretsToSet.push({ name: this.secretName, value });
       } else {
-        console.error(`Error: Could not resolve value for secret "${this.secretName}"`);
+        logger.error(`Error: Could not resolve value for secret "${this.secretName}"`);
         return 1;
       }
     } else {
-      console.error("Error: Must provide either --from-env-file or --secret-name");
+      logger.error("Error: Must provide either --from-env-file or --secret-name");
       return 1;
     }
 
     if (secretsToSet.length === 0) {
-      console.log("No secrets to set");
+      logger.info("No secrets to set");
       return 0;
     }
 
-    console.log(`\nWill set ${secretsToSet.length} secret(s) on ${repos.length} repo(s):`);
-    console.log(`  Repos: ${repos.join(", ")}`);
-    console.log(`  Secrets: ${secretsToSet.map((s) => s.name).join(", ")}`);
+    logger.info(`\nWill set ${secretsToSet.length} secret(s) on ${repos.length} repo(s):`);
+    logger.info(`  Repos: ${repos.join(", ")}`);
+    logger.info(`  Secrets: ${secretsToSet.map((s) => s.name).join(", ")}`);
 
     if (this.dryRun) {
-      console.log("\n[Dry Run] No changes made");
+      logger.info("\n[Dry Run] No changes made");
       return 0;
     }
 
@@ -421,25 +433,25 @@ class BulkSetCommand extends Command<BaseContext> {
         process.stdin.once("data", (data) => resolve(data.toString().trim().toLowerCase()));
       });
       if (reply === "n" || reply === "no") {
-        console.log("Cancelled");
+        logger.info("Cancelled");
         return 0;
       }
     }
 
     // Set secrets on each repo
     for (const repo of repos) {
-      console.log(`\nSetting secrets on ${repo}...`);
+      logger.info(`\nSetting secrets on ${repo}...`);
       for (const { name, value } of secretsToSet) {
         try {
           setSecret(repo, name, value);
-          console.log(`  ✓ ${name}`);
+          logger.info(`  ✓ ${name}`);
         } catch (e) {
-          console.error(`  ✗ ${name}: ${e instanceof Error ? e.message : String(e)}`);
+          logger.error(`  ✗ ${name}: ${e instanceof Error ? e.message : String(e)}`);
         }
       }
     }
 
-    console.log("\nBulk set complete!");
+    logger.info("\nBulk set complete!");
     return 0;
   }
 }
@@ -467,16 +479,16 @@ class PullCommand extends Command<BaseContext> {
 
   async execute() {
     if (this.format !== "env" && this.format !== "file") {
-      console.error("Error: Format must be 'env' or 'file'");
+      logger.error("Error: Format must be 'env' or 'file'");
       return 1;
     }
-    console.log(`Fetching secrets from ${this.from}...`);
+    logger.info(`Fetching secrets from ${this.from}...`);
 
     const secretNames = listSecretNames(this.from);
-    console.log(`Found ${secretNames.length} secrets`);
+    logger.info(`Found ${secretNames.length} secrets`);
 
     if (secretNames.length === 0) {
-      console.log("No secrets to write");
+      logger.info("No secrets to write");
       return 0;
     }
 
@@ -509,14 +521,14 @@ class PullCommand extends Command<BaseContext> {
     const content = lines.join("\n") + "\n";
 
     if (this.dryRun) {
-      console.log("\n[Dry Run] Would write to " + this.output + ":");
-      console.log(content);
+      logger.info("\n[Dry Run] Would write to " + this.output + ":");
+      logger.info(content);
       return 0;
     }
 
     writeFileSync(this.output, content, "utf8");
     setSecurePermissions(this.output);
-    console.log(`\nWrote ${secretNames.length} secret entries to ${this.output} (permissions: 600)`);
+    logger.info(`\nWrote ${secretNames.length} secret entries to ${this.output} (permissions: 600)`);
     return 0;
   }
 }
@@ -578,9 +590,9 @@ class UpdateCommand extends Command<BaseContext> {
         newLines.push("");
       }
       newLines.push(`${this.key}=${this.value}`);
-      console.log(`Added ${this.key} to ${this.file}`);
+      logger.info(`Added ${this.key} to ${this.file}`);
     } else {
-      console.log(`Updated ${this.key} in ${this.file}`);
+      logger.info(`Updated ${this.key} in ${this.file}`);
     }
 
     writeFileSync(resolvedPath, newLines.join("\n") + "\n", "utf8");
