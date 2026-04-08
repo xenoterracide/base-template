@@ -6,7 +6,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdtempSync, writeFileSync, readFileSync, rmSync, mkdirSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
-import { parseEnvFile, resolveSecretValue, PullCommand, UpdateCommand } from "./secrets-sync";
+import { parseEnvFile, resolveSecretValue, UpdateCommand } from "./secrets-sync";
 
 describe("parseEnvFile", () => {
   let tmpDir: string;

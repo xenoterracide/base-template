@@ -17,6 +17,6 @@
     "secrets-sync": "tsx secrets-sync.ts",
     "test": "vitest run && yarn typecheck",
     "test:watch": "vitest",
-    "typecheck": "tsc --noEmit secrets-sync.ts"
+    "typecheck": "tsc --noEmit"
   }
 }

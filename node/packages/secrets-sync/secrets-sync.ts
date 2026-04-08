@@ -9,8 +9,9 @@ import { existsSync, readFileSync, statSync, writeFileSync, chmodSync, unlinkSyn
 import { resolve, dirname } from "path";
 import { tmpdir } from "os";
 import { join } from "path";
-import { Command, Option, Cli, BaseContext } from "clipanion";
-const pino = require("pino");
+import { Command, Option, Cli } from "clipanion";
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const pino = require("pino") as typeof import("pino");
 
 const logger = pino({
   transport: {
@@ -126,38 +127,38 @@ export function resolveSecretValue(
   if (envFileEntries && name in envFileEntries) {
     const entry = envFileEntries[name];
 
-    if (entry.type === "value") {
-      return entry.value;
-    }
-
-    if (entry.type === "env") {
-      const envValue = process.env[entry.value];
-      if (envValue !== undefined) {
-        return envValue;
+    switch (entry.type) {
+      case "value": {
+        return entry.value;
       }
-      logger.warn(`Warning: Environment variable "${entry.value}" not found for secret "${name}"`);
-      return undefined;
-    }
-
-    if (entry.type === "file") {
-      if (!existsSync(entry.value)) {
-        logger.warn(`Warning: File "${entry.value}" not found for secret "${name}"`);
+      case "env": {
+        const envValue = process.env[entry.value];
+        if (envValue !== undefined) {
+          return envValue;
+        }
+        logger.warn(`Warning: Environment variable "${entry.value}" not found for secret "${name}"`);
         return undefined;
       }
-      // Check file permissions
-      try {
-        const stats = statSync(entry.value);
-        const mode = stats.mode & 0o777;
-        if (mode & 0o044) {
-          logger.warn(
-            `Warning: File "${entry.value}" has permissive permissions (${mode.toString(8)}), should be 0400 or 0600`,
-          );
+      case "file": {
+        if (!existsSync(entry.value)) {
+          logger.warn(`Warning: File "${entry.value}" not found for secret "${name}"`);
+          return undefined;
         }
-      } catch {
-        // Ignore permission check errors
+        // Check file permissions
+        try {
+          const stats = statSync(entry.value);
+          const mode = stats.mode & 0o777;
+          if (mode & 0o044) {
+            logger.warn(
+              `Warning: File "${entry.value}" has permissive permissions (${mode.toString(8)}), should be 0400 or 0600`,
+            );
+          }
+        } catch {
+          // Ignore permission check errors
+        }
+        const content = readFileSync(entry.value, "utf8");
+        return content;
       }
-      const content = readFileSync(entry.value, "utf8");
-      return content;
     }
   }
 
@@ -173,7 +174,8 @@ export function resolveSecretValue(
 function listSecretNames(repo: string, runner: CommandRunner = defaultRunner): string[] {
   try {
     const output = runner.runArgv("gh", ["secret", "list", "--repo", repo, "--json", "name"]);
-    const parsed = JSON.parse(output) as Array<{ name: string }>;
+    const parsed: { name: string }[] = JSON.parse(output);
+    return parsed.map((s) => s.name);
     return parsed.map((s) => s.name);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
@@ -182,7 +184,7 @@ function listSecretNames(repo: string, runner: CommandRunner = defaultRunner): s
 }
 
 function setSecret(repo: string, name: string, value: string, runner: CommandRunner = defaultRunner): void {
-  const tmpFile = join(tmpdir(), `secret-${name}-${Date.now()}.txt`);
+  const tmpFile = join(tmpdir(), `secret-${name}-${String(Date.now())}.txt`);
   try {
     writeFileSync(tmpFile, value, "utf8");
     setSecurePermissions(tmpFile);
@@ -213,7 +215,7 @@ function findReposByLabel(owner: string, label: string, runner: CommandRunner = 
       "--json",
       "nameWithOwner",
     ]);
-    const parsed = JSON.parse(output) as Array<{ nameWithOwner: string }>;
+    const parsed: { nameWithOwner: string }[] = JSON.parse(output);
     return parsed.map((r) => r.nameWithOwner);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
@@ -225,13 +227,13 @@ function getCurrentUser(runner: CommandRunner = defaultRunner): string {
   try {
     const output = runner.runArgv("gh", ["api", "user", "--jq", ".login"]);
     return output.trim();
-  } catch (e) {
+  } catch {
     throw new Error("Failed to get current user. Make sure you're authenticated with 'gh auth login'");
   }
 }
 
 // Sync Command
-export class SyncCommand extends Command<BaseContext> {
+export class SyncCommand extends Command {
   static paths = [["sync"]];
 
   from = Option.String("--from,-f", {
@@ -260,7 +262,7 @@ export class SyncCommand extends Command<BaseContext> {
     description: "Show what would be done",
   });
 
-  async execute() {
+  async execute(): Promise<number> {
     logger.info(`Syncing secrets from ${this.from}...`);
 
     // Parse target repos
@@ -276,7 +278,7 @@ export class SyncCommand extends Command<BaseContext> {
 
     // Get secret names from source repo
     const secretNames = listSecretNames(this.from);
-    logger.info(`Found ${secretNames.length} secrets in source repo`);
+    logger.info(`Found ${String(secretNames.length)} secrets in source repo`);
 
     // Apply include/exclude filters
     let filteredNames = secretNames;
@@ -284,13 +286,13 @@ export class SyncCommand extends Command<BaseContext> {
     if (this.include) {
       const includeSet = new Set(this.include.split(",").map((s) => s.trim()));
       filteredNames = filteredNames.filter((n) => includeSet.has(n));
-      logger.info(`Included ${filteredNames.length} secrets based on --include filter`);
+      logger.info(`Included ${String(filteredNames.length)} secrets based on --include filter`);
     }
 
     if (this.exclude) {
       const excludeSet = new Set(this.exclude.split(",").map((s) => s.trim()));
       filteredNames = filteredNames.filter((n) => !excludeSet.has(n));
-      logger.info(`Excluded secrets, ${filteredNames.length} remaining`);
+      logger.info(`Excluded secrets, ${String(filteredNames.length)} remaining`);
     }
 
     if (filteredNames.length === 0) {
@@ -302,7 +304,7 @@ export class SyncCommand extends Command<BaseContext> {
     const envFileEntries = this.fromEnvFile ? parseEnvFile(this.fromEnvFile) : undefined;
 
     // Resolve all secret values
-    const secretsToSync: Array<{ name: string; value: string }> = [];
+    const secretsToSync: { name: string; value: string }[] = [];
 
     for (const name of filteredNames) {
       const value = resolveSecretValue(name, envFileEntries);
@@ -318,7 +320,7 @@ export class SyncCommand extends Command<BaseContext> {
       return 0;
     }
 
-    logger.info(`\nWill sync ${secretsToSync.length} secrets to ${targetRepos.length} repo(s):`);
+    logger.info(`\nWill sync ${String(secretsToSync.length)} secrets to ${String(targetRepos.length)} repo(s):`);
     logger.info(`  Repos: ${targetRepos.join(", ")}`);
     logger.info(`  Secrets: ${secretsToSync.map((s) => s.name).join(", ")}`);
 
@@ -331,7 +333,9 @@ export class SyncCommand extends Command<BaseContext> {
     if (process.stdin.isTTY) {
       process.stdout.write("\nProceed? [Y/n] ");
       const reply = await new Promise<string>((resolve) => {
-        process.stdin.once("data", (data) => resolve(data.toString().trim().toLowerCase()));
+        process.stdin.once("data", (data): void => {
+          resolve(data.toString().trim().toLowerCase());
+        });
       });
       if (reply === "n" || reply === "no") {
         logger.info("Cancelled");
@@ -358,7 +362,7 @@ export class SyncCommand extends Command<BaseContext> {
 }
 
 // Bulk Set Command
-export class BulkSetCommand extends Command<BaseContext> {
+export class BulkSetCommand extends Command {
   static paths = [["bulk-set"]];
 
   owner = Option.String("--owner,-o", {
@@ -386,12 +390,12 @@ export class BulkSetCommand extends Command<BaseContext> {
     description: "Show what would be done",
   });
 
-  async execute() {
+  async execute(): Promise<number> {
     const owner = this.owner ?? getCurrentUser();
     logger.info(`Finding repos for owner "${owner}" with label "${this.label}"...`);
 
     const repos = findReposByLabel(owner, this.label);
-    logger.info(`Found ${repos.length} non-archived repos with label "${this.label}"`);
+    logger.info(`Found ${String(repos.length)} non-archived repos with label "${this.label}"`);
 
     if (repos.length === 0) {
       logger.info("No repos to update");
@@ -399,7 +403,7 @@ export class BulkSetCommand extends Command<BaseContext> {
     }
 
     // Collect secrets to set
-    const secretsToSet: Array<{ name: string; value: string }> = [];
+    const secretsToSet: { name: string; value: string }[] = [];
 
     if (this.fromEnvFile) {
       const envFileEntries = parseEnvFile(this.fromEnvFile);
@@ -428,7 +432,7 @@ export class BulkSetCommand extends Command<BaseContext> {
       return 0;
     }
 
-    logger.info(`\nWill set ${secretsToSet.length} secret(s) on ${repos.length} repo(s):`);
+    logger.info(`\nWill set ${String(secretsToSet.length)} secret(s) on ${String(repos.length)} repo(s):`);
     logger.info(`  Repos: ${repos.join(", ")}`);
     logger.info(`  Secrets: ${secretsToSet.map((s) => s.name).join(", ")}`);
 
@@ -441,7 +445,9 @@ export class BulkSetCommand extends Command<BaseContext> {
     if (process.stdin.isTTY) {
       process.stdout.write("\nProceed? [Y/n] ");
       const reply = await new Promise<string>((resolve) => {
-        process.stdin.once("data", (data) => resolve(data.toString().trim().toLowerCase()));
+        process.stdin.once("data", (data): void => {
+          resolve(data.toString().trim().toLowerCase());
+        });
       });
       if (reply === "n" || reply === "no") {
         logger.info("Cancelled");
@@ -468,7 +474,7 @@ export class BulkSetCommand extends Command<BaseContext> {
 }
 
 // Pull Command
-export class PullCommand extends Command<BaseContext> {
+export class PullCommand extends Command {
   static paths = [["pull"]];
 
   from = Option.String("--from,-f", {
@@ -488,7 +494,7 @@ export class PullCommand extends Command<BaseContext> {
     description: "Show what would be done",
   });
 
-  async execute() {
+  async execute(): Promise<number> {
     if (this.format !== "env" && this.format !== "file") {
       logger.error("Error: Format must be 'env' or 'file'");
       return 1;
@@ -496,7 +502,7 @@ export class PullCommand extends Command<BaseContext> {
     logger.info(`Fetching secrets from ${this.from}...`);
 
     const secretNames = listSecretNames(this.from);
-    logger.info(`Found ${secretNames.length} secrets`);
+    logger.info(`Found ${String(secretNames.length)} secrets`);
 
     if (secretNames.length === 0) {
       logger.info("No secrets to write");
@@ -539,13 +545,13 @@ export class PullCommand extends Command<BaseContext> {
 
     writeFileSync(this.output, content, "utf8");
     setSecurePermissions(this.output);
-    logger.info(`\nWrote ${secretNames.length} secret entries to ${this.output} (permissions: 600)`);
+    logger.info(`\nWrote ${String(secretNames.length)} secret entries to ${this.output} (permissions: 600)`);
     return 0;
   }
 }
 
 // Update Command
-export class UpdateCommand extends Command<BaseContext> {
+export class UpdateCommand extends Command {
   static paths = [["update"]];
 
   file = Option.String("--file,-f", "secrets.env", {
@@ -562,7 +568,7 @@ export class UpdateCommand extends Command<BaseContext> {
     description: "Secret value",
   });
 
-  async execute() {
+  async execute(): Promise<number> {
     const resolvedPath = resolve(this.file);
 
     // Check/fix existing file permissions
@@ -623,4 +629,4 @@ cli.register(BulkSetCommand);
 cli.register(PullCommand);
 cli.register(UpdateCommand);
 
-cli.runExit(process.argv.slice(2), Cli.defaultContext);
+void cli.runExit(process.argv.slice(2), Cli.defaultContext);

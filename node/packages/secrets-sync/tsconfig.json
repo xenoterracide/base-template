@@ -5,11 +5,10 @@
     "moduleResolution": "NodeNext",
     "strict": true,
     "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     "skipLibCheck": true,
     "noEmit": true,
-    "allowJs": true,
-    "resolveJsonModule": true,
-    "allowSyntheticDefaultImports": true
+    "resolveJsonModule": true
   },
-  "include": ["eslint.config.cts", "node/packages/**/*.ts"]
+  "include": ["**/*.ts"]
 }
