@@ -16,10 +16,6 @@ yarn install
 
 ## Usage
 
-### Sync Command
-
-Sync secrets to repositories:
-
 ```bash
 # Sync all secrets from env file to current repo
 yarn secrets sync --env-file secrets.env
@@ -39,18 +35,6 @@ yarn secrets sync --secrets API_KEY,SECRET --repo owner/target
 # Use environment variables directly
 export API_KEY="secret-value"
 yarn secrets sync --secrets API_KEY
-```
-
-### Bulk-Set Command (Legacy)
-
-Set secrets on all non-archived repositories with a specific label/topic:
-
-```bash
-# Set secrets from env file on all repos with "production" label
-yarn secrets bulk-set --label production --from-env-file ./secrets.env
-
-# Set a single secret
-yarn secrets bulk-set --label production --secret-name API_KEY --secret-value "$API_KEY"
 ```
 
 ## Env File Format

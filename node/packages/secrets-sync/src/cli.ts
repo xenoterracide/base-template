@@ -6,16 +6,14 @@
 
 import { Cli } from "clipanion";
 import { SyncCommand } from "./commands/sync.js";
-import { BulkSetCommand } from "./commands/bulk-set.js";
 import { UpdateCommand } from "./commands/update.js";
 
 const cli = new Cli({
   binaryLabel: "secrets-sync",
-  binaryName: "secrets-sync",
+  binaryName: "secrets",
 });
 
 cli.register(SyncCommand);
-cli.register(BulkSetCommand);
 cli.register(UpdateCommand);
 
 void cli.runExit(process.argv.slice(2), Cli.defaultContext);
