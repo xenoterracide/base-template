@@ -27,9 +27,6 @@ yarn secrets-sync sync --from org/source-repo --to org/target-repo
 # Sync to multiple repos
 yarn secrets-sync sync --from org/source-repo --to org/target-1,org/target-2
 
-# Sync with interactive prompting for values
-yarn secrets-sync sync --from org/source-repo --to org/target-repo --interactive
-
 # Sync using env file with file references for GPG keys
 yarn secrets-sync sync --from org/source-repo --to org/target-repo --from-env-file ./secrets.env
 
@@ -100,7 +97,6 @@ GitHub's API (and `gh` CLI) only allows listing secret **names** - you cannot re
 2. Values must be provided via:
    - Environment variables (matching the secret name)
    - `--from-env-file` with `env://` or `file://` references
-   - `--interactive` mode (prompts for each value)
 
 ### Value Resolution Priority
 
@@ -112,7 +108,6 @@ For each secret, values are resolved in this order:
    - `file://./path` - Read from file
    - Plain value - Use as-is
 3. **Environment variable matching secret name**
-4. **Interactive prompt** (if `--interactive` flag is set)
 
 ## Requirements
 
