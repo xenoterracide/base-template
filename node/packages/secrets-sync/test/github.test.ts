@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 import { describe, it, expect } from "vitest";
-import { listSecretNames, setSecret, findReposByLabel, getCurrentUser } from "../src/github.js";
+import { listSecretNames, setSecret, findReposByLabel, getCurrentUser, getCurrentRepo } from "../src/github.js";
 import type { CommandRunner } from "../src/types.js";
 
 function createFakeRunner(responses: Map<string, string>): CommandRunner {
@@ -85,6 +85,40 @@ describe("getCurrentUser", () => {
     const runner = createFakeRunner(new Map());
 
     expect(() => getCurrentUser(runner)).toThrow("Failed to get current user");
+  });
+});
+
+describe("getCurrentUser", () => {
+  it("should return trimmed login from gh api", () => {
+    const runner = createFakeRunner(new Map([["gh api user --jq .login", "myuser"]]));
+
+    const result = getCurrentUser(runner);
+
+    expect(result).toBe("myuser");
+  });
+
+  it("should throw on authentication error", () => {
+    const runner = createFakeRunner(new Map());
+
+    expect(() => getCurrentUser(runner)).toThrow("Failed to get current user");
+  });
+});
+
+describe("getCurrentRepo", () => {
+  it("should return nameWithOwner from gh repo view", () => {
+    const runner = createFakeRunner(
+      new Map([["gh repo view --json nameWithOwner", '{"nameWithOwner":"myorg/myrepo"}']]),
+    );
+
+    const result = getCurrentRepo(runner);
+
+    expect(result).toBe("myorg/myrepo");
+  });
+
+  it("should throw when not in a git repo", () => {
+    const runner = createFakeRunner(new Map());
+
+    expect(() => getCurrentRepo(runner)).toThrow("Failed to detect current repo");
   });
 });
 

@@ -5,7 +5,7 @@
 import { Command, Option } from "clipanion";
 import { logger } from "../logger.js";
 import { parseEnvFile, resolveSecretValue } from "../env.js";
-import { setSecret } from "../github.js";
+import { setSecret, getCurrentRepo } from "../github.js";
 import type { CommandRunner } from "../types.js";
 
 export class SyncCommand extends Command {
@@ -17,8 +17,7 @@ export class SyncCommand extends Command {
   });
 
   public to = Option.String("--to,-t", {
-    required: true,
-    description: "Target repo(s), comma-separated (OWNER/REPO format)",
+    description: "Target repo(s), comma-separated (OWNER/REPO format). Defaults to current repo",
   });
 
   public fromEnvFile = Option.String("--from-env-file", {
@@ -44,11 +43,21 @@ export class SyncCommand extends Command {
       return 1;
     }
 
-    // Parse target repos
-    const targetRepos = this.to
-      .split(",")
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0);
+    // Parse target repos (default to current repo if not specified)
+    let targetRepos: string[];
+    if (typeof this.to === "string" && this.to !== "") {
+      targetRepos = this.to
+        .split(",")
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0);
+    } else {
+      try {
+        targetRepos = [getCurrentRepo(this.runner)];
+      } catch (e) {
+        logger.error(`Error: ${e instanceof Error ? e.message : String(e)}`);
+        return 1;
+      }
+    }
 
     if (targetRepos.length === 0) {
       logger.error("Error: No target repos specified");

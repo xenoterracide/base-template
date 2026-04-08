@@ -114,4 +114,25 @@ describe("SyncCommand", () => {
 
     expect(result).toBe(0);
   });
+
+  it("should auto-detect current repo when --to not specified", async () => {
+    process.env.MY_SECRET = "secret-value";
+
+    const runner = createFakeRunner(
+      new Map([
+        ["gh repo view --json nameWithOwner", '{"nameWithOwner":"current/repo"}'],
+        ["gh secret set MY_SECRET --repo current/repo --body secret-value", ""],
+      ]),
+    );
+
+    const cmd = new SyncCommand();
+    cmd.runner = runner;
+    cmd.secrets = "MY_SECRET";
+    // No cmd.to specified - should auto-detect
+    cmd.dryRun = false;
+
+    const result = await cmd.execute();
+
+    expect(result).toBe(0);
+  });
 });

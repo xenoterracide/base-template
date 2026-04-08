@@ -87,3 +87,13 @@ export function getCurrentUser(runner: CommandRunner = defaultRunner): string {
     throw new Error("Failed to get current user. Make sure you're authenticated with 'gh auth login'");
   }
 }
+
+export function getCurrentRepo(runner: CommandRunner = defaultRunner): string {
+  try {
+    const output = runner.runArgv("gh", ["repo", "view", "--json", "nameWithOwner"]);
+    const parsed = JSON.parse(output) as { nameWithOwner: string };
+    return parsed.nameWithOwner;
+  } catch {
+    throw new Error("Failed to detect current repo. Run from within a git repo or specify --to");
+  }
+}

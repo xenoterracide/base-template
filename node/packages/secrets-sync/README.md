@@ -21,7 +21,10 @@ yarn install
 Set secrets on target repositories:
 
 ```bash
-# Sync secrets from environment variables
+# Sync secrets to current repo (auto-detected from git)
+yarn secrets sync --secrets API_KEY,SECRET
+
+# Sync to specific repo
 yarn secrets sync --secrets API_KEY,SECRET --to org/target-repo
 
 # Sync to multiple repos
@@ -31,7 +34,7 @@ yarn secrets sync --secrets API_KEY,SECRET --to org/target-1,org/target-2
 yarn secrets sync --secrets GPG_KEY,API_KEY --to org/target-repo --from-env-file ./secrets.env
 
 # Dry run to preview changes
-yarn secrets sync --secrets API_KEY --to org/target-repo --dry-run
+yarn secrets sync --secrets API_KEY --dry-run
 ```
 
 ### Bulk-Set Command
