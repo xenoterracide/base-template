@@ -1,5 +1,5 @@
 {
-  "name": "share",
+  "name": "@xenoterracide/share",
   "packageManager": "yarn@4.12.0",
   "private": true,
   "license": "MIT",
@@ -25,15 +25,15 @@
   },
   "scripts": {
     "contribute": "git submodule update --init --recursive && uv sync --frozen && git config core.hooksPath .share/git/hooks",
-    "merge:copilot": "yarn workspace merge run merge:copilot",
-    "merge:junie": "yarn workspace merge run merge:junie",
-    "merge:kimi": "yarn workspace merge run merge:kimi",
-    "secrets-sync": "yarn workspace secrets-sync run secrets-sync",
+    "merge:copilot": "yarn workspace @xenoterracide/merge run merge:copilot",
+    "merge:junie": "yarn workspace @xenoterracide/merge run merge:junie",
+    "merge:kimi": "yarn workspace @xenoterracide/merge run merge:kimi",
+    "secrets-sync": "yarn workspace @xenoterracide/secrets-sync run secrets-sync",
     "lint:prettier": "prettier --ignore-unknown --cache --check '**'",
     "lint:reuse": "uv run --frozen --group dev reuse lint",
     "lint:eslint": "eslint .",
     "lint": "yarn lint:eslint && yarn lint:prettier && yarn lint:reuse",
-    "test": "yarn workspaces foreach --all run test"
+    "test": "yarn workspaces foreach --parallel --all --exclude @xenoterracide/share run test"
   },
   "workspaces": [
     "node/packages/*"
