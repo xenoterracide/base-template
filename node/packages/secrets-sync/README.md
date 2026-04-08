@@ -39,22 +39,30 @@ yarn secrets sync --secrets API_KEY
 
 ## Env File Format
 
-The `--env-file` option supports a special syntax for handling multi-line secrets like GPG keys:
+Comments start with `#`:
 
 ```bash
+# Generate with: gpg --armor --export 8042ED9A
+GPG_PUBLIC_KEY=file://./keys/public.asc
+
+# Generate with: gpg --armor --export-secret-keys 8042ED9A
+GPG_PRIVATE_KEY=file://./keys/private.asc
+
 # Read from environment variable
 API_KEY=env://API_KEY
 DATABASE_URL=env://DATABASE_URL
-
-# Read from file (for multi-line values like GPG keys)
-GPG_SIGNING_KEY=file://./keys/signing-key.asc
-GPG_PUBLIC_KEY=file://./keys/public.asc
 
 # Direct value (not recommended for sensitive data)
 DEBUG_MODE=true
 ```
 
-### Why file:// for GPG keys?
+### File References
+
+For multi-line secrets like GPG keys, use `file://`:
+
+```bash
+GPG_SIGNING_KEY=file://./keys/signing-key.asc
+```
 
 Armored GPG keys are multi-line PEM-like blocks that don't fit well in `.env` files:
 
