@@ -28,7 +28,7 @@
     "merge:copilot": "yarn workspace @xenoterracide/merge run merge:copilot",
     "merge:junie": "yarn workspace @xenoterracide/merge run merge:junie",
     "merge:kimi": "yarn workspace @xenoterracide/merge run merge:kimi",
-    "secrets-sync": "yarn workspace @xenoterracide/secrets-sync run secrets-sync",
+    "secrets": "yarn workspace @xenoterracide/secrets-sync run secrets-sync",
     "lint:prettier": "prettier --ignore-unknown --cache --check '**'",
     "lint:reuse": "uv run --frozen --group dev reuse lint",
     "lint:eslint": "eslint .",

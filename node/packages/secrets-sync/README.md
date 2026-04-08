@@ -22,22 +22,22 @@ Synchronize secrets from one repository to another:
 
 ```bash
 # Sync all secrets (values from environment variables)
-yarn secrets-sync sync --from org/source-repo --to org/target-repo
+yarn secrets sync --from org/source-repo --to org/target-repo
 
 # Sync to multiple repos
-yarn secrets-sync sync --from org/source-repo --to org/target-1,org/target-2
+yarn secrets sync --from org/source-repo --to org/target-1,org/target-2
 
 # Sync using env file with file references for GPG keys
-yarn secrets-sync sync --from org/source-repo --to org/target-repo --from-env-file ./secrets.env
+yarn secrets sync --from org/source-repo --to org/target-repo --from-env-file ./secrets.env
 
 # Sync only specific secrets
-yarn secrets-sync sync --from org/source-repo --to org/target-repo --include API_KEY,DATABASE_URL
+yarn secrets sync --from org/source-repo --to org/target-repo --include API_KEY,DATABASE_URL
 
 # Exclude specific secrets
-yarn secrets-sync sync --from org/source-repo --to org/target-repo --exclude DEBUG_MODE
+yarn secrets sync --from org/source-repo --to org/target-repo --exclude DEBUG_MODE
 
 # Dry run to preview changes
-yarn secrets-sync sync --from org/source-repo --to org/target-repo --dry-run
+yarn secrets sync --from org/source-repo --to org/target-repo --dry-run
 ```
 
 ### Bulk-Set Command
@@ -46,16 +46,16 @@ Set secrets on all non-archived repositories with a specific label/topic:
 
 ```bash
 # Set secrets from env file on all repos with "production" label
-yarn secrets-sync bulk-set --owner org --label production --from-env-file ./secrets.env
+yarn secrets bulk-set --owner org --label production --from-env-file ./secrets.env
 
 # Set a single secret
-yarn secrets-sync bulk-set --owner org --label production --secret-name API_KEY --secret-value "$API_KEY"
+yarn secrets bulk-set --owner org --label production --secret-name API_KEY --secret-value "$API_KEY"
 
 # Use current user as owner (defaults to authenticated user)
-yarn secrets-sync bulk-set --label production --from-env-file ./secrets.env
+yarn secrets bulk-set --label production --from-env-file ./secrets.env
 
 # Dry run to preview changes
-yarn secrets-sync bulk-set --owner org --label production --from-env-file ./secrets.env --dry-run
+yarn secrets bulk-set --owner org --label production --from-env-file ./secrets.env --dry-run
 ```
 
 ## Env File Format

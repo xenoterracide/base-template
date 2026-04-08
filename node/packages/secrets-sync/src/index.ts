@@ -14,5 +14,4 @@ export { listSecretNames, setSecret, findReposByLabel, getCurrentUser } from "./
 // Commands (exported for testing)
 export { SyncCommand } from "./commands/sync.js";
 export { BulkSetCommand } from "./commands/bulk-set.js";
-export { PullCommand } from "./commands/pull.js";
 export { UpdateCommand } from "./commands/update.js";

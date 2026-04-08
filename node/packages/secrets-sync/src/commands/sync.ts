@@ -95,8 +95,10 @@ export class SyncCommand extends Command {
     }
 
     if (secretsToSync.length === 0) {
-      logger.info("No secrets to sync (could not resolve any values)");
-      return 0;
+      logger.error("Error: Could not resolve values for any secrets.");
+      logger.error("Secrets must be provided via environment variables or --from-env-file.");
+      logger.error("Example: export SECRET_NAME=value && yarn secrets sync ...");
+      return 1;
     }
 
     logger.info(`\nWill sync ${String(secretsToSync.length)} secrets to ${String(targetRepos.length)} repo(s):`);

@@ -61,13 +61,9 @@ describe("SyncCommand", () => {
     expect(result).toBe(0); // No secrets to sync
   });
 
-  it("should sync secrets to target repo", async () => {
+  it("should return error when secrets found but no values provided", async () => {
     const runner = createFakeRunner(
-      new Map([
-        ["gh secret list --repo owner/source --json name", '[{"name":"API_KEY"},{"name":"SECRET"}]'],
-        ["gh secret set API_KEY --repo owner/target --body-file /tmp/secret-API_KEY-123.txt", ""],
-        ["gh secret set SECRET --repo owner/target --body-file /tmp/secret-SECRET-123.txt", ""],
-      ]),
+      new Map([["gh secret list --repo owner/source --json name", '[{"name":"API_KEY"},{"name":"SECRET"}]']]),
     );
 
     const cmd = new SyncCommand();
@@ -78,7 +74,7 @@ describe("SyncCommand", () => {
 
     const result = await cmd.execute();
 
-    expect(result).toBe(0);
+    expect(result).toBe(1); // Error: no values provided
   });
 
   it("should apply include filter", async () => {
@@ -118,6 +114,6 @@ describe("SyncCommand", () => {
 
     const result = await cmd.execute();
 
-    expect(result).toBe(0); // KEEP secret only, but no env value so nothing to sync
+    expect(result).toBe(1); // KEEP secret only, but no env value so error
   });
 });
