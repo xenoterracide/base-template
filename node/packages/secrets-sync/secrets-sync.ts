@@ -62,12 +62,12 @@ function createDefaultCommandRunner(): CommandRunner {
 
 const defaultRunner = createDefaultCommandRunner();
 
-interface EnvEntry {
+export interface EnvEntry {
   type: "value" | "env" | "file";
   value: string;
 }
 
-function parseEnvFile(filePath: string): Record<string, EnvEntry> {
+export function parseEnvFile(filePath: string): Record<string, EnvEntry> {
   const resolvedPath = resolve(filePath);
   if (!existsSync(resolvedPath)) {
     throw new Error(`Env file not found: ${filePath}`);
@@ -112,7 +112,7 @@ function parseEnvFile(filePath: string): Record<string, EnvEntry> {
   return entries;
 }
 
-function resolveSecretValue(
+export function resolveSecretValue(
   name: string,
   envFileEntries?: Record<string, EnvEntry>,
   explicitValue?: string,
