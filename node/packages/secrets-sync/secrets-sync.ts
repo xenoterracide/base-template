@@ -5,8 +5,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 import { execFileSync } from "child_process";
-import { existsSync, readFileSync, statSync, writeFileSync, chmodSync } from "fs";
+import { existsSync, readFileSync, statSync, writeFileSync, chmodSync, unlinkSync } from "fs";
 import { resolve, dirname } from "path";
+import { tmpdir } from "os";
+import { join } from "path";
 import { Command, Option, Cli, BaseContext } from "clipanion";
 const pino = require("pino");
 
@@ -180,11 +182,20 @@ function listSecretNames(repo: string, runner: CommandRunner = defaultRunner): s
 }
 
 function setSecret(repo: string, name: string, value: string, runner: CommandRunner = defaultRunner): void {
+  const tmpFile = join(tmpdir(), `secret-${name}-${Date.now()}.txt`);
   try {
-    runner.runArgv("gh", ["secret", "set", name, "--repo", repo, "--body", value]);
+    writeFileSync(tmpFile, value, "utf8");
+    setSecurePermissions(tmpFile);
+    runner.runArgv("gh", ["secret", "set", name, "--repo", repo, "--body-file", tmpFile]);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     throw new Error(`Failed to set secret "${name}" on ${repo}: ${msg}`);
+  } finally {
+    try {
+      unlinkSync(tmpFile);
+    } catch {
+      // Ignore cleanup errors
+    }
   }
 }
 
