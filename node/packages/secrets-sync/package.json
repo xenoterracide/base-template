@@ -14,7 +14,7 @@
     "vitest": "^4.1.2"
   },
   "scripts": {
-    "secrets-sync": "tsx secrets-sync.ts",
+    "secrets-sync": "tsx src/cli.ts",
     "test": "vitest run && yarn typecheck",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit"

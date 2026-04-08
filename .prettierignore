@@ -12,3 +12,4 @@ build/
 gradlew*
 gradle/wrapper/*
 .agents/
+coverage/
