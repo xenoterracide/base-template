@@ -9,7 +9,7 @@ export type { CommandRunner, EnvEntry, SetSecretOptions } from "./types.js";
 export { parseEnvFile, resolveSecretValue } from "./env.js";
 
 // GitHub operations (exported for testing)
-export { listSecretNames, setSecret, findReposByLabel, getCurrentUser } from "./github.js";
+export { setSecret, findReposByLabel, getCurrentUser } from "./github.js";
 
 // Commands (exported for testing)
 export { SyncCommand } from "./commands/sync.js";

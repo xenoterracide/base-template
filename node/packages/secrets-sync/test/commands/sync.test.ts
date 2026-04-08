@@ -24,18 +24,32 @@ function createFakeRunner(responses: Map<string, string>): CommandRunner {
 
 describe("SyncCommand", () => {
   let tmpDir = "";
+  const originalEnv = process.env;
 
   beforeEach(() => {
     tmpDir = mkdtempSync(join(tmpdir(), "sync-test-"));
+    process.env = { ...originalEnv };
   });
 
   afterEach(() => {
     rmSync(tmpDir, { recursive: true, force: true });
+    process.env = originalEnv;
+  });
+
+  it("should return error when no secrets specified", async () => {
+    const cmd = new SyncCommand();
+    cmd.secrets = ""; // Empty secrets
+    cmd.to = "owner/target";
+    cmd.dryRun = true;
+
+    const result = await cmd.execute();
+
+    expect(result).toBe(1);
   });
 
   it("should return error when no target repos", async () => {
     const cmd = new SyncCommand();
-    cmd.from = "owner/source";
+    cmd.secrets = "API_KEY";
     cmd.to = ""; // Empty targets
     cmd.dryRun = true;
 
@@ -44,76 +58,60 @@ describe("SyncCommand", () => {
     expect(result).toBe(1);
   });
 
-  it("should return success with no matching secrets after filter", async () => {
-    const runner = createFakeRunner(
-      new Map([["gh secret list --repo owner/source --json name", '[{"name":"SECRET1"}]']]),
-    );
-
+  it("should return error when secrets specified but no values provided", async () => {
     const cmd = new SyncCommand();
-    cmd.runner = runner;
-    cmd.from = "owner/source";
+    cmd.secrets = "API_KEY,SECRET";
     cmd.to = "owner/target";
-    cmd.include = "NONEXISTENT"; // Won't match any secrets
     cmd.dryRun = true;
+    // No env values set
 
     const result = await cmd.execute();
 
-    expect(result).toBe(0); // No secrets to sync
+    expect(result).toBe(1);
   });
 
-  it("should return error when secrets found but no values provided", async () => {
-    const runner = createFakeRunner(
-      new Map([["gh secret list --repo owner/source --json name", '[{"name":"API_KEY"},{"name":"SECRET"}]']]),
-    );
-
-    const cmd = new SyncCommand();
-    cmd.runner = runner;
-    cmd.from = "owner/source";
-    cmd.to = "owner/target";
-    cmd.dryRun = true;
-
-    const result = await cmd.execute();
-
-    expect(result).toBe(1); // Error: no values provided
-  });
-
-  it("should apply include filter", async () => {
-    const envPath = join(tmpDir, "secrets.env");
-    writeFileSync(envPath, "API_KEY=from-env\nSECRET=also-from-env\n", "utf8");
+  it("should sync secrets from environment variables", async () => {
+    process.env.API_KEY = "test-api-key";
+    process.env.SECRET = "test-secret";
 
     const runner = createFakeRunner(
       new Map([
-        ["gh secret list --repo owner/source --json name", '[{"name":"API_KEY"},{"name":"SECRET"},{"name":"OTHER"}]'],
+        ["gh secret set API_KEY --repo owner/target --body test-api-key", ""],
+        ["gh secret set SECRET --repo owner/target --body test-secret", ""],
       ]),
     );
 
     const cmd = new SyncCommand();
     cmd.runner = runner;
-    cmd.from = "owner/source";
+    cmd.secrets = "API_KEY,SECRET";
     cmd.to = "owner/target";
-    cmd.include = "API_KEY,SECRET";
-    cmd.fromEnvFile = envPath;
-    cmd.dryRun = true;
+    cmd.dryRun = false;
 
     const result = await cmd.execute();
 
     expect(result).toBe(0);
   });
 
-  it("should apply exclude filter", async () => {
+  it("should sync secrets from env file", async () => {
+    const envPath = join(tmpDir, "secrets.env");
+    writeFileSync(envPath, "API_KEY=from-env\nSECRET=also-from-env\n", "utf8");
+
     const runner = createFakeRunner(
-      new Map([["gh secret list --repo owner/source --json name", '[{"name":"KEEP"},{"name":"REMOVE"}]']]),
+      new Map([
+        ["gh secret set API_KEY --repo owner/target --body from-env", ""],
+        ["gh secret set SECRET --repo owner/target --body also-from-env", ""],
+      ]),
     );
 
     const cmd = new SyncCommand();
     cmd.runner = runner;
-    cmd.from = "owner/source";
+    cmd.secrets = "API_KEY,SECRET";
     cmd.to = "owner/target";
-    cmd.exclude = "REMOVE";
-    cmd.dryRun = true;
+    cmd.fromEnvFile = envPath;
+    cmd.dryRun = false;
 
     const result = await cmd.execute();
 
-    expect(result).toBe(1); // KEEP secret only, but no env value so error
+    expect(result).toBe(0);
   });
 });

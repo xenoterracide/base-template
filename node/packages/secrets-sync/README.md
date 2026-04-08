@@ -6,7 +6,7 @@ SPDX-License-Identifier: CC-BY-NC-SA-4.0
 
 # secrets-sync
 
-A CLI tool for synchronizing GitHub secrets between repositories and bulk-setting secrets across repositories with specific labels.
+A CLI tool for bulk-setting GitHub secrets across repositories.
 
 ## Installation
 
@@ -18,26 +18,20 @@ yarn install
 
 ### Sync Command
 
-Synchronize secrets from one repository to another:
+Set secrets on target repositories:
 
 ```bash
-# Sync all secrets (values from environment variables)
-yarn secrets sync --from org/source-repo --to org/target-repo
+# Sync secrets from environment variables
+yarn secrets sync --secrets API_KEY,SECRET --to org/target-repo
 
 # Sync to multiple repos
-yarn secrets sync --from org/source-repo --to org/target-1,org/target-2
+yarn secrets sync --secrets API_KEY,SECRET --to org/target-1,org/target-2
 
-# Sync using env file with file references for GPG keys
-yarn secrets sync --from org/source-repo --to org/target-repo --from-env-file ./secrets.env
-
-# Sync only specific secrets
-yarn secrets sync --from org/source-repo --to org/target-repo --include API_KEY,DATABASE_URL
-
-# Exclude specific secrets
-yarn secrets sync --from org/source-repo --to org/target-repo --exclude DEBUG_MODE
+# Sync using env file (for complex values like GPG keys)
+yarn secrets sync --secrets GPG_KEY,API_KEY --to org/target-repo --from-env-file ./secrets.env
 
 # Dry run to preview changes
-yarn secrets sync --from org/source-repo --to org/target-repo --dry-run
+yarn secrets sync --secrets API_KEY --to org/target-repo --dry-run
 ```
 
 ### Bulk-Set Command
@@ -91,12 +85,10 @@ Using `file://` references keeps the env file clean and makes it easier to manag
 
 ### Important: GitHub Doesn't Allow Reading Secret Values
 
-GitHub's API (and `gh` CLI) only allows listing secret **names** - you cannot read the values back. This means:
+GitHub's API (and `gh` CLI) only allows listing secret **names** - you cannot read the values back. This means you must provide secret values via:
 
-1. The `sync` command lists secret names from the source repo
-2. Values must be provided via:
-   - Environment variables (matching the secret name)
-   - `--from-env-file` with `env://` or `file://` references
+- Environment variables (matching the secret name)
+- `--from-env-file` with `env://` or `file://` references
 
 ### Value Resolution Priority
 
