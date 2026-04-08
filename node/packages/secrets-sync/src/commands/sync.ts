@@ -104,7 +104,7 @@ export class SyncCommand extends Command {
     logger.info(`  Secrets: ${secretsToSync.map((s) => s.name).join(", ")}`);
 
     if (this.dryRun) {
-      logger.info("\n[Dry Run] No changes made");
+      logger.info("[Dry Run] No changes made");
       return 0;
     }
 
@@ -135,7 +135,7 @@ export class SyncCommand extends Command {
       }
     }
 
-    logger.info("\nSync complete!");
+    logger.info("Sync complete!");
     return 0;
   }
 }

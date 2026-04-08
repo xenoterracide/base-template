@@ -84,17 +84,22 @@ export function resolveSecretValue(
           logger.warn(`Warning: File "${entry.value}" not found for secret "${name}"`);
           return undefined;
         }
-        // Check file permissions
+        // Check file permissions - warn on any group/other permissions
         try {
           const stats = statSync(entry.value);
           const mode = stats.mode & 0o777;
-          if (mode & 0o044) {
+          // Warn if any group or other permissions are set (not 0400 or 0600)
+          if (mode !== 0o400 && mode !== 0o600) {
             logger.warn(
-              `Warning: File "${entry.value}" has permissive permissions (${mode.toString(8)}), should be 0400 or 0600`,
+              { file: entry.value, mode: mode.toString(8), expected: "0400 or 0600" },
+              "File has overly permissive permissions",
             );
           }
-        } catch {
-          // Ignore permission check errors
+        } catch (e) {
+          logger.debug(
+            { file: entry.value, error: e instanceof Error ? e.message : String(e) },
+            "Could not check file permissions",
+          );
         }
         const content = readFileSync(entry.value, "utf8");
         return content;

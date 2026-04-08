@@ -4,6 +4,7 @@
 
 import type { Logger } from "pino";
 
+// Pino is a CommonJS module, use require for compatibility
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pino = require("pino") as (options: unknown) => Logger;
 

@@ -6,7 +6,7 @@ import { Command, Option } from "clipanion";
 import { existsSync, readFileSync, writeFileSync } from "fs";
 import { resolve } from "path";
 import { logger } from "../logger.js";
-import { checkFilePermissions, setSecurePermissions } from "../fs-utils.js";
+import { checkFilePermissions } from "../fs-utils.js";
 
 export class UpdateCommand extends Command {
   public static paths = [["update"]];
@@ -25,8 +25,7 @@ export class UpdateCommand extends Command {
     description: "Secret value",
   });
 
-  // Required by clipanion interface - async needed even without await
-  // eslint-disable-next-line @typescript-eslint/require-await
+  // eslint-disable-next-line @typescript-eslint/require-await -- clipanion requires async execute()
   public async execute(): Promise<number> {
     const resolvedPath = resolve(this.file);
 
@@ -71,8 +70,8 @@ export class UpdateCommand extends Command {
       logger.info(`Updated ${this.key} in ${this.file}`);
     }
 
-    writeFileSync(resolvedPath, newLines.join("\n") + "\n", "utf8");
-    setSecurePermissions(resolvedPath);
+    // Write with mode 0600 from the start (or maintain existing)
+    writeFileSync(resolvedPath, newLines.join("\n") + "\n", { encoding: "utf8", mode: 0o600 });
     return 0;
   }
 }

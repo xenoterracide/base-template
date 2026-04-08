@@ -3,11 +3,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 import { execFileSync } from "child_process";
-import { writeFileSync, unlinkSync } from "fs";
+import { writeFileSync, unlinkSync, mkdtempSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
+import { randomUUID } from "crypto";
 import type { CommandRunner, SetSecretOptions } from "./types.js";
-import { setSecurePermissions } from "./fs-utils.js";
 import { logger } from "./logger.js";
 
 function createDefaultCommandRunner(): CommandRunner {
@@ -37,10 +37,13 @@ export function listSecretNames(repo: string, runner: CommandRunner = defaultRun
 
 export function setSecret(opts: SetSecretOptions): void {
   const { repo, name, value, runner = defaultRunner } = opts;
-  const tmpFile = join(tmpdir(), `secret-${name}-${String(Date.now())}.txt`);
+  // Use collision-resistant temp directory with secure permissions
+  const tmpDir = mkdtempSync(join(tmpdir(), `secret-${name}-`));
+  const tmpFile = join(tmpDir, `${randomUUID()}.txt`);
+
   try {
-    writeFileSync(tmpFile, value, "utf8");
-    setSecurePermissions(tmpFile);
+    // Create file with mode 0600 from the start
+    writeFileSync(tmpFile, value, { encoding: "utf8", mode: 0o600 });
     runner.runArgv("gh", ["secret", "set", name, "--repo", repo, "--body-file", tmpFile]);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
@@ -49,7 +52,7 @@ export function setSecret(opts: SetSecretOptions): void {
     try {
       unlinkSync(tmpFile);
     } catch (e) {
-      logger.debug(`Could not clean up temp file ${tmpFile}: ${e instanceof Error ? e.message : String(e)}`);
+      logger.debug({ tmpFile, error: e instanceof Error ? e.message : String(e) }, "Could not clean up temp file");
     }
   }
 }

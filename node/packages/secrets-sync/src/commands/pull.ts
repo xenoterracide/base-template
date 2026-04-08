@@ -6,7 +6,6 @@ import { Command, Option } from "clipanion";
 import { writeFileSync } from "fs";
 import { logger } from "../logger.js";
 import { listSecretNames } from "../github.js";
-import { setSecurePermissions } from "../fs-utils.js";
 import type { CommandRunner } from "../types.js";
 
 export class PullCommand extends Command {
@@ -32,8 +31,7 @@ export class PullCommand extends Command {
   // Optional runner for testing - uses default gh runner if not set
   public runner?: CommandRunner;
 
-  // Required by clipanion interface - async needed even without await
-  // eslint-disable-next-line @typescript-eslint/require-await
+  // eslint-disable-next-line @typescript-eslint/require-await -- clipanion requires async execute()
   public async execute(): Promise<number> {
     if (this.format !== "env" && this.format !== "file") {
       logger.error("Error: Format must be 'env' or 'file'");
@@ -78,14 +76,14 @@ export class PullCommand extends Command {
     const content = lines.join("\n") + "\n";
 
     if (this.dryRun) {
-      logger.info("\n[Dry Run] Would write to " + this.output + ":");
+      logger.info({ output: this.output }, "[Dry Run] Would write to output file");
       logger.info(content);
       return 0;
     }
 
-    writeFileSync(this.output, content, "utf8");
-    setSecurePermissions(this.output);
-    logger.info(`\nWrote ${String(secretNames.length)} secret entries to ${this.output} (permissions: 600)`);
+    // Create file with mode 0600 from the start
+    writeFileSync(this.output, content, { encoding: "utf8", mode: 0o600 });
+    logger.info(`Wrote ${String(secretNames.length)} secret entries to ${this.output} (permissions: 600)`);
     return 0;
   }
 }
