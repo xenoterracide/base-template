@@ -36,10 +36,10 @@ describe("SyncCommand", () => {
     process.env = originalEnv;
   });
 
-  it("should return error when no secrets specified", async () => {
+  it("should return error when neither --secrets nor --env-file provided", async () => {
     const cmd = new SyncCommand();
-    cmd.secrets = ""; // Empty secrets
-    cmd.to = "owner/target";
+    // Missing both secrets and env-file
+    cmd.repo = "owner/target";
     cmd.dryRun = true;
 
     const result = await cmd.execute();
@@ -47,10 +47,11 @@ describe("SyncCommand", () => {
     expect(result).toBe(1);
   });
 
-  it("should return error when no target repos", async () => {
+  it("should return error when both --to and --label provided", async () => {
     const cmd = new SyncCommand();
     cmd.secrets = "API_KEY";
-    cmd.to = ""; // Empty targets
+    cmd.repo = "owner/target";
+    cmd.label = "production";
     cmd.dryRun = true;
 
     const result = await cmd.execute();
@@ -58,19 +59,7 @@ describe("SyncCommand", () => {
     expect(result).toBe(1);
   });
 
-  it("should return error when secrets specified but no values provided", async () => {
-    const cmd = new SyncCommand();
-    cmd.secrets = "API_KEY,SECRET";
-    cmd.to = "owner/target";
-    cmd.dryRun = true;
-    // No env values set
-
-    const result = await cmd.execute();
-
-    expect(result).toBe(1);
-  });
-
-  it("should sync secrets from environment variables", async () => {
+  it("should sync secrets from environment variables to specific repo", async () => {
     process.env.API_KEY = "test-api-key";
     process.env.SECRET = "test-secret";
 
@@ -84,7 +73,7 @@ describe("SyncCommand", () => {
     const cmd = new SyncCommand();
     cmd.runner = runner;
     cmd.secrets = "API_KEY,SECRET";
-    cmd.to = "owner/target";
+    cmd.repo = "owner/target";
     cmd.dryRun = false;
 
     const result = await cmd.execute();
@@ -92,7 +81,7 @@ describe("SyncCommand", () => {
     expect(result).toBe(0);
   });
 
-  it("should sync secrets from env file", async () => {
+  it("should sync all secrets from env file to specific repo", async () => {
     const envPath = join(tmpDir, "secrets.env");
     writeFileSync(envPath, "API_KEY=from-env\nSECRET=also-from-env\n", "utf8");
 
@@ -105,9 +94,9 @@ describe("SyncCommand", () => {
 
     const cmd = new SyncCommand();
     cmd.runner = runner;
-    cmd.secrets = "API_KEY,SECRET";
-    cmd.to = "owner/target";
-    cmd.fromEnvFile = envPath;
+    // No cmd.secrets - should sync all from env file
+    cmd.envFile = envPath;
+    cmd.repo = "owner/target";
     cmd.dryRun = false;
 
     const result = await cmd.execute();
@@ -128,7 +117,34 @@ describe("SyncCommand", () => {
     const cmd = new SyncCommand();
     cmd.runner = runner;
     cmd.secrets = "MY_SECRET";
-    // No cmd.to specified - should auto-detect
+    // No cmd.repo specified - should auto-detect
+    cmd.dryRun = false;
+
+    const result = await cmd.execute();
+
+    expect(result).toBe(0);
+  });
+
+  it("should sync to repos with label", async () => {
+    const envPath = join(tmpDir, "secrets.env");
+    writeFileSync(envPath, "TOKEN=abc123\n", "utf8");
+
+    const runner = createFakeRunner(
+      new Map([
+        ["gh api user --jq .login", "myuser"],
+        [
+          "gh repo list myuser --topic auto-updated --no-archived --limit 1000 --json nameWithOwner",
+          '[{"nameWithOwner":"myuser/repo1"},{"nameWithOwner":"myuser/repo2"}]',
+        ],
+        ["gh secret set TOKEN --repo myuser/repo1 --body abc123", ""],
+        ["gh secret set TOKEN --repo myuser/repo2 --body abc123", ""],
+      ]),
+    );
+
+    const cmd = new SyncCommand();
+    cmd.runner = runner;
+    cmd.envFile = envPath;
+    cmd.label = "auto-updated";
     cmd.dryRun = false;
 
     const result = await cmd.execute();

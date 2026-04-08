@@ -40,10 +40,11 @@ export class BulkSetCommand extends Command {
   public runner?: CommandRunner;
 
   public async execute(): Promise<number> {
-    const owner = typeof this.owner === "string" && this.owner !== "" ? this.owner : getCurrentUser(this.runner);
-    logger.info(`Finding repos for owner "${owner}" with label "${this.label}"...`);
+    const owner = typeof this.owner === "string" && this.owner !== "" ? this.owner : undefined;
+    const ownerMsg = owner ?? "current user";
+    logger.info(`Finding repos for owner "${ownerMsg}" with label "${this.label}"...`);
 
-    const repos = findReposByLabel(owner, this.label, this.runner);
+    const repos = findReposByLabel(this.label, owner, this.runner);
     logger.info(`Found ${String(repos.length)} non-archived repos with label "${this.label}"`);
 
     if (repos.length === 0) {

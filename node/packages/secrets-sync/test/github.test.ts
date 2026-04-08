@@ -46,7 +46,7 @@ describe("listSecretNames", () => {
 });
 
 describe("findReposByLabel", () => {
-  it("should parse repo list from gh output", () => {
+  it("should parse repo list from gh output with explicit owner", () => {
     const runner = createFakeRunner(
       new Map([
         [
@@ -56,9 +56,25 @@ describe("findReposByLabel", () => {
       ]),
     );
 
-    const result = findReposByLabel("myorg", "production", runner);
+    const result = findReposByLabel("production", "myorg", runner);
 
     expect(result).toEqual(["myorg/repo1", "myorg/repo2"]);
+  });
+
+  it("should use current user when owner not provided", () => {
+    const runner = createFakeRunner(
+      new Map([
+        ["gh api user --jq .login", "currentuser"],
+        [
+          "gh repo list currentuser --topic production --no-archived --limit 1000 --json nameWithOwner",
+          '[{"nameWithOwner":"currentuser/repo1"}]',
+        ],
+      ]),
+    );
+
+    const result = findReposByLabel("production", undefined, runner);
+
+    expect(result).toEqual(["currentuser/repo1"]);
   });
 
   it("should return empty array when no repos", () => {
@@ -66,25 +82,9 @@ describe("findReposByLabel", () => {
       new Map([["gh repo list myorg --topic empty --no-archived --limit 1000 --json nameWithOwner", "[]"]]),
     );
 
-    const result = findReposByLabel("myorg", "empty", runner);
+    const result = findReposByLabel("empty", "myorg", runner);
 
     expect(result).toEqual([]);
-  });
-});
-
-describe("getCurrentUser", () => {
-  it("should return trimmed login from gh api", () => {
-    const runner = createFakeRunner(new Map([["gh api user --jq .login", "myuser"]]));
-
-    const result = getCurrentUser(runner);
-
-    expect(result).toBe("myuser");
-  });
-
-  it("should throw on authentication error", () => {
-    const runner = createFakeRunner(new Map());
-
-    expect(() => getCurrentUser(runner)).toThrow("Failed to get current user");
   });
 });
 

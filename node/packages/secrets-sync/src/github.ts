@@ -57,12 +57,13 @@ export function setSecret(opts: SetSecretOptions): void {
   }
 }
 
-export function findReposByLabel(owner: string, label: string, runner: CommandRunner = defaultRunner): string[] {
+export function findReposByLabel(label: string, owner?: string, runner: CommandRunner = defaultRunner): string[] {
+  const ownerToUse = owner ?? getCurrentUser(runner);
   try {
     const output = runner.runArgv("gh", [
       "repo",
       "list",
-      owner,
+      ownerToUse,
       "--topic",
       label,
       "--no-archived",
@@ -75,7 +76,7 @@ export function findReposByLabel(owner: string, label: string, runner: CommandRu
     return parsed.map((r) => r.nameWithOwner);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    throw new Error(`Failed to list repos for owner "${owner}" with label "${label}": ${msg}`);
+    throw new Error(`Failed to list repos for owner "${ownerToUse}" with label "${label}": ${msg}`);
   }
 }
 

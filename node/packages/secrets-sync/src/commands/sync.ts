@@ -5,23 +5,30 @@
 import { Command, Option } from "clipanion";
 import { logger } from "../logger.js";
 import { parseEnvFile, resolveSecretValue } from "../env.js";
-import { setSecret, getCurrentRepo } from "../github.js";
+import { setSecret, getCurrentRepo, findReposByLabel } from "../github.js";
 import type { CommandRunner } from "../types.js";
 
 export class SyncCommand extends Command {
   public static paths = [["sync"]];
 
   public secrets = Option.String("--secrets,-s", {
-    required: true,
-    description: "Secret names to sync (comma-separated)",
+    description: "Secret names to sync (comma-separated). If omitted with --env-file, all secrets from file are synced",
   });
 
-  public to = Option.String("--to,-t", {
+  public envFile = Option.String("--env-file,-e", {
+    description: "Env file with secret names and values",
+  });
+
+  public repo = Option.String("--repo,-r", {
     description: "Target repo(s), comma-separated (OWNER/REPO format). Defaults to current repo",
   });
 
-  public fromEnvFile = Option.String("--from-env-file", {
-    description: "Load values from env file",
+  public label = Option.String("--label,-l", {
+    description: "Sync to all non-archived repos with this topic/label",
+  });
+
+  public owner = Option.String("--owner,-o", {
+    description: "Owner/organization for --label (defaults to current user)",
   });
 
   public dryRun = Option.Boolean("--dry-run", false, {
@@ -32,25 +39,56 @@ export class SyncCommand extends Command {
   public runner?: CommandRunner;
 
   public async execute(): Promise<number> {
-    // Parse secret names
-    const secretNames = this.secrets
-      .split(",")
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0);
+    // Must provide either --secrets or --env-file
+    const hasSecrets = typeof this.secrets === "string" && this.secrets !== "";
+    const hasEnvFile = typeof this.envFile === "string" && this.envFile !== "";
+
+    if (!hasSecrets && !hasEnvFile) {
+      logger.error("Error: Must provide either --secrets or --env-file");
+      return 1;
+    }
+
+    // Cannot use both --repo and --label
+    if (typeof this.repo === "string" && this.repo !== "" && typeof this.label === "string" && this.label !== "") {
+      logger.error("Error: Cannot use both --repo and --label");
+      return 1;
+    }
+
+    // Parse env file if provided
+    const envFileEntries = hasEnvFile ? parseEnvFile(this.envFile!) : undefined;
+
+    // Determine secret names to sync
+    let secretNames: string[];
+    if (hasSecrets) {
+      secretNames = this.secrets!.split(",")
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0);
+    } else if (envFileEntries !== undefined) {
+      // Sync all secrets from env file
+      secretNames = Object.keys(envFileEntries);
+    } else {
+      logger.error("Error: No secrets to sync");
+      return 1;
+    }
 
     if (secretNames.length === 0) {
       logger.error("Error: No secrets specified");
       return 1;
     }
 
-    // Parse target repos (default to current repo if not specified)
+    // Determine target repos
     let targetRepos: string[];
-    if (typeof this.to === "string" && this.to !== "") {
-      targetRepos = this.to
+    if (typeof this.repo === "string" && this.repo !== "") {
+      targetRepos = this.repo
         .split(",")
         .map((s) => s.trim())
         .filter((s) => s.length > 0);
+    } else if (typeof this.label === "string" && this.label !== "") {
+      // Find repos by label
+      const owner = typeof this.owner === "string" && this.owner !== "" ? this.owner : undefined;
+      targetRepos = findReposByLabel(this.label, owner, this.runner);
     } else {
+      // Default to current repo
       try {
         targetRepos = [getCurrentRepo(this.runner)];
       } catch (e) {
@@ -60,13 +98,9 @@ export class SyncCommand extends Command {
     }
 
     if (targetRepos.length === 0) {
-      logger.error("Error: No target repos specified");
+      logger.error("Error: No target repos found");
       return 1;
     }
-
-    // Parse env file if provided
-    const envFileEntries =
-      typeof this.fromEnvFile === "string" && this.fromEnvFile !== "" ? parseEnvFile(this.fromEnvFile) : undefined;
 
     // Resolve all secret values
     const secretsToSync: { name: string; value: string }[] = [];
@@ -82,8 +116,7 @@ export class SyncCommand extends Command {
 
     if (secretsToSync.length === 0) {
       logger.error("Error: Could not resolve values for any secrets.");
-      logger.error("Secrets must be provided via environment variables or --from-env-file.");
-      logger.error("Example: export SECRET_NAME=value && yarn secrets sync ...");
+      logger.error("Secrets must be provided via environment variables or --env-file.");
       return 1;
     }
 

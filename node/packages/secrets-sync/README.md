@@ -6,7 +6,7 @@ SPDX-License-Identifier: CC-BY-NC-SA-4.0
 
 # secrets-sync
 
-A CLI tool for bulk-setting GitHub secrets across repositories.
+A CLI tool for syncing GitHub secrets to repositories.
 
 ## Installation
 
@@ -18,46 +18,44 @@ yarn install
 
 ### Sync Command
 
-Set secrets on target repositories:
+Sync secrets to repositories:
 
 ```bash
-# Sync secrets to current repo (auto-detected from git)
-yarn secrets sync --secrets API_KEY,SECRET
+# Sync all secrets from env file to current repo
+yarn secrets sync --env-file secrets.env
 
 # Sync to specific repo
-yarn secrets sync --secrets API_KEY,SECRET --to org/target-repo
+yarn secrets sync --env-file secrets.env --repo owner/target-repo
 
 # Sync to multiple repos
-yarn secrets sync --secrets API_KEY,SECRET --to org/target-1,org/target-2
+yarn secrets sync --env-file secrets.env --repo owner/target-1,owner/target-2
 
-# Sync using env file (for complex values like GPG keys)
-yarn secrets sync --secrets GPG_KEY,API_KEY --to org/target-repo --from-env-file ./secrets.env
+# Sync to all repos with a label/topic
+yarn secrets sync --env-file secrets.env --label auto-updated
 
-# Dry run to preview changes
-yarn secrets sync --secrets API_KEY --dry-run
+# Sync specific secrets only (from env or env vars)
+yarn secrets sync --secrets API_KEY,SECRET --repo owner/target
+
+# Use environment variables directly
+export API_KEY="secret-value"
+yarn secrets sync --secrets API_KEY
 ```
 
-### Bulk-Set Command
+### Bulk-Set Command (Legacy)
 
 Set secrets on all non-archived repositories with a specific label/topic:
 
 ```bash
 # Set secrets from env file on all repos with "production" label
-yarn secrets bulk-set --owner org --label production --from-env-file ./secrets.env
-
-# Set a single secret
-yarn secrets bulk-set --owner org --label production --secret-name API_KEY --secret-value "$API_KEY"
-
-# Use current user as owner (defaults to authenticated user)
 yarn secrets bulk-set --label production --from-env-file ./secrets.env
 
-# Dry run to preview changes
-yarn secrets bulk-set --owner org --label production --from-env-file ./secrets.env --dry-run
+# Set a single secret
+yarn secrets bulk-set --label production --secret-name API_KEY --secret-value "$API_KEY"
 ```
 
 ## Env File Format
 
-The `--from-env-file` option supports a special syntax for handling multi-line secrets like GPG keys:
+The `--env-file` option supports a special syntax for handling multi-line secrets like GPG keys:
 
 ```bash
 # Read from environment variable
@@ -91,18 +89,17 @@ Using `file://` references keeps the env file clean and makes it easier to manag
 GitHub's API (and `gh` CLI) only allows listing secret **names** - you cannot read the values back. This means you must provide secret values via:
 
 - Environment variables (matching the secret name)
-- `--from-env-file` with `env://` or `file://` references
+- `--env-file` with `env://` or `file://` references
 
 ### Value Resolution Priority
 
 For each secret, values are resolved in this order:
 
-1. **Explicit `--secret-value`** (for bulk-set single secret)
-2. **From env file entry:**
+1. **From env file entry:**
    - `env://VAR_NAME` - Read from environment variable
    - `file://./path` - Read from file
    - Plain value - Use as-is
-3. **Environment variable matching secret name**
+2. **Environment variable matching secret name**
 
 ## Requirements
 
