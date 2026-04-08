@@ -29,6 +29,9 @@ export default defineConfig([
     },
     rules: {
       // Strict rules from mira
+
+      // Disable base ESLint rules in favor of TypeScript-aware equivalents
+      // TypeScript versions understand TS syntax (generics, type annotations, etc.)
       "max-params": "off",
       "@typescript-eslint/max-params": "error",
       "default-param-last": "off",
