@@ -231,7 +231,7 @@ function getCurrentUser(runner: CommandRunner = defaultRunner): string {
 }
 
 // Sync Command
-class SyncCommand extends Command<BaseContext> {
+export class SyncCommand extends Command<BaseContext> {
   static paths = [["sync"]];
 
   from = Option.String("--from,-f", {
@@ -358,7 +358,7 @@ class SyncCommand extends Command<BaseContext> {
 }
 
 // Bulk Set Command
-class BulkSetCommand extends Command<BaseContext> {
+export class BulkSetCommand extends Command<BaseContext> {
   static paths = [["bulk-set"]];
 
   owner = Option.String("--owner,-o", {
@@ -468,7 +468,7 @@ class BulkSetCommand extends Command<BaseContext> {
 }
 
 // Pull Command
-class PullCommand extends Command<BaseContext> {
+export class PullCommand extends Command<BaseContext> {
   static paths = [["pull"]];
 
   from = Option.String("--from,-f", {
@@ -545,7 +545,7 @@ class PullCommand extends Command<BaseContext> {
 }
 
 // Update Command
-class UpdateCommand extends Command<BaseContext> {
+export class UpdateCommand extends Command<BaseContext> {
   static paths = [["update"]];
 
   file = Option.String("--file,-f", "secrets.env", {

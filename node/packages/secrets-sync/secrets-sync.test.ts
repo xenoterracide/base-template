@@ -2,44 +2,28 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-import { describe, it, expect, beforeEach, vi } from "vitest";
-import type { CommandRunner } from "./secrets-sync";
-import { parseEnvFile, resolveSecretValue, EnvEntry } from "./secrets-sync";
-
-// Mock the fs module
-vi.mock("fs", () => ({
-  existsSync: vi.fn(),
-  readFileSync: vi.fn(),
-  statSync: vi.fn(),
-  chmodSync: vi.fn(),
-}));
-
-import { existsSync, readFileSync, statSync } from "fs";
-
-describe("CommandRunner", () => {
-  it("should execute commands with args array", () => {
-    const mockRunner: CommandRunner = {
-      runArgv: vi.fn().mockReturnValue('[{"name": "TEST_SECRET"}]'),
-    };
-
-    const result = mockRunner.runArgv("gh", ["secret", "list", "--repo", "test/repo"]);
-    expect(mockRunner.runArgv).toHaveBeenCalledWith("gh", ["secret", "list", "--repo", "test/repo"]);
-    expect(JSON.parse(result)).toEqual([{ name: "TEST_SECRET" }]);
-  });
-});
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { mkdtempSync, writeFileSync, readFileSync, rmSync, mkdirSync } from "fs";
+import { tmpdir } from "os";
+import { join } from "path";
+import { parseEnvFile, resolveSecretValue, PullCommand, UpdateCommand } from "./secrets-sync";
 
 describe("parseEnvFile", () => {
+  let tmpDir: string;
+
   beforeEach(() => {
-    vi.clearAllMocks();
+    tmpDir = mkdtempSync(join(tmpdir(), "secrets-sync-test-"));
+  });
+
+  afterEach(() => {
+    rmSync(tmpDir, { recursive: true, force: true });
   });
 
   it("should parse plain values", () => {
-    const mockContent = "DEBUG_MODE=true\nAPI_KEY=test123";
-    vi.mocked(existsSync).mockReturnValue(true);
-    vi.mocked(statSync).mockReturnValue({ mode: 0o100600 } as ReturnType<typeof statSync>);
-    vi.mocked(readFileSync).mockReturnValue(mockContent);
+    const envPath = join(tmpDir, ".env");
+    writeFileSync(envPath, "DEBUG_MODE=true\nAPI_KEY=test123\n", "utf8");
 
-    const result = parseEnvFile(".env");
+    const result = parseEnvFile(envPath);
 
     expect(result).toEqual({
       DEBUG_MODE: { type: "value", value: "true" },
@@ -48,12 +32,10 @@ describe("parseEnvFile", () => {
   });
 
   it("should parse env:// references", () => {
-    const mockContent = "API_KEY=env://PROD_API_KEY";
-    vi.mocked(existsSync).mockReturnValue(true);
-    vi.mocked(statSync).mockReturnValue({ mode: 0o100600 } as ReturnType<typeof statSync>);
-    vi.mocked(readFileSync).mockReturnValue(mockContent);
+    const envPath = join(tmpDir, ".env");
+    writeFileSync(envPath, "API_KEY=env://PROD_API_KEY\n", "utf8");
 
-    const result = parseEnvFile(".env");
+    const result = parseEnvFile(envPath);
 
     expect(result).toEqual({
       API_KEY: { type: "env", value: "PROD_API_KEY" },
@@ -61,40 +43,60 @@ describe("parseEnvFile", () => {
   });
 
   it("should parse file:// references", () => {
-    const mockContent = "GPG_KEY=file://./keys/key.asc";
-    vi.mocked(existsSync).mockReturnValue(true);
-    vi.mocked(statSync).mockReturnValue({ mode: 0o100600 } as ReturnType<typeof statSync>);
-    vi.mocked(readFileSync).mockReturnValue(mockContent);
+    const envPath = join(tmpDir, ".env");
+    const keyPath = join(tmpDir, "key.asc");
+    writeFileSync(keyPath, "gpg-key-content", "utf8");
+    writeFileSync(envPath, `GPG_KEY=file://${keyPath}\n`, "utf8");
 
-    const result = parseEnvFile(".env");
+    const result = parseEnvFile(envPath);
 
     expect(result.GPG_KEY.type).toBe("file");
-    expect(result.GPG_KEY.value).toContain("keys/key.asc");
+    expect(result.GPG_KEY.value).toBe(keyPath);
+  });
+
+  it("should resolve relative file:// paths", () => {
+    const envPath = join(tmpDir, ".env");
+    const keysDir = join(tmpDir, "keys");
+    mkdirSync(keysDir);
+    const keyPath = join(keysDir, "signing.asc");
+    writeFileSync(keyPath, "key-content", "utf8");
+    writeFileSync(envPath, "GPG_KEY=file://./keys/signing.asc\n", "utf8");
+
+    const result = parseEnvFile(envPath);
+
+    expect(result.GPG_KEY.value).toBe(keyPath);
   });
 
   it("should skip empty lines and comments", () => {
-    const mockContent = "# This is a comment\n\nAPI_KEY=test123\n  \n";
-    vi.mocked(existsSync).mockReturnValue(true);
-    vi.mocked(statSync).mockReturnValue({ mode: 0o100600 } as ReturnType<typeof statSync>);
-    vi.mocked(readFileSync).mockReturnValue(mockContent);
+    const envPath = join(tmpDir, ".env");
+    writeFileSync(envPath, "# This is a comment\n\nAPI_KEY=test123\n  \n# Another comment\nSECRET=val\n", "utf8");
 
-    const result = parseEnvFile(".env");
+    const result = parseEnvFile(envPath);
 
     expect(result).toEqual({
       API_KEY: { type: "value", value: "test123" },
+      SECRET: { type: "value", value: "val" },
     });
   });
 
   it("should throw if file not found", () => {
-    vi.mocked(existsSync).mockReturnValue(false);
+    const missingPath = join(tmpDir, "missing.env");
 
-    expect(() => parseEnvFile(".env")).toThrow("Env file not found");
+    expect(() => parseEnvFile(missingPath)).toThrow("Env file not found");
   });
 });
 
 describe("resolveSecretValue", () => {
+  let tmpDir: string;
+
   beforeEach(() => {
-    vi.clearAllMocks();
+    tmpDir = mkdtempSync(join(tmpdir(), "secrets-sync-test-"));
+    delete process.env.TEST_ENV_VAR;
+    delete process.env.EXISTING_VAR;
+  });
+
+  afterEach(() => {
+    rmSync(tmpDir, { recursive: true, force: true });
     delete process.env.TEST_ENV_VAR;
     delete process.env.EXISTING_VAR;
   });
@@ -105,8 +107,8 @@ describe("resolveSecretValue", () => {
   });
 
   it("should resolve from env file entry with plain value", () => {
-    const envFileEntries: Record<string, EnvEntry> = {
-      API_KEY: { type: "value", value: "from-env-file" },
+    const envFileEntries = {
+      API_KEY: { type: "value" as const, value: "from-env-file" },
     };
 
     const result = resolveSecretValue("API_KEY", envFileEntries);
@@ -115,8 +117,8 @@ describe("resolveSecretValue", () => {
 
   it("should resolve from env file entry with env:// reference", () => {
     process.env.EXISTING_VAR = "env-var-value";
-    const envFileEntries: Record<string, EnvEntry> = {
-      API_KEY: { type: "env", value: "EXISTING_VAR" },
+    const envFileEntries = {
+      API_KEY: { type: "env" as const, value: "EXISTING_VAR" },
     };
 
     const result = resolveSecretValue("API_KEY", envFileEntries);
@@ -124,8 +126,8 @@ describe("resolveSecretValue", () => {
   });
 
   it("should return undefined for missing env var in env:// reference", () => {
-    const envFileEntries: Record<string, EnvEntry> = {
-      API_KEY: { type: "env", value: "NONEXISTENT_VAR" },
+    const envFileEntries = {
+      API_KEY: { type: "env" as const, value: "NONEXISTENT_VAR" },
     };
 
     const result = resolveSecretValue("API_KEY", envFileEntries);
@@ -133,22 +135,20 @@ describe("resolveSecretValue", () => {
   });
 
   it("should resolve from env file entry with file:// reference", () => {
-    const envFileEntries: Record<string, EnvEntry> = {
-      GPG_KEY: { type: "file", value: "/path/to/key.asc" },
+    const keyPath = join(tmpDir, "key.asc");
+    writeFileSync(keyPath, "file-contents", "utf8");
+    const envFileEntries = {
+      GPG_KEY: { type: "file" as const, value: keyPath },
     };
-    vi.mocked(existsSync).mockReturnValue(true);
-    vi.mocked(statSync).mockReturnValue({ mode: 0o100400 } as ReturnType<typeof statSync>);
-    vi.mocked(readFileSync).mockReturnValue("file-contents");
 
     const result = resolveSecretValue("GPG_KEY", envFileEntries);
     expect(result).toBe("file-contents");
   });
 
   it("should return undefined for missing file in file:// reference", () => {
-    const envFileEntries: Record<string, EnvEntry> = {
-      GPG_KEY: { type: "file", value: "/path/to/missing.asc" },
+    const envFileEntries = {
+      GPG_KEY: { type: "file" as const, value: "/path/to/missing.asc" },
     };
-    vi.mocked(existsSync).mockReturnValue(false);
 
     const result = resolveSecretValue("GPG_KEY", envFileEntries);
     expect(result).toBeUndefined();
@@ -169,8 +169,8 @@ describe("resolveSecretValue", () => {
   });
 
   it("should prefer explicit value over env file entry", () => {
-    const envFileEntries: Record<string, EnvEntry> = {
-      API_KEY: { type: "value", value: "from-env-file" },
+    const envFileEntries = {
+      API_KEY: { type: "value" as const, value: "from-env-file" },
     };
 
     const result = resolveSecretValue("API_KEY", envFileEntries, "explicit-value");
@@ -179,13 +179,74 @@ describe("resolveSecretValue", () => {
 
   it("should prefer env file entry over environment variable", () => {
     process.env.API_KEY = "from-env-var";
-    const envFileEntries: Record<string, EnvEntry> = {
-      API_KEY: { type: "value", value: "from-env-file" },
+    const envFileEntries = {
+      API_KEY: { type: "value" as const, value: "from-env-file" },
     };
 
     const result = resolveSecretValue("API_KEY", envFileEntries);
     expect(result).toBe("from-env-file");
 
     delete process.env.API_KEY;
+  });
+});
+
+describe("UpdateCommand", () => {
+  let tmpDir: string;
+
+  beforeEach(() => {
+    tmpDir = mkdtempSync(join(tmpdir(), "secrets-sync-test-"));
+  });
+
+  afterEach(() => {
+    rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it("should add new key to file", async () => {
+    const envPath = join(tmpDir, "secrets.env");
+    writeFileSync(envPath, "EXISTING_KEY=old-value\n", "utf8");
+
+    const cmd = new UpdateCommand();
+    cmd.file = envPath;
+    cmd.key = "NEW_KEY";
+    cmd.value = "new-value";
+
+    const exitCode = await cmd.execute();
+    expect(exitCode).toBe(0);
+
+    const content = readFileSync(envPath, "utf8");
+    expect(content).toContain("NEW_KEY=new-value");
+    expect(content).toContain("EXISTING_KEY=old-value");
+  });
+
+  it("should update existing key in file", async () => {
+    const envPath = join(tmpDir, "secrets.env");
+    writeFileSync(envPath, "API_KEY=old-value\nSECRET=unchanged\n", "utf8");
+
+    const cmd = new UpdateCommand();
+    cmd.file = envPath;
+    cmd.key = "API_KEY";
+    cmd.value = "updated-value";
+
+    const exitCode = await cmd.execute();
+    expect(exitCode).toBe(0);
+
+    const content = readFileSync(envPath, "utf8");
+    expect(content).toContain("API_KEY=updated-value");
+    expect(content).toContain("SECRET=unchanged");
+  });
+
+  it("should create file if it does not exist", async () => {
+    const envPath = join(tmpDir, "new-secrets.env");
+
+    const cmd = new UpdateCommand();
+    cmd.file = envPath;
+    cmd.key = "API_KEY";
+    cmd.value = "new-value";
+
+    const exitCode = await cmd.execute();
+    expect(exitCode).toBe(0);
+
+    const content = readFileSync(envPath, "utf8");
+    expect(content).toContain("API_KEY=new-value");
   });
 });
