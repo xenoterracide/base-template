@@ -24,7 +24,7 @@ The project uses a hybrid Python + Node.js architecture with Yarn workspaces for
 
 ## Project Structure
 
-```
+```text
 .
 ├── git/hooks/                  # Custom git hooks
 │   ├── commit-msg              # Conventional commits validation

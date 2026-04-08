@@ -82,7 +82,7 @@ DEBUG_MODE=true
 
 Armored GPG keys are multi-line PEM-like blocks that don't fit well in `.env` files:
 
-```
+```text
 -----BEGIN PGP PUBLIC KEY BLOCK-----
 ...
 -----END PGP PUBLIC KEY BLOCK-----

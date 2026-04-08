@@ -10,8 +10,9 @@ import { resolve, dirname } from "path";
 import { tmpdir } from "os";
 import { join } from "path";
 import { Command, Option, Cli } from "clipanion";
+import type { Logger } from "pino";
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const pino = require("pino") as typeof import("pino");
+const pino = require("pino") as (options: unknown) => Logger;
 
 const logger = pino({
   transport: {
@@ -25,7 +26,7 @@ const logger = pino({
 });
 
 export interface CommandRunner {
-  runArgv(cmd: string, args: string[], opts?: { cwd?: string; env?: Record<string, string> }): string;
+  runArgv: (cmd: string, args: string[], opts?: { cwd?: string; env?: Record<string, string> }) => string;
 }
 
 function setSecurePermissions(filePath: string): void {
@@ -174,8 +175,7 @@ export function resolveSecretValue(
 function listSecretNames(repo: string, runner: CommandRunner = defaultRunner): string[] {
   try {
     const output = runner.runArgv("gh", ["secret", "list", "--repo", repo, "--json", "name"]);
-    const parsed: { name: string }[] = JSON.parse(output);
-    return parsed.map((s) => s.name);
+    const parsed = JSON.parse(output) as { name: string }[];
     return parsed.map((s) => s.name);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
@@ -183,7 +183,15 @@ function listSecretNames(repo: string, runner: CommandRunner = defaultRunner): s
   }
 }
 
-function setSecret(repo: string, name: string, value: string, runner: CommandRunner = defaultRunner): void {
+interface SetSecretOptions {
+  repo: string;
+  name: string;
+  value: string;
+  runner?: CommandRunner;
+}
+
+function setSecret(opts: SetSecretOptions): void {
+  const { repo, name, value, runner = defaultRunner } = opts;
   const tmpFile = join(tmpdir(), `secret-${name}-${String(Date.now())}.txt`);
   try {
     writeFileSync(tmpFile, value, "utf8");
@@ -215,7 +223,7 @@ function findReposByLabel(owner: string, label: string, runner: CommandRunner = 
       "--json",
       "nameWithOwner",
     ]);
-    const parsed: { nameWithOwner: string }[] = JSON.parse(output);
+    const parsed = JSON.parse(output) as { nameWithOwner: string }[];
     return parsed.map((r) => r.nameWithOwner);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
@@ -234,35 +242,35 @@ function getCurrentUser(runner: CommandRunner = defaultRunner): string {
 
 // Sync Command
 export class SyncCommand extends Command {
-  static paths = [["sync"]];
+  public static paths = [["sync"]];
 
-  from = Option.String("--from,-f", {
+  public from = Option.String("--from,-f", {
     required: true,
     description: "Source repository (OWNER/REPO format)",
   });
 
-  to = Option.String("--to,-t", {
+  public to = Option.String("--to,-t", {
     required: true,
     description: "Target repo(s), comma-separated",
   });
 
-  include = Option.String("--include,-i", {
+  public include = Option.String("--include,-i", {
     description: "Only sync specific secrets (comma-separated)",
   });
 
-  exclude = Option.String("--exclude,-e", {
+  public exclude = Option.String("--exclude,-e", {
     description: "Exclude specific secrets (comma-separated)",
   });
 
-  fromEnvFile = Option.String("--from-env-file", {
+  public fromEnvFile = Option.String("--from-env-file", {
     description: "Load values from env file",
   });
 
-  dryRun = Option.Boolean("--dry-run", false, {
+  public dryRun = Option.Boolean("--dry-run", false, {
     description: "Show what would be done",
   });
 
-  async execute(): Promise<number> {
+  public async execute(): Promise<number> {
     logger.info(`Syncing secrets from ${this.from}...`);
 
     // Parse target repos
@@ -283,13 +291,13 @@ export class SyncCommand extends Command {
     // Apply include/exclude filters
     let filteredNames = secretNames;
 
-    if (this.include) {
+    if (this.include != null && this.include !== "") {
       const includeSet = new Set(this.include.split(",").map((s) => s.trim()));
       filteredNames = filteredNames.filter((n) => includeSet.has(n));
       logger.info(`Included ${String(filteredNames.length)} secrets based on --include filter`);
     }
 
-    if (this.exclude) {
+    if (this.exclude != null && this.exclude !== "") {
       const excludeSet = new Set(this.exclude.split(",").map((s) => s.trim()));
       filteredNames = filteredNames.filter((n) => !excludeSet.has(n));
       logger.info(`Excluded secrets, ${String(filteredNames.length)} remaining`);
@@ -301,7 +309,8 @@ export class SyncCommand extends Command {
     }
 
     // Parse env file if provided
-    const envFileEntries = this.fromEnvFile ? parseEnvFile(this.fromEnvFile) : undefined;
+    const envFileEntries =
+      this.fromEnvFile != null && this.fromEnvFile !== "" ? parseEnvFile(this.fromEnvFile) : undefined;
 
     // Resolve all secret values
     const secretsToSync: { name: string; value: string }[] = [];
@@ -332,9 +341,9 @@ export class SyncCommand extends Command {
     // Confirm if interactive
     if (process.stdin.isTTY) {
       process.stdout.write("\nProceed? [Y/n] ");
-      const reply = await new Promise<string>((resolve) => {
+      const reply = await new Promise<string>((res) => {
         process.stdin.once("data", (data): void => {
-          resolve(data.toString().trim().toLowerCase());
+          res(data.toString().trim().toLowerCase());
         });
       });
       if (reply === "n" || reply === "no") {
@@ -348,7 +357,7 @@ export class SyncCommand extends Command {
       logger.info(`\nSyncing to ${repo}...`);
       for (const { name, value } of secretsToSync) {
         try {
-          setSecret(repo, name, value);
+          setSecret({ repo, name, value });
           logger.info(`  ✓ ${name}`);
         } catch (e) {
           logger.error(`  ✗ ${name}: ${e instanceof Error ? e.message : String(e)}`);
@@ -363,34 +372,34 @@ export class SyncCommand extends Command {
 
 // Bulk Set Command
 export class BulkSetCommand extends Command {
-  static paths = [["bulk-set"]];
+  public static paths = [["bulk-set"]];
 
-  owner = Option.String("--owner,-o", {
+  public owner = Option.String("--owner,-o", {
     description: "GitHub owner/organization (defaults to current user)",
   });
 
-  label = Option.String("--label,-l", {
+  public label = Option.String("--label,-l", {
     required: true,
     description: "Repository topic/label to filter by",
   });
 
-  secretName = Option.String("--secret-name,-n", {
+  public secretName = Option.String("--secret-name,-n", {
     description: "Secret name to set",
   });
 
-  secretValue = Option.String("--secret-value,-v", {
+  public secretValue = Option.String("--secret-value,-v", {
     description: "Secret value",
   });
 
-  fromEnvFile = Option.String("--from-env-file", {
+  public fromEnvFile = Option.String("--from-env-file", {
     description: "Load secrets from env file",
   });
 
-  dryRun = Option.Boolean("--dry-run", false, {
+  public dryRun = Option.Boolean("--dry-run", false, {
     description: "Show what would be done",
   });
 
-  async execute(): Promise<number> {
+  public async execute(): Promise<number> {
     const owner = this.owner ?? getCurrentUser();
     logger.info(`Finding repos for owner "${owner}" with label "${this.label}"...`);
 
@@ -405,7 +414,7 @@ export class BulkSetCommand extends Command {
     // Collect secrets to set
     const secretsToSet: { name: string; value: string }[] = [];
 
-    if (this.fromEnvFile) {
+    if (this.fromEnvFile != null && this.fromEnvFile !== "") {
       const envFileEntries = parseEnvFile(this.fromEnvFile);
 
       for (const name of Object.keys(envFileEntries)) {
@@ -414,7 +423,7 @@ export class BulkSetCommand extends Command {
           secretsToSet.push({ name, value });
         }
       }
-    } else if (this.secretName) {
+    } else if (this.secretName != null && this.secretName !== "") {
       const value = resolveSecretValue(this.secretName, undefined, this.secretValue);
       if (value !== undefined) {
         secretsToSet.push({ name: this.secretName, value });
@@ -444,9 +453,9 @@ export class BulkSetCommand extends Command {
     // Confirm if interactive
     if (process.stdin.isTTY) {
       process.stdout.write("\nProceed? [Y/n] ");
-      const reply = await new Promise<string>((resolve) => {
+      const reply = await new Promise<string>((res) => {
         process.stdin.once("data", (data): void => {
-          resolve(data.toString().trim().toLowerCase());
+          res(data.toString().trim().toLowerCase());
         });
       });
       if (reply === "n" || reply === "no") {
@@ -460,7 +469,7 @@ export class BulkSetCommand extends Command {
       logger.info(`\nSetting secrets on ${repo}...`);
       for (const { name, value } of secretsToSet) {
         try {
-          setSecret(repo, name, value);
+          setSecret({ repo, name, value });
           logger.info(`  ✓ ${name}`);
         } catch (e) {
           logger.error(`  ✗ ${name}: ${e instanceof Error ? e.message : String(e)}`);
@@ -475,26 +484,28 @@ export class BulkSetCommand extends Command {
 
 // Pull Command
 export class PullCommand extends Command {
-  static paths = [["pull"]];
+  public static paths = [["pull"]];
 
-  from = Option.String("--from,-f", {
+  public from = Option.String("--from,-f", {
     required: true,
     description: "Source repository (OWNER/REPO format)",
   });
 
-  output = Option.String("--output,-o", "secrets.env", {
+  public output = Option.String("--output,-o", "secrets.env", {
     description: "Output file path",
   });
 
-  format = Option.String("--format", "env", {
+  public format = Option.String("--format", "env", {
     description: "Output format: env or file",
   });
 
-  dryRun = Option.Boolean("--dry-run", false, {
+  public dryRun = Option.Boolean("--dry-run", false, {
     description: "Show what would be done",
   });
 
-  async execute(): Promise<number> {
+  // Required by clipanion interface - async needed even without await
+  // eslint-disable-next-line @typescript-eslint/require-await
+  public async execute(): Promise<number> {
     if (this.format !== "env" && this.format !== "file") {
       logger.error("Error: Format must be 'env' or 'file'");
       return 1;
@@ -552,23 +563,25 @@ export class PullCommand extends Command {
 
 // Update Command
 export class UpdateCommand extends Command {
-  static paths = [["update"]];
+  public static paths = [["update"]];
 
-  file = Option.String("--file,-f", "secrets.env", {
+  public file = Option.String("--file,-f", "secrets.env", {
     description: "Secrets env file path",
   });
 
-  key = Option.String("--key,-k", {
+  public key = Option.String("--key,-k", {
     required: true,
     description: "Secret name to update",
   });
 
-  value = Option.String("--value,-v", {
+  public value = Option.String("--value,-v", {
     required: true,
     description: "Secret value",
   });
 
-  async execute(): Promise<number> {
+  // Required by clipanion interface - async needed even without await
+  // eslint-disable-next-line @typescript-eslint/require-await
+  public async execute(): Promise<number> {
     const resolvedPath = resolve(this.file);
 
     // Check/fix existing file permissions

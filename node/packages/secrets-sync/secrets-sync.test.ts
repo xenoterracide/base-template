@@ -9,7 +9,7 @@ import { join } from "path";
 import { parseEnvFile, resolveSecretValue, UpdateCommand } from "./secrets-sync";
 
 describe("parseEnvFile", () => {
-  let tmpDir: string;
+  let tmpDir = "";
 
   beforeEach(() => {
     tmpDir = mkdtempSync(join(tmpdir(), "secrets-sync-test-"));
@@ -87,7 +87,7 @@ describe("parseEnvFile", () => {
 });
 
 describe("resolveSecretValue", () => {
-  let tmpDir: string;
+  let tmpDir = "";
 
   beforeEach(() => {
     tmpDir = mkdtempSync(join(tmpdir(), "secrets-sync-test-"));
@@ -191,7 +191,7 @@ describe("resolveSecretValue", () => {
 });
 
 describe("UpdateCommand", () => {
-  let tmpDir: string;
+  let tmpDir = "";
 
   beforeEach(() => {
     tmpDir = mkdtempSync(join(tmpdir(), "secrets-sync-test-"));
