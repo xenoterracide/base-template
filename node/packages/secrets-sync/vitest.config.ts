@@ -8,5 +8,15 @@ export default defineConfig({
   test: {
     globals: true,
     environment: "node",
+    // Use forks for better isolation with PnP
+    pool: "forks",
+    // Enable dependency optimization for faster imports
+    deps: {
+      optimizer: {
+        ssr: {
+          enabled: true,
+        },
+      },
+    },
   },
 });
