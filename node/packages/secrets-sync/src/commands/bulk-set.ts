@@ -6,6 +6,7 @@ import { Command, Option } from "clipanion";
 import { logger } from "../logger.js";
 import { parseEnvFile, resolveSecretValue } from "../env.js";
 import { findReposByLabel, getCurrentUser, setSecret } from "../github.js";
+import type { CommandRunner } from "../types.js";
 
 export class BulkSetCommand extends Command {
   public static paths = [["bulk-set"]];
@@ -35,11 +36,14 @@ export class BulkSetCommand extends Command {
     description: "Show what would be done",
   });
 
+  // Optional runner for testing - uses default gh runner if not set
+  public runner?: CommandRunner;
+
   public async execute(): Promise<number> {
-    const owner = this.owner ?? getCurrentUser();
+    const owner = typeof this.owner === "string" && this.owner !== "" ? this.owner : getCurrentUser(this.runner);
     logger.info(`Finding repos for owner "${owner}" with label "${this.label}"...`);
 
-    const repos = findReposByLabel(owner, this.label);
+    const repos = findReposByLabel(owner, this.label, this.runner);
     logger.info(`Found ${String(repos.length)} non-archived repos with label "${this.label}"`);
 
     if (repos.length === 0) {
@@ -50,7 +54,7 @@ export class BulkSetCommand extends Command {
     // Collect secrets to set
     const secretsToSet: { name: string; value: string }[] = [];
 
-    if (this.fromEnvFile != null && this.fromEnvFile !== "") {
+    if (typeof this.fromEnvFile === "string" && this.fromEnvFile !== "") {
       const envFileEntries = parseEnvFile(this.fromEnvFile);
 
       for (const name of Object.keys(envFileEntries)) {
@@ -59,7 +63,7 @@ export class BulkSetCommand extends Command {
           secretsToSet.push({ name, value });
         }
       }
-    } else if (this.secretName != null && this.secretName !== "") {
+    } else if (typeof this.secretName === "string" && this.secretName !== "") {
       const value = resolveSecretValue(this.secretName, undefined, this.secretValue);
       if (value !== undefined) {
         secretsToSet.push({ name: this.secretName, value });
@@ -105,7 +109,7 @@ export class BulkSetCommand extends Command {
       logger.info(`\nSetting secrets on ${repo}...`);
       for (const { name, value } of secretsToSet) {
         try {
-          setSecret({ repo, name, value });
+          setSecret({ repo, name, value, runner: this.runner });
           logger.info(`  ✓ ${name}`);
         } catch (e) {
           logger.error(`  ✗ ${name}: ${e instanceof Error ? e.message : String(e)}`);

@@ -7,6 +7,7 @@ import { writeFileSync } from "fs";
 import { logger } from "../logger.js";
 import { listSecretNames } from "../github.js";
 import { setSecurePermissions } from "../fs-utils.js";
+import type { CommandRunner } from "../types.js";
 
 export class PullCommand extends Command {
   public static paths = [["pull"]];
@@ -28,6 +29,9 @@ export class PullCommand extends Command {
     description: "Show what would be done",
   });
 
+  // Optional runner for testing - uses default gh runner if not set
+  public runner?: CommandRunner;
+
   // Required by clipanion interface - async needed even without await
   // eslint-disable-next-line @typescript-eslint/require-await
   public async execute(): Promise<number> {
@@ -37,7 +41,7 @@ export class PullCommand extends Command {
     }
     logger.info(`Fetching secrets from ${this.from}...`);
 
-    const secretNames = listSecretNames(this.from);
+    const secretNames = listSecretNames(this.from, this.runner);
     logger.info(`Found ${String(secretNames.length)} secrets`);
 
     if (secretNames.length === 0) {

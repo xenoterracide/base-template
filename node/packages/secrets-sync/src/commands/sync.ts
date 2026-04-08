@@ -6,6 +6,7 @@ import { Command, Option } from "clipanion";
 import { logger } from "../logger.js";
 import { parseEnvFile, resolveSecretValue } from "../env.js";
 import { listSecretNames, setSecret } from "../github.js";
+import type { CommandRunner } from "../types.js";
 
 export class SyncCommand extends Command {
   public static paths = [["sync"]];
@@ -36,6 +37,9 @@ export class SyncCommand extends Command {
     description: "Show what would be done",
   });
 
+  // Optional runner for testing - uses default gh runner if not set
+  public runner?: CommandRunner;
+
   public async execute(): Promise<number> {
     logger.info(`Syncing secrets from ${this.from}...`);
 
@@ -51,19 +55,19 @@ export class SyncCommand extends Command {
     }
 
     // Get secret names from source repo
-    const secretNames = listSecretNames(this.from);
+    const secretNames = listSecretNames(this.from, this.runner);
     logger.info(`Found ${String(secretNames.length)} secrets in source repo`);
 
     // Apply include/exclude filters
     let filteredNames = secretNames;
 
-    if (this.include != null && this.include !== "") {
+    if (typeof this.include === "string" && this.include !== "") {
       const includeSet = new Set(this.include.split(",").map((s) => s.trim()));
       filteredNames = filteredNames.filter((n) => includeSet.has(n));
       logger.info(`Included ${String(filteredNames.length)} secrets based on --include filter`);
     }
 
-    if (this.exclude != null && this.exclude !== "") {
+    if (typeof this.exclude === "string" && this.exclude !== "") {
       const excludeSet = new Set(this.exclude.split(",").map((s) => s.trim()));
       filteredNames = filteredNames.filter((n) => !excludeSet.has(n));
       logger.info(`Excluded secrets, ${String(filteredNames.length)} remaining`);
@@ -76,7 +80,7 @@ export class SyncCommand extends Command {
 
     // Parse env file if provided
     const envFileEntries =
-      this.fromEnvFile != null && this.fromEnvFile !== "" ? parseEnvFile(this.fromEnvFile) : undefined;
+      typeof this.fromEnvFile === "string" && this.fromEnvFile !== "" ? parseEnvFile(this.fromEnvFile) : undefined;
 
     // Resolve all secret values
     const secretsToSync: { name: string; value: string }[] = [];
@@ -123,7 +127,7 @@ export class SyncCommand extends Command {
       logger.info(`\nSyncing to ${repo}...`);
       for (const { name, value } of secretsToSync) {
         try {
-          setSecret({ repo, name, value });
+          setSecret({ repo, name, value, runner: this.runner });
           logger.info(`  ✓ ${name}`);
         } catch (e) {
           logger.error(`  ✗ ${name}: ${e instanceof Error ? e.message : String(e)}`);
