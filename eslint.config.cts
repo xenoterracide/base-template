@@ -70,6 +70,8 @@ export default defineConfig([
       "@typescript-eslint/no-unsafe-call": "off",
       "@typescript-eslint/no-unsafe-member-access": "off",
       "@typescript-eslint/no-unsafe-type-assertion": "off",
+      // Allow async methods without await (needed for clipanion interface)
+      "@typescript-eslint/require-await": "off",
     },
   },
   {
