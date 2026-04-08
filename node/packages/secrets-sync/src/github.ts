@@ -6,7 +6,7 @@ import { execFileSync } from "child_process";
 import { writeFileSync, unlinkSync, mkdtempSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
-import { randomUUID } from "crypto";
+
 import type { CommandRunner, SetSecretOptions } from "./types.js";
 import { logger } from "./logger.js";
 
@@ -37,9 +37,9 @@ export function listSecretNames(repo: string, runner: CommandRunner = defaultRun
 
 export function setSecret(opts: SetSecretOptions): void {
   const { repo, name, value, runner = defaultRunner } = opts;
-  // Use collision-resistant temp directory with secure permissions
+  // Use mkdtemp for collision-resistant temp directory with secure permissions
   const tmpDir = mkdtempSync(join(tmpdir(), `secret-${name}-`));
-  const tmpFile = join(tmpDir, `${randomUUID()}.txt`);
+  const tmpFile = join(tmpDir, "secret.txt");
 
   try {
     // Create file with mode 0600 from the start
