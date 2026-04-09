@@ -13,5 +13,5 @@ export { setSecret, findReposByLabel, getCurrentUser, getCurrentRepo } from "./g
 
 // Commands (exported for testing)
 export { SyncCommand } from "./commands/sync.js";
-
 export { UpdateCommand } from "./commands/update.js";
+export { GetCommand } from "./commands/get.js";
