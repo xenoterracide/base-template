@@ -12,9 +12,8 @@
     "merge:copilot": "ENGINE=copilot tsx merge.ts",
     "merge:junie": "ENGINE=junie tsx merge.ts",
     "merge:kimi": "ENGINE=kimi tsx merge.ts",
-    "test": "vitest run && yarn typecheck",
+    "test": "vitest run --coverage && yarn typecheck",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit merge.ts"
   }
 }
