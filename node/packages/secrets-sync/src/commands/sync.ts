@@ -122,12 +122,17 @@ export class SyncCommand extends Command {
       return 1;
     }
 
-    logger.info(`Will sync ${String(secretsToSync.length)} secret(s) to ${String(targetRepos.length)} repo(s):`);
-    logger.info(`  Repos: ${targetRepos.join(", ")}`);
-    logger.info(`  Secrets: ${secretsToSync.map((s) => s.name).join(", ")}`);
+    // Use console for interactive output to avoid async log ordering issues
+    // eslint-disable-next-line no-console
+    console.log(`Will sync ${String(secretsToSync.length)} secret(s) to ${String(targetRepos.length)} repo(s):`);
+    // eslint-disable-next-line no-console
+    console.log(`  Repos: ${targetRepos.join(", ")}`);
+    // eslint-disable-next-line no-console
+    console.log(`  Secrets: ${secretsToSync.map((s) => s.name).join(", ")}`);
 
     if (this.dryRun) {
-      logger.info("[Dry Run] No changes made");
+      // eslint-disable-next-line no-console
+      console.log("[Dry Run] No changes made");
       return 0;
     }
 
@@ -141,7 +146,8 @@ export class SyncCommand extends Command {
       });
       process.stdin.pause();
       if (reply === "n" || reply === "no") {
-        logger.info("Cancelled");
+        // eslint-disable-next-line no-console
+        console.log("Cancelled");
         return 0;
       }
     }
