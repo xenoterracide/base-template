@@ -178,18 +178,22 @@ export class SyncCommand extends Command {
 
     // Sync to each target repo
     for (const repo of targetRepos) {
-      logger.info(`\nSyncing to ${repo}...`);
-      for (const { name, value } of secretsToSync) {
+      // eslint-disable-next-line no-console
+      console.log(`\nSyncing to ${repo}...`);
+      for (const { name } of secretsToSync) {
         try {
-          setSecret({ repo, name, value, runner: this.runner });
-          logger.info(`  ✓ ${name}`);
+          setSecret({ repo, name, value: secretsToSync.find((s) => s.name === name)!.value, runner: this.runner });
+          // eslint-disable-next-line no-console
+          console.log(`  ✓ ${name}`);
         } catch (e) {
-          logger.error(`  ✗ ${name}: ${e instanceof Error ? e.message : String(e)}`);
+          // eslint-disable-next-line no-console
+          console.error(`  ✗ ${name}: ${e instanceof Error ? e.message : String(e)}`);
         }
       }
     }
 
-    logger.info("\nSync complete!");
+    // eslint-disable-next-line no-console
+    console.log("\nSync complete!");
     return 0;
   }
 }

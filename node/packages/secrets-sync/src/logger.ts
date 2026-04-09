@@ -8,14 +8,10 @@ import type { Logger } from "pino";
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pino = require("pino") as (options: unknown) => Logger;
 
-export const logger = pino({
-  transport: {
-    target: "pino-pretty",
-    options: {
-      colorize: true,
-      translateTime: false,
-      ignore: "pid,hostname,time",
-      sync: true, // Ensure logs are written before prompts
-    },
-  },
-});
+// Simple console-based logger for predictable output ordering
+export const logger = {
+  info: (msg: string) => console.log(msg),
+  warn: (msg: string) => console.warn(msg),
+  error: (msg: string) => console.error(msg),
+  debug: (obj: Record<string, unknown>, msg: string) => console.debug(msg, obj),
+};
