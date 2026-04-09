@@ -9,7 +9,7 @@ import { checkFilePermissions } from "./fs-utils.js";
 import { logger } from "./logger.js";
 import { UserError } from "./errors.js";
 
-function parseValue(value: string, baseDir: string): EnvEntry {
+function parseValue(value: string, key: string, baseDir: string): EnvEntry {
   const colonIndex = value.indexOf(":");
   if (colonIndex === -1) {
     throw new Error(`Value must have a protocol prefix (env:, file:, val:). Got: "${value}"`);
@@ -33,7 +33,7 @@ function parseValue(value: string, baseDir: string): EnvEntry {
       return { type: "value", value: rest };
     }
     default: {
-      throw new UserError(`Unknown protocol "${protocol}:". Use env:, file:, or val:`);
+      throw new UserError(`Unknown protocol "${protocol}:". Use env:, file:, or val: for key "${key}"`);
     }
   }
 }
@@ -63,14 +63,7 @@ export function parseEnvFile(filePath: string): Record<string, EnvEntry> {
 
     if (!key) continue;
 
-    try {
-      entries[key] = parseValue(value, baseDir);
-    } catch (e) {
-      if (e instanceof UserError) {
-        throw new UserError(`${e.message} for key "${key}"`);
-      }
-      throw e;
-    }
+    entries[key] = parseValue(value, key, baseDir);
   }
 
   return entries;
