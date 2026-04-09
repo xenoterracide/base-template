@@ -33,7 +33,7 @@
     "lint:reuse": "uv run --frozen --group dev reuse lint",
     "lint:eslint": "eslint .",
     "lint": "yarn lint:eslint && yarn lint:prettier && yarn lint:reuse",
-    "test": "yarn workspaces foreach --parallel --all --exclude @xenoterracide/share run test"
+    "test": "vitest run --coverage"
   },
   "workspaces": [
     "node/packages/*"
