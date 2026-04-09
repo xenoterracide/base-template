@@ -14,7 +14,8 @@ export const logger = pino({
     options: {
       colorize: true,
       translateTime: false,
-      ignore: "pid,hostname",
+      ignore: "pid,hostname,time",
+      sync: true, // Ensure logs are written before prompts
     },
   },
 });
