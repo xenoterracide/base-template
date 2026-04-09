@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 import { Command, Option } from "clipanion";
-import { logger } from "../logger.js";
+import { logger, setLogLevel } from "../logger.js";
 import { parseEnvFile, resolveSecretValue } from "../env.js";
 import { setSecret, getCurrentRepo, findReposByLabel } from "../github.js";
 import type { CommandRunner } from "../types.js";
@@ -49,10 +49,8 @@ export class SyncCommand extends Command {
     const hasEnvFile = typeof envFilePath === "string" && envFilePath !== "";
 
     if (this.verbose) {
-      // eslint-disable-next-line no-console
-      console.log(
-        `Verbose: hasSecrets=${hasSecrets}, hasEnvFile=${hasEnvFile}, envFilePath=${envFilePath ?? "undefined"}`,
-      );
+      setLogLevel("debug");
+      logger.debug({ hasSecrets, hasEnvFile, envFilePath }, "Parsing options");
     }
 
     if (!hasSecrets && !hasEnvFile) {
@@ -70,8 +68,7 @@ export class SyncCommand extends Command {
     const envFileEntries = hasEnvFile ? parseEnvFile(envFilePath) : undefined;
 
     if (this.verbose && envFileEntries) {
-      // eslint-disable-next-line no-console
-      console.log(`Verbose: Parsed env file, found keys: ${Object.keys(envFileEntries).join(", ")}`);
+      logger.debug({ keys: Object.keys(envFileEntries) }, "Parsed env file");
     }
 
     // Determine secret names to sync
@@ -124,19 +121,13 @@ export class SyncCommand extends Command {
     const secretsToSync: { name: string; value: string }[] = [];
 
     for (const name of secretNames) {
-      if (this.verbose) {
-        // eslint-disable-next-line no-console
-        console.log(`Verbose: Resolving secret "${name}"...`);
-      }
+      logger.debug({ name }, "Resolving secret");
       const value = resolveSecretValue(name, envFileEntries);
       if (value === undefined) {
         logger.warn(`Warning: Could not resolve value for secret "${name}", skipping`);
         continue;
       }
-      if (this.verbose) {
-        // eslint-disable-next-line no-console
-        console.log(`Verbose: Resolved "${name}" (${value.length} chars)`);
-      }
+      logger.debug({ name, length: value.length }, "Resolved secret");
       secretsToSync.push({ name, value });
     }
 

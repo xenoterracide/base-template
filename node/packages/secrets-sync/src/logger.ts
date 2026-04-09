@@ -21,3 +21,7 @@ export const logger = pino(
     ignore: "pid,hostname,time",
   }),
 );
+
+export function setLogLevel(level: "info" | "debug"): void {
+  logger.level = level;
+}
