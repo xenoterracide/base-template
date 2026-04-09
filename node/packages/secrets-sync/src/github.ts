@@ -8,7 +8,11 @@ import type { CommandRunner, SetSecretOptions } from "./types.js";
 
 function createDefaultCommandRunner(): CommandRunner {
   return {
-    runArgv(cmd: string, args: string[], opts?: { cwd?: string; env?: Record<string, string>; input?: string }): string {
+    runArgv(
+      cmd: string,
+      args: string[],
+      opts?: { cwd?: string; env?: Record<string, string>; input?: string },
+    ): string {
       return execFileSync(cmd, args, {
         encoding: "utf8",
         cwd: opts?.cwd,
