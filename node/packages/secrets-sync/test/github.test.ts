@@ -123,20 +123,21 @@ describe("getCurrentRepo", () => {
 });
 
 describe("setSecret", () => {
-  it("should call gh secret set with body-file", () => {
-    const commands: string[] = [];
+  it("should call gh secret set with value via stdin", () => {
+    const calls: { cmd: string; args: string[]; opts?: { input?: string } }[] = [];
     const runner: CommandRunner = {
-      runArgv: (cmd: string, args: string[]): string => {
-        commands.push(`${cmd} ${args.join(" ")}`);
+      runArgv: (cmd: string, args: string[], opts?: { input?: string }): string => {
+        calls.push({ cmd, args, opts });
         return "";
       },
     };
 
     setSecret({ repo: "owner/repo", name: "API_KEY", value: "secret123", runner });
-    return undefined;
 
-    expect(commands).toHaveLength(1);
-    expect(commands[0]).toMatch(/gh secret set API_KEY --repo owner\/repo --body-file .+/);
+    expect(calls).toHaveLength(1);
+    expect(calls[0].cmd).toBe("gh");
+    expect(calls[0].args).toEqual(["secret", "set", "API_KEY", "--repo", "owner/repo"]);
+    expect(calls[0].opts?.input).toBe("secret123");
   });
 
   it("should throw on error", () => {

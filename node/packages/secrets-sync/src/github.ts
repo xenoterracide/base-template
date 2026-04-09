@@ -8,11 +8,12 @@ import type { CommandRunner, SetSecretOptions } from "./types.js";
 
 function createDefaultCommandRunner(): CommandRunner {
   return {
-    runArgv(cmd: string, args: string[], opts?: { cwd?: string; env?: Record<string, string> }): string {
+    runArgv(cmd: string, args: string[], opts?: { cwd?: string; env?: Record<string, string>; input?: string }): string {
       return execFileSync(cmd, args, {
         encoding: "utf8",
         cwd: opts?.cwd,
         env: { ...process.env, ...opts?.env },
+        input: opts?.input,
       }).trim();
     },
   };
@@ -35,8 +36,8 @@ export function setSecret(opts: SetSecretOptions): void {
   const { repo, name, value, runner = defaultRunner } = opts;
 
   try {
-    // Pass value directly to --body (execFileSync handles escaping)
-    runner.runArgv("gh", ["secret", "set", name, "--repo", repo, "--body", value]);
+    // Pass value via stdin to avoid exposing it in process argv
+    runner.runArgv("gh", ["secret", "set", name, "--repo", repo], { input: value });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     throw new Error(`Failed to set secret "${name}" on ${repo}: ${msg}`);

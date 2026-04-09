@@ -151,15 +151,11 @@ export class SyncCommand extends Command {
     }
 
     // Use console for interactive output to avoid async log ordering issues
-    // eslint-disable-next-line no-console
     console.log(`Will sync ${String(secretsToSync.length)} secret(s) to ${String(targetRepos.length)} repo(s):`);
-    // eslint-disable-next-line no-console
     console.log(`  Repos: ${targetRepos.join(", ")}`);
-    // eslint-disable-next-line no-console
     console.log(`  Secrets: ${secretsToSync.map((s) => s.name).join(", ")}`);
 
     if (this.dryRun) {
-      // eslint-disable-next-line no-console
       console.log("[Dry Run] No changes made");
       return 0;
     }
@@ -174,7 +170,6 @@ export class SyncCommand extends Command {
       });
       process.stdin.pause();
       if (reply === "n" || reply === "no") {
-        // eslint-disable-next-line no-console
         console.log("Cancelled");
         return 0;
       }
@@ -182,21 +177,17 @@ export class SyncCommand extends Command {
 
     // Sync to each target repo
     for (const repo of targetRepos) {
-      // eslint-disable-next-line no-console
       console.log(`\nSyncing to ${repo}...`);
-      for (const { name } of secretsToSync) {
+      for (const { name, value } of secretsToSync) {
         try {
-          setSecret({ repo, name, value: secretsToSync.find((s) => s.name === name)!.value, runner: this.runner });
-          // eslint-disable-next-line no-console
+          setSecret({ repo, name, value, runner: this.runner });
           console.log(`  ✓ ${name}`);
         } catch (e) {
-          // eslint-disable-next-line no-console
           console.error(`  ✗ ${name}: ${e instanceof Error ? e.message : String(e)}`);
         }
       }
     }
 
-    // eslint-disable-next-line no-console
     console.log("\nSync complete!");
     return 0;
   }

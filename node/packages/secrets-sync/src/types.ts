@@ -7,7 +7,7 @@
  * Allows for dependency injection in tests.
  */
 export interface CommandRunner {
-  runArgv: (cmd: string, args: string[], opts?: { cwd?: string; env?: Record<string, string> }) => string;
+  runArgv: (cmd: string, args: string[], opts?: { cwd?: string; env?: Record<string, string>; input?: string }) => string;
 }
 
 /**
