@@ -20,6 +20,7 @@
     "prettier-plugin-properties": "^0.3.0",
     "prettier-plugin-toml": "^2.0.6",
     "rimraf": "^6.1.2",
+    "tsx": "^4.21.0",
     "typescript": "^5.0.0",
     "typescript-eslint": "^8.0.0",
     "vitest": "^4.1.3"
@@ -29,7 +30,7 @@
     "merge:copilot": "yarn workspace @xenoterracide/merge run merge:copilot",
     "merge:junie": "yarn workspace @xenoterracide/merge run merge:junie",
     "merge:kimi": "yarn workspace @xenoterracide/merge run merge:kimi",
-    "secrets": "yarn workspace @xenoterracide/secrets-sync run secrets-sync",
+    "secrets": "tsx node/packages/secrets-sync/src/cli.ts",
     "lint:prettier": "prettier --ignore-unknown --cache --check '**'",
     "lint:reuse": "uv run --frozen --group dev reuse lint",
     "lint:eslint": "eslint .",
