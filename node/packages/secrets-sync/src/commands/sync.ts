@@ -6,6 +6,7 @@ import { Command, Option } from "clipanion";
 import { logger, setLogLevel } from "../logger.js";
 import { parseEnvFile, resolveSecretValue } from "../env.js";
 import { setSecret, getCurrentRepo, findReposByLabel } from "../github.js";
+import { UserError } from "../errors.js";
 import type { CommandRunner } from "../types.js";
 
 export class SyncCommand extends Command {
@@ -43,6 +44,18 @@ export class SyncCommand extends Command {
   public runner?: CommandRunner;
 
   public async execute(): Promise<number> {
+    try {
+      return await this.doExecute();
+    } catch (e) {
+      if (e instanceof UserError) {
+        logger.error(e.message);
+        return 1;
+      }
+      throw e;
+    }
+  }
+
+  private async doExecute(): Promise<number> {
     // Must provide either --secrets or --env-file
     const hasSecrets = typeof this.secrets === "string" && this.secrets !== "";
     const envFilePath = this.envFile;
