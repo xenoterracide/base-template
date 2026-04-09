@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import {
   findMainRepoRoot,
   parseAndWriteMessage,
@@ -12,7 +12,7 @@ import {
   type CommandRunner,
   type FileSystem,
 } from "./merge";
-import { join } from "path";
+
 
 describe("findMainRepoRoot", () => {
   it("should return the directory when .git exists and no parent .gitmodules", () => {
@@ -182,7 +182,7 @@ Let's also add filters.
     const mockExit = vi.spyOn(process, "exit").mockImplementation(() => {
       throw new Error("process.exit");
     });
-    const mockConsoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    const mockConsoleError = vi.spyOn(console, "error").mockImplementation(vi.fn());
 
     await expect(parseAndWriteMessage("invalid output", "/tmp/title.txt", "/tmp/body.txt", fs)).rejects.toThrow(
       "process.exit",
@@ -202,7 +202,7 @@ Let's also add filters.
     const mockExit = vi.spyOn(process, "exit").mockImplementation(() => {
       throw new Error("process.exit");
     });
-    const mockConsoleLog = vi.spyOn(console, "log").mockImplementation(() => {});
+    const mockConsoleLog = vi.spyOn(console, "log").mockImplementation(vi.fn());
 
     await expect(parseAndWriteMessage("invalid output", "/tmp/title.txt", "/tmp/body.txt", fs)).rejects.toThrow(
       "process.exit",

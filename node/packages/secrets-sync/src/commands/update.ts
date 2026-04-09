@@ -25,7 +25,6 @@ export class UpdateCommand extends Command {
     description: "Secret value",
   });
 
-  // eslint-disable-next-line @typescript-eslint/require-await -- clipanion requires async execute()
   public async execute(): Promise<number> {
     const resolvedPath = resolve(this.file);
 

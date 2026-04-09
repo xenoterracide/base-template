@@ -18,7 +18,6 @@ export interface CommandRunner {
   runArgv(cmd: string, args: string[], opts?: { cwd?: string; env?: Record<string, string> }): string;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type FileSystem = any;
 
 /**
@@ -135,7 +134,7 @@ export async function generateMessage(
   }
 }
 
-async function generateWithKimi(titleFile: string, bodyFile: string, diff: string, tmpDir: string): Promise<void> {
+export async function generateWithKimi(titleFile: string, bodyFile: string, diff: string, tmpDir: string): Promise<void> {
   const skillsDir = ".agents/skills";
   const hasSkillsDir = existsSync(skillsDir);
 
@@ -183,7 +182,7 @@ ${diff}`;
   }
 }
 
-async function generateWithJunie(titleFile: string, bodyFile: string, diff: string, tmpDir: string): Promise<void> {
+export async function generateWithJunie(titleFile: string, bodyFile: string, diff: string, tmpDir: string): Promise<void> {
   const promptFile = join(tmpDir, "junie-prompt.txt");
   const prompt = `Generate a conventional commit message for the following diff and write the subject line to '${titleFile}' and the body to '${bodyFile}'. Do not run any tests or gradle commands.
 
@@ -216,7 +215,7 @@ ${diff}`;
   }
 }
 
-async function generateWithCopilot(
+export async function generateWithCopilot(
   titleFile: string,
   bodyFile: string,
   diff: string,
@@ -369,7 +368,7 @@ export async function parseAndWriteMessage(
   fs.writeFileSync(bodyFile, body, { encoding: "utf8" });
 }
 
-async function waitForChecks(repoRoot: string = MAIN_REPO_ROOT): Promise<void> {
+export async function waitForChecks(repoRoot: string = MAIN_REPO_ROOT): Promise<void> {
   console.log("Waiting for PR checks to complete...");
 
   try {

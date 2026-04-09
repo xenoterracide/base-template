@@ -12,7 +12,7 @@ export default defineConfig({
         test: {
           name: "merge",
           root: "./node/packages/merge",
-          include: ["merge.test.ts"],
+          include: ["**/*.test.ts"],
         },
       },
       {

@@ -11,7 +11,7 @@ import type { CommandRunner } from "../../src/types.js";
 
 function createFakeRunner(responses: Map<string, string>): CommandRunner {
   return {
-    runArgv: (cmd: string, args: string[], opts?: { input?: string }): string => {
+    runArgv: (cmd: string, args: string[]): string => {
       const key = `${cmd} ${args.join(" ")}`;
       const response = responses.get(key);
       if (response === undefined) {

@@ -24,18 +24,18 @@ function format(msg: string, obj?: Record<string, unknown>): string {
 }
 
 export const logger = {
-  info: (msg: string, obj?: Record<string, unknown>) => {
+  info: (msg: string, obj?: Record<string, unknown>): void => {
     console.log(`${colors.blue}INFO${colors.reset}: ${format(msg, obj)}`);
   },
-  debug: (obj: Record<string, unknown>, msg: string) => {
+  debug: (obj: Record<string, unknown>, msg: string): void => {
     if (currentLevel === "debug") {
       console.log(`${colors.cyan}DEBUG${colors.reset}: ${format(msg, obj)}`);
     }
   },
-  warn: (msg: string, obj?: Record<string, unknown>) => {
+  warn: (msg: string, obj?: Record<string, unknown>): void => {
     console.warn(`${colors.yellow}WARN${colors.reset}: ${format(msg, obj)}`);
   },
-  error: (msg: string, obj?: Record<string, unknown>) => {
+  error: (msg: string, obj?: Record<string, unknown>): void => {
     console.error(`${colors.red}ERROR${colors.reset}: ${format(msg, obj)}`);
   },
 };
