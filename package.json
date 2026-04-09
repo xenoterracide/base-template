@@ -5,6 +5,7 @@
   "license": "MIT",
   "devDependencies": {
     "@eslint/js": "^9.0.0",
+    "concurrently": "^9.0.0",
     "@eslint/json": "^0.12.0",
     "@eslint/markdown": "^6.0.0",
     "@prettier/plugin-xml": "^3.4.2",
@@ -33,7 +34,7 @@
     "lint:reuse": "uv run --frozen --group dev reuse lint",
     "lint:eslint": "eslint .",
     "lint": "yarn lint:eslint && yarn lint:prettier && yarn lint:reuse",
-    "test": "vitest run --coverage"
+    "ci": "concurrently --names eslint,tsc,test --prefix-colors cyan,magenta,green 'yarn lint:eslint' 'yarn typecheck' 'yarn test'"
   },
   "workspaces": [
     "node/packages/*"
