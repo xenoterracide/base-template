@@ -7,6 +7,7 @@
 import { Cli } from "clipanion";
 import { SyncCommand } from "./commands/sync.js";
 import { UpdateCommand } from "./commands/update.js";
+import { UserError } from "./errors.js";
 
 const cli = new Cli({
   binaryLabel: "secrets-sync",
@@ -22,7 +23,11 @@ void cli
     process.exit(exitCode);
   })
   .catch((err: unknown) => {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error(`Error: ${msg}`);
+    if (err instanceof UserError) {
+      console.error(`Error: ${err.message}`);
+      process.exit(1);
+    }
+    // Unexpected error - show full details
+    console.error(err);
     process.exit(1);
   });
