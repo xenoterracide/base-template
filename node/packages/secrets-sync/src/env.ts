@@ -8,6 +8,35 @@ import type { EnvEntry } from "./types.js";
 import { checkFilePermissions } from "./fs-utils.js";
 import { logger } from "./logger.js";
 
+function parseValue(value: string, baseDir: string): EnvEntry {
+  const colonIndex = value.indexOf(":");
+  if (colonIndex === -1) {
+    throw new Error(`Value must have a protocol prefix (env:, file:, val:). Got: "${value}"`);
+  }
+
+  const protocol = value.slice(0, colonIndex);
+  const rest = value.slice(colonIndex + 1);
+
+  switch (protocol) {
+    case "env": {
+      return { type: "env", value: rest };
+    }
+    case "file": {
+      // Handle file:path, file:./path, or file:///absolute/path
+      // Strip leading // if present (file://path -> path)
+      const path = rest.startsWith("//") ? rest.slice(2) : rest;
+      const resolvedPath = resolve(baseDir, path);
+      return { type: "file", value: resolvedPath };
+    }
+    case "val": {
+      return { type: "value", value: rest };
+    }
+    default: {
+      throw new Error(`Unknown protocol "${protocol}:". Use env:, file:, or val:`);
+    }
+  }
+}
+
 export function parseEnvFile(filePath: string): Record<string, EnvEntry> {
   const resolvedPath = resolve(filePath);
   if (!existsSync(resolvedPath)) {
@@ -33,20 +62,11 @@ export function parseEnvFile(filePath: string): Record<string, EnvEntry> {
 
     if (!key) continue;
 
-    // Check for file:// prefix
-    if (value.startsWith("file://")) {
-      const referencedPath = value.slice(7);
-      const resolvedFilePath = resolve(baseDir, referencedPath);
-      entries[key] = { type: "file", value: resolvedFilePath };
-    }
-    // Check for env:// prefix
-    else if (value.startsWith("env://")) {
-      const envVar = value.slice(6);
-      entries[key] = { type: "env", value: envVar };
-    }
-    // Plain value
-    else {
-      entries[key] = { type: "value", value };
+    try {
+      entries[key] = parseValue(value, baseDir);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      throw new Error(`${msg} for key "${key}"`);
     }
   }
 

@@ -19,9 +19,9 @@ describe("parseEnvFile", () => {
     rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  it("should parse plain values", () => {
+  it("should parse val: literal values", () => {
     const envPath = join(tmpDir, ".env");
-    writeFileSync(envPath, "DEBUG_MODE=true\nAPI_KEY=test123\n", "utf8");
+    writeFileSync(envPath, "DEBUG_MODE=val:true\nAPI_KEY=val:test123\n", "utf8");
 
     const result = parseEnvFile(envPath);
 
@@ -31,9 +31,16 @@ describe("parseEnvFile", () => {
     });
   });
 
-  it("should parse env:// references", () => {
+  it("should throw for values without protocol prefix", () => {
     const envPath = join(tmpDir, ".env");
-    writeFileSync(envPath, "API_KEY=env://PROD_API_KEY\n", "utf8");
+    writeFileSync(envPath, "API_KEY=no-protocol-value\n", "utf8");
+
+    expect(() => parseEnvFile(envPath)).toThrow("must have a protocol prefix");
+  });
+
+  it("should parse env: references", () => {
+    const envPath = join(tmpDir, ".env");
+    writeFileSync(envPath, "API_KEY=env:PROD_API_KEY\n", "utf8");
 
     const result = parseEnvFile(envPath);
 
@@ -42,7 +49,19 @@ describe("parseEnvFile", () => {
     });
   });
 
-  it("should parse file:// references", () => {
+  it("should parse file: references", () => {
+    const envPath = join(tmpDir, ".env");
+    const keyPath = join(tmpDir, "key.asc");
+    writeFileSync(keyPath, "gpg-key-content", "utf8");
+    writeFileSync(envPath, `GPG_KEY=file:${keyPath}\n`, "utf8");
+
+    const result = parseEnvFile(envPath);
+
+    expect(result.GPG_KEY.type).toBe("file");
+    expect(result.GPG_KEY.value).toBe(keyPath);
+  });
+
+  it("should handle file: with // prefix (URI style)", () => {
     const envPath = join(tmpDir, ".env");
     const keyPath = join(tmpDir, "key.asc");
     writeFileSync(keyPath, "gpg-key-content", "utf8");
@@ -54,13 +73,13 @@ describe("parseEnvFile", () => {
     expect(result.GPG_KEY.value).toBe(keyPath);
   });
 
-  it("should resolve relative file:// paths", () => {
+  it("should resolve relative file: paths", () => {
     const envPath = join(tmpDir, ".env");
     const keysDir = join(tmpDir, "keys");
     mkdirSync(keysDir);
     const keyPath = join(keysDir, "signing.asc");
     writeFileSync(keyPath, "key-content", "utf8");
-    writeFileSync(envPath, "GPG_KEY=file://./keys/signing.asc\n", "utf8");
+    writeFileSync(envPath, "GPG_KEY=file:./keys/signing.asc\n", "utf8");
 
     const result = parseEnvFile(envPath);
 
@@ -69,13 +88,17 @@ describe("parseEnvFile", () => {
 
   it("should skip empty lines and comments", () => {
     const envPath = join(tmpDir, ".env");
-    writeFileSync(envPath, "# This is a comment\n\nAPI_KEY=test123\n  \n# Another comment\nSECRET=val\n", "utf8");
+    writeFileSync(
+      envPath,
+      "# This is a comment\n\nAPI_KEY=val:test123\n  \n# Another comment\nSECRET=val:value\n",
+      "utf8",
+    );
 
     const result = parseEnvFile(envPath);
 
     expect(result).toEqual({
       API_KEY: { type: "value", value: "test123" },
-      SECRET: { type: "value", value: "val" },
+      SECRET: { type: "value", value: "value" },
     });
   });
 
@@ -83,6 +106,13 @@ describe("parseEnvFile", () => {
     const missingPath = join(tmpDir, "missing.env");
 
     expect(() => parseEnvFile(missingPath)).toThrow("Env file not found");
+  });
+
+  it("should throw for unknown protocol", () => {
+    const envPath = join(tmpDir, ".env");
+    writeFileSync(envPath, "API_KEY=unknown:value\n", "utf8");
+
+    expect(() => parseEnvFile(envPath)).toThrow('Unknown protocol "unknown:"');
   });
 });
 
@@ -106,7 +136,7 @@ describe("resolveSecretValue", () => {
     expect(result).toBe("explicit-value");
   });
 
-  it("should resolve from env file entry with plain value", () => {
+  it("should resolve from env file entry with val: value", () => {
     const envFileEntries = {
       API_KEY: { type: "value" as const, value: "from-env-file" },
     };
@@ -115,7 +145,7 @@ describe("resolveSecretValue", () => {
     expect(result).toBe("from-env-file");
   });
 
-  it("should resolve from env file entry with env:// reference", () => {
+  it("should resolve from env file entry with env: reference", () => {
     process.env.EXISTING_VAR = "env-var-value";
     const envFileEntries = {
       API_KEY: { type: "env" as const, value: "EXISTING_VAR" },
@@ -125,7 +155,7 @@ describe("resolveSecretValue", () => {
     expect(result).toBe("env-var-value");
   });
 
-  it("should return undefined for missing env var in env:// reference", () => {
+  it("should return undefined for missing env var in env: reference", () => {
     const envFileEntries = {
       API_KEY: { type: "env" as const, value: "NONEXISTENT_VAR" },
     };
@@ -134,7 +164,7 @@ describe("resolveSecretValue", () => {
     expect(result).toBeUndefined();
   });
 
-  it("should resolve from env file entry with file:// reference", () => {
+  it("should resolve from env file entry with file: reference", () => {
     const keyPath = join(tmpDir, "key.asc");
     writeFileSync(keyPath, "file-contents", "utf8");
     const envFileEntries = {
@@ -145,7 +175,7 @@ describe("resolveSecretValue", () => {
     expect(result).toBe("file-contents");
   });
 
-  it("should return undefined for missing file in file:// reference", () => {
+  it("should return undefined for missing file in file: reference", () => {
     const envFileEntries = {
       GPG_KEY: { type: "file" as const, value: "/path/to/missing.asc" },
     };

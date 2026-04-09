@@ -39,29 +39,47 @@ yarn secrets sync --secrets API_KEY
 
 ## Env File Format
 
-Comments start with `#`:
+All values **must** use a protocol prefix:
 
 ```bash
-# Generate with: gpg --armor --export 8042ED9A
-GPG_PUBLIC_KEY=file://./keys/public.asc
-
-# Generate with: gpg --armor --export-secret-keys 8042ED9A
-GPG_PRIVATE_KEY=file://./keys/private.asc
-
 # Read from environment variable
-API_KEY=env://API_KEY
-DATABASE_URL=env://DATABASE_URL
+API_KEY=env:PROD_API_KEY
+DATABASE_URL=env:DATABASE_URL
 
-# Direct value (not recommended for sensitive data)
-DEBUG_MODE=true
+# Read from file (for multi-line values like GPG keys)
+GPG_SIGNING_KEY=file:./keys/signing-key.asc
+GPG_PUBLIC_KEY=file:///home/user/keys/public.asc
+
+# Literal value
+DEBUG_MODE=val:true
+PASSWORD=val:my-secret-123
+```
+
+### Why require prefixes?
+
+Without prefixes, a password like `pass:word` is ambiguous - is it a `pass` protocol or a literal value? Explicit protocols remove all ambiguity:
+
+```bash
+# ERROR: no protocol prefix
+PASSWORD=my-secret
+
+# OK: explicit val protocol
+PASSWORD=val:my-secret
+
+# OK: explicit file protocol (even if value contains colons)
+PASSWORD=val:pass:word
 ```
 
 ### File References
 
-For multi-line secrets like GPG keys, use `file://`:
+For multi-line secrets like GPG keys, use `file:` with a relative or absolute path:
 
 ```bash
-GPG_SIGNING_KEY=file://./keys/signing-key.asc
+# Relative to env file location
+GPG_SIGNING_KEY=file:./keys/signing-key.asc
+
+# Absolute path
+GPG_PUBLIC_KEY=file:///home/user/.gnupg/public.asc
 ```
 
 Armored GPG keys are multi-line PEM-like blocks that don't fit well in `.env` files:
@@ -72,7 +90,7 @@ Armored GPG keys are multi-line PEM-like blocks that don't fit well in `.env` fi
 -----END PGP PUBLIC KEY BLOCK-----
 ```
 
-Using `file://` references keeps the env file clean and makes it easier to manage keys.
+Using `file:` references keeps the env file clean and makes it easier to manage keys.
 
 ## How It Works
 
@@ -81,16 +99,16 @@ Using `file://` references keeps the env file clean and makes it easier to manag
 GitHub's API (and `gh` CLI) only allows listing secret **names** - you cannot read the values back. This means you must provide secret values via:
 
 - Environment variables (matching the secret name)
-- `--env-file` with `env://` or `file://` references
+- `--env-file` with `env:`, `file:`, or `val:` protocols
 
 ### Value Resolution Priority
 
 For each secret, values are resolved in this order:
 
 1. **From env file entry:**
-   - `env://VAR_NAME` - Read from environment variable
-   - `file://./path` - Read from file
-   - Plain value - Use as-is
+   - `env:VAR_NAME` - Read from environment variable
+   - `file:./path` or `file:///absolute/path` - Read from file
+   - `val:literal` - Use as-is
 2. **Environment variable matching secret name**
 
 ## Requirements

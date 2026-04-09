@@ -83,7 +83,7 @@ describe("SyncCommand", () => {
 
   it("should sync all secrets from env file to specific repo", async () => {
     const envPath = join(tmpDir, "secrets.env");
-    writeFileSync(envPath, "API_KEY=from-env\nSECRET=also-from-env\n", "utf8");
+    writeFileSync(envPath, "API_KEY=val:from-env\nSECRET=val:also-from-env\n", "utf8");
 
     const runner = createFakeRunner(
       new Map([
@@ -127,7 +127,7 @@ describe("SyncCommand", () => {
 
   it("should sync to repos with label", async () => {
     const envPath = join(tmpDir, "secrets.env");
-    writeFileSync(envPath, "TOKEN=abc123\n", "utf8");
+    writeFileSync(envPath, "TOKEN=val:abc123\n", "utf8");
 
     const runner = createFakeRunner(
       new Map([
