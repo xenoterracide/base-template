@@ -107,8 +107,7 @@ export function resolveSecretValue(
           // Warn if any group or other permissions are set (not 0400 or 0600)
           if (mode !== 0o400 && mode !== 0o600) {
             logger.warn(
-              { file: entry.value, mode: mode.toString(8), expected: "0400 or 0600" },
-              "File has overly permissive permissions",
+              `File "${entry.value}" has overly permissive permissions (${mode.toString(8)}), expected 0400 or 0600`,
             );
           }
         } catch (e) {

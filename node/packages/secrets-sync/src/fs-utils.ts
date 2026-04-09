@@ -22,6 +22,9 @@ export function checkFilePermissions(filePath: string): void {
       setSecurePermissions(filePath);
     }
   } catch (e) {
-    logger.debug(`Could not check permissions on ${filePath}: ${e instanceof Error ? e.message : String(e)}`);
+    logger.debug(
+      { file: filePath, error: e instanceof Error ? e.message : String(e) },
+      "Could not check file permissions",
+    );
   }
 }
