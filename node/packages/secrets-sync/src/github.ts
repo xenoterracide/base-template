@@ -57,6 +57,15 @@ export function setSecret(opts: SetSecretOptions): void {
   }
 }
 
+export function getCurrentUser(runner: CommandRunner = defaultRunner): string {
+  try {
+    const output = runner.runArgv("gh", ["api", "user", "--jq", ".login"]);
+    return output.trim();
+  } catch {
+    throw new Error("Failed to get current user. Make sure you're authenticated with 'gh auth login'");
+  }
+}
+
 export function findReposByLabel(label: string, owner?: string, runner: CommandRunner = defaultRunner): string[] {
   const ownerToUse = owner ?? getCurrentUser(runner);
   try {
@@ -77,15 +86,6 @@ export function findReposByLabel(label: string, owner?: string, runner: CommandR
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     throw new Error(`Failed to list repos for owner "${ownerToUse}" with label "${label}": ${msg}`);
-  }
-}
-
-export function getCurrentUser(runner: CommandRunner = defaultRunner): string {
-  try {
-    const output = runner.runArgv("gh", ["api", "user", "--jq", ".login"]);
-    return output.trim();
-  } catch {
-    throw new Error("Failed to get current user. Make sure you're authenticated with 'gh auth login'");
   }
 }
 
