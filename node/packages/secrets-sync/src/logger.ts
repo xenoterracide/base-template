@@ -2,26 +2,44 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-import type { Logger } from "pino";
+// ANSI color codes
+const colors = {
+  reset: "\x1b[0m",
+  dim: "\x1b[2m",
+  blue: "\x1b[34m",
+  cyan: "\x1b[36m",
+  yellow: "\x1b[33m",
+  red: "\x1b[31m",
+  green: "\x1b[32m",
+};
 
-// Pino is a CommonJS module, use require for compatibility
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const pino = require("pino") as (options: unknown, destination?: unknown) => Logger;
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const pinoPretty = require("pino-pretty") as (options: unknown) => unknown;
+let currentLevel: "info" | "debug" = "info";
 
-// Use pino-pretty as a destination (sync) instead of transport (async worker)
-export const logger = pino(
-  {
-    level: "info",
+function format(msg: string, obj?: Record<string, unknown>): string {
+  if (!obj || Object.keys(obj).length === 0) return msg;
+  const objStr = Object.entries(obj)
+    .map(([k, v]) => `${k}=${JSON.stringify(v)}`)
+    .join(" ");
+  return `${msg} ${colors.dim}(${objStr})${colors.reset}`;
+}
+
+export const logger = {
+  info: (msg: string, obj?: Record<string, unknown>) => {
+    console.log(`${colors.blue}INFO${colors.reset}: ${format(msg, obj)}`);
   },
-  pinoPretty({
-    colorize: true,
-    translateTime: false,
-    ignore: "pid,hostname,time",
-  }),
-);
+  debug: (obj: Record<string, unknown>, msg: string) => {
+    if (currentLevel === "debug") {
+      console.log(`${colors.cyan}DEBUG${colors.reset}: ${format(msg, obj)}`);
+    }
+  },
+  warn: (msg: string, obj?: Record<string, unknown>) => {
+    console.warn(`${colors.yellow}WARN${colors.reset}: ${format(msg, obj)}`);
+  },
+  error: (msg: string, obj?: Record<string, unknown>) => {
+    console.error(`${colors.red}ERROR${colors.reset}: ${format(msg, obj)}`);
+  },
+};
 
 export function setLogLevel(level: "info" | "debug"): void {
-  logger.level = level;
+  currentLevel = level;
 }
