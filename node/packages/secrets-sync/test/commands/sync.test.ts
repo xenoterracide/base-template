@@ -11,7 +11,7 @@ import type { CommandRunner } from "../../src/types.js";
 
 function createFakeRunner(responses: Map<string, string>): CommandRunner {
   return {
-    runArgv: (cmd: string, args: string[]): string => {
+    runArgv: (cmd: string, args: string[], opts?: { input?: string }): string => {
       const key = `${cmd} ${args.join(" ")}`;
       const response = responses.get(key);
       if (response === undefined) {
@@ -65,8 +65,8 @@ describe("SyncCommand", () => {
 
     const runner = createFakeRunner(
       new Map([
-        ["gh secret set API_KEY --repo owner/target --body test-api-key", ""],
-        ["gh secret set SECRET --repo owner/target --body test-secret", ""],
+        ["gh secret set API_KEY --repo owner/target", ""],
+        ["gh secret set SECRET --repo owner/target", ""],
       ]),
     );
 
@@ -87,8 +87,8 @@ describe("SyncCommand", () => {
 
     const runner = createFakeRunner(
       new Map([
-        ["gh secret set API_KEY --repo owner/target --body from-env", ""],
-        ["gh secret set SECRET --repo owner/target --body also-from-env", ""],
+        ["gh secret set API_KEY --repo owner/target", ""],
+        ["gh secret set SECRET --repo owner/target", ""],
       ]),
     );
 
@@ -110,7 +110,7 @@ describe("SyncCommand", () => {
     const runner = createFakeRunner(
       new Map([
         ["gh repo view --json nameWithOwner", '{"nameWithOwner":"current/repo"}'],
-        ["gh secret set MY_SECRET --repo current/repo --body secret-value", ""],
+        ["gh secret set MY_SECRET --repo current/repo", ""],
       ]),
     );
 
@@ -136,8 +136,8 @@ describe("SyncCommand", () => {
           "gh repo list myuser --topic auto-updated --no-archived --limit 1000 --json nameWithOwner",
           '[{"nameWithOwner":"myuser/repo1"},{"nameWithOwner":"myuser/repo2"}]',
         ],
-        ["gh secret set TOKEN --repo myuser/repo1 --body abc123", ""],
-        ["gh secret set TOKEN --repo myuser/repo2 --body abc123", ""],
+        ["gh secret set TOKEN --repo myuser/repo1", ""],
+        ["gh secret set TOKEN --repo myuser/repo2", ""],
       ]),
     );
 
@@ -150,5 +150,120 @@ describe("SyncCommand", () => {
     const result = await cmd.execute();
 
     expect(result).toBe(0);
+  });
+
+  it("should return 0 for dry-run without making changes", async () => {
+    process.env.API_KEY = "test-key";
+
+    const cmd = new SyncCommand();
+    cmd.secrets = "API_KEY";
+    cmd.repo = "owner/target";
+    cmd.dryRun = true;
+
+    const result = await cmd.execute();
+
+    expect(result).toBe(0);
+  });
+
+  it("should skip secrets that cannot be resolved", async () => {
+    // API_KEY not set in env, only SECRET is
+    process.env.SECRET = "secret-value";
+
+    const runner = createFakeRunner(new Map([["gh secret set SECRET --repo owner/target", ""]]));
+
+    const cmd = new SyncCommand();
+    cmd.runner = runner;
+    cmd.secrets = "API_KEY,SECRET";
+    cmd.repo = "owner/target";
+    cmd.dryRun = false;
+
+    const result = await cmd.execute();
+
+    expect(result).toBe(0);
+  });
+
+  it("should return error when no secrets can be resolved", async () => {
+    // Neither secret is set in env
+    const cmd = new SyncCommand();
+    cmd.secrets = "MISSING_KEY,ANOTHER_MISSING";
+    cmd.repo = "owner/target";
+    cmd.dryRun = false;
+
+    const result = await cmd.execute();
+
+    expect(result).toBe(1);
+  });
+
+  it("should return error when no target repos found", async () => {
+    process.env.API_KEY = "test-key";
+
+    const runner = createFakeRunner(
+      new Map([
+        ["gh api user --jq .login", "myuser"],
+        ["gh repo list myuser --topic empty-label --no-archived --limit 1000 --json nameWithOwner", "[]"],
+      ]),
+    );
+
+    const cmd = new SyncCommand();
+    cmd.runner = runner;
+    cmd.secrets = "API_KEY";
+    cmd.label = "empty-label";
+    cmd.dryRun = false;
+
+    const result = await cmd.execute();
+
+    expect(result).toBe(1);
+  });
+
+  it("should handle setSecret errors gracefully", async () => {
+    process.env.API_KEY = "test-key";
+
+    const runner = createFakeRunner(
+      new Map([
+        ["gh repo view --json nameWithOwner", '{"nameWithOwner":"current/repo"}'],
+        // setSecret will throw since "gh secret set" is not in the map
+      ]),
+    );
+
+    const cmd = new SyncCommand();
+    cmd.runner = runner;
+    cmd.secrets = "API_KEY";
+    cmd.dryRun = false;
+
+    // Should complete (return 0) even if individual secrets fail
+    const result = await cmd.execute();
+
+    expect(result).toBe(0);
+  });
+
+  it("should return error when current repo cannot be detected", async () => {
+    process.env.API_KEY = "test-key";
+
+    const runner = createFakeRunner(
+      new Map([
+        // gh repo view will throw since it's not in the map
+      ]),
+    );
+
+    const cmd = new SyncCommand();
+    cmd.runner = runner;
+    cmd.secrets = "API_KEY";
+    // No repo specified - will try to auto-detect and fail
+    cmd.dryRun = false;
+
+    const result = await cmd.execute();
+
+    expect(result).toBe(1);
+  });
+
+  it("should return error when secrets list is empty after filtering", async () => {
+    const cmd = new SyncCommand();
+    cmd.secrets = ""; // Empty string after split/filter
+    cmd.repo = "owner/target";
+    cmd.dryRun = false;
+
+    const result = await cmd.execute();
+
+    expect(result).toBe(1);
   });
 });
