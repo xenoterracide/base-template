@@ -139,6 +139,7 @@ export class SyncCommand extends Command {
           res(data.toString().trim().toLowerCase());
         });
       });
+      process.stdin.pause();
       if (reply === "n" || reply === "no") {
         logger.info("Cancelled");
         return 0;
