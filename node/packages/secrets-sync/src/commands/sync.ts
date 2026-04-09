@@ -35,6 +35,10 @@ export class SyncCommand extends Command {
     description: "Show what would be done",
   });
 
+  public verbose = Option.Boolean("--verbose,-v", false, {
+    description: "Enable verbose logging",
+  });
+
   // Optional runner for testing - uses default gh runner if not set
   public runner?: CommandRunner;
 
@@ -43,6 +47,13 @@ export class SyncCommand extends Command {
     const hasSecrets = typeof this.secrets === "string" && this.secrets !== "";
     const envFilePath = this.envFile;
     const hasEnvFile = typeof envFilePath === "string" && envFilePath !== "";
+
+    if (this.verbose) {
+      // eslint-disable-next-line no-console
+      console.log(
+        `Verbose: hasSecrets=${hasSecrets}, hasEnvFile=${hasEnvFile}, envFilePath=${envFilePath ?? "undefined"}`,
+      );
+    }
 
     if (!hasSecrets && !hasEnvFile) {
       logger.error("Error: Must provide either --secrets or --env-file");
@@ -57,6 +68,11 @@ export class SyncCommand extends Command {
 
     // Parse env file if provided
     const envFileEntries = hasEnvFile ? parseEnvFile(envFilePath) : undefined;
+
+    if (this.verbose && envFileEntries) {
+      // eslint-disable-next-line no-console
+      console.log(`Verbose: Parsed env file, found keys: ${Object.keys(envFileEntries).join(", ")}`);
+    }
 
     // Determine secret names to sync
     let secretNames: string[] = [];
@@ -108,10 +124,18 @@ export class SyncCommand extends Command {
     const secretsToSync: { name: string; value: string }[] = [];
 
     for (const name of secretNames) {
+      if (this.verbose) {
+        // eslint-disable-next-line no-console
+        console.log(`Verbose: Resolving secret "${name}"...`);
+      }
       const value = resolveSecretValue(name, envFileEntries);
       if (value === undefined) {
         logger.warn(`Warning: Could not resolve value for secret "${name}", skipping`);
         continue;
+      }
+      if (this.verbose) {
+        // eslint-disable-next-line no-console
+        console.log(`Verbose: Resolved "${name}" (${value.length} chars)`);
       }
       secretsToSync.push({ name, value });
     }
