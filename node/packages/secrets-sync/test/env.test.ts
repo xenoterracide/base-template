@@ -114,6 +114,18 @@ describe("parseEnvFile", () => {
 
     expect(() => parseEnvFile(envPath)).toThrow('Unknown protocol "unknown:"');
   });
+
+  it("should handle values with colons in them", () => {
+    const envPath = join(tmpDir, ".env");
+    writeFileSync(envPath, "PASSWORD=val:pass:word\nAPI_KEY=val:abc:123:xyz\n", "utf8");
+
+    const result = parseEnvFile(envPath);
+
+    expect(result).toEqual({
+      PASSWORD: { type: "value", value: "pass:word" },
+      API_KEY: { type: "value", value: "abc:123:xyz" },
+    });
+  });
 });
 
 describe("resolveSecretValue", () => {
