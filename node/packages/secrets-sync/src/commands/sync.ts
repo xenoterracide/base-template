@@ -41,7 +41,8 @@ export class SyncCommand extends Command {
   public async execute(): Promise<number> {
     // Must provide either --secrets or --env-file
     const hasSecrets = typeof this.secrets === "string" && this.secrets !== "";
-    const hasEnvFile = typeof this.envFile === "string" && this.envFile !== "";
+    const envFilePath = this.envFile;
+    const hasEnvFile = typeof envFilePath === "string" && envFilePath !== "";
 
     if (!hasSecrets && !hasEnvFile) {
       logger.error("Error: Must provide either --secrets or --env-file");
@@ -55,12 +56,13 @@ export class SyncCommand extends Command {
     }
 
     // Parse env file if provided
-    const envFileEntries = hasEnvFile ? parseEnvFile(this.envFile!) : undefined;
+    const envFileEntries = hasEnvFile ? parseEnvFile(envFilePath) : undefined;
 
     // Determine secret names to sync
-    let secretNames: string[];
+    let secretNames: string[] = [];
     if (hasSecrets) {
-      secretNames = this.secrets!.split(",")
+      secretNames = (this.secrets ?? "")
+        .split(",")
         .map((s) => s.trim())
         .filter((s) => s.length > 0);
     } else if (envFileEntries !== undefined) {
@@ -77,7 +79,7 @@ export class SyncCommand extends Command {
     }
 
     // Determine target repos
-    let targetRepos: string[];
+    let targetRepos: string[] = [];
     if (typeof this.repo === "string" && this.repo !== "") {
       targetRepos = this.repo
         .split(",")
