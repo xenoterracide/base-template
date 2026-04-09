@@ -16,4 +16,13 @@ const cli = new Cli({
 cli.register(SyncCommand);
 cli.register(UpdateCommand);
 
-void cli.runExit(process.argv.slice(2), Cli.defaultContext);
+void cli
+  .run(process.argv.slice(2), Cli.defaultContext)
+  .then((exitCode) => {
+    process.exit(exitCode);
+  })
+  .catch((err: unknown) => {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(`Error: ${msg}`);
+    process.exit(1);
+  });
