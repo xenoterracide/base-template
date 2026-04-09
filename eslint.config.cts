@@ -12,7 +12,16 @@ import { defineConfig, globalIgnores } from "eslint/config";
 const jsonPlugin = (jsonPluginImport as { default?: typeof jsonPluginImport }).default ?? jsonPluginImport;
 
 export default defineConfig([
-  globalIgnores([".yarn/", ".pnp.*", "dist/", "build/", "node_modules/", ".agents/", "node/packages/merge/", "node/packages/secrets-sync/"]),
+  globalIgnores([
+    ".yarn/",
+    ".pnp.*",
+    "dist/",
+    "build/",
+    "node_modules/",
+    ".agents/",
+    "node/packages/merge/",
+    "node/packages/secrets-sync/",
+  ]),
   {
     files: ["**/*.{js,mjs,cjs,ts,mts,cts}"],
     languageOptions: { globals: globals.node },
