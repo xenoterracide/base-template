@@ -13,7 +13,6 @@ import {
   type FileSystem,
 } from "./merge";
 
-
 describe("findMainRepoRoot", () => {
   it("should return the directory when .git exists and no parent .gitmodules", () => {
     const fs = {

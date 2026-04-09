@@ -134,7 +134,12 @@ export async function generateMessage(
   }
 }
 
-export async function generateWithKimi(titleFile: string, bodyFile: string, diff: string, tmpDir: string): Promise<void> {
+export async function generateWithKimi(
+  titleFile: string,
+  bodyFile: string,
+  diff: string,
+  tmpDir: string,
+): Promise<void> {
   const skillsDir = ".agents/skills";
   const hasSkillsDir = existsSync(skillsDir);
 
@@ -182,7 +187,12 @@ ${diff}`;
   }
 }
 
-export async function generateWithJunie(titleFile: string, bodyFile: string, diff: string, tmpDir: string): Promise<void> {
+export async function generateWithJunie(
+  titleFile: string,
+  bodyFile: string,
+  diff: string,
+  tmpDir: string,
+): Promise<void> {
   const promptFile = join(tmpDir, "junie-prompt.txt");
   const prompt = `Generate a conventional commit message for the following diff and write the subject line to '${titleFile}' and the body to '${bodyFile}'. Do not run any tests or gradle commands.
 

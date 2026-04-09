@@ -94,7 +94,9 @@ describe("generateWithJunie", () => {
       throw new Error("junie failed");
     });
 
-    await expect(generateWithJunie(titleFile, bodyFile, diff, tmpDir)).rejects.toThrow("junie failed to generate message");
+    await expect(generateWithJunie(titleFile, bodyFile, diff, tmpDir)).rejects.toThrow(
+      "junie failed to generate message",
+    );
   });
 });
 
