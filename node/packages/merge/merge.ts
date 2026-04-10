@@ -575,7 +575,7 @@ export class MergeCommand extends Command {
         return 1;
       }
 
-      this.runner.run("gh pr merge --squash --delete-branch --admin");
+      this.runner.run("gh pr merge --squash --delete-branch");
       return 0;
     } catch (e) {
       console.error(e instanceof Error ? e.message : String(e));
