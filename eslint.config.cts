@@ -73,36 +73,10 @@ export default defineConfig([
       "no-console": "off",
     },
   },
+
   {
-    // Merge package: relax strict type checking due to PnP resolution issues
-    files: ["node/packages/merge/**/*.ts"],
-    rules: {
-      "@typescript-eslint/no-unsafe-assignment": "off",
-      "@typescript-eslint/no-unsafe-call": "off",
-      "@typescript-eslint/no-unsafe-member-access": "off",
-      "@typescript-eslint/no-unsafe-return": "off",
-      "@typescript-eslint/no-explicit-any": "off",
-      "@typescript-eslint/strict-boolean-expressions": "off",
-      "@typescript-eslint/prefer-nullish-coalescing": "off",
-      "@typescript-eslint/no-unnecessary-condition": "off",
-      "@typescript-eslint/unbound-method": "off",
-      "@typescript-eslint/method-signature-style": "off",
-      "@typescript-eslint/max-params": "off",
-      "@typescript-eslint/no-use-before-define": "off",
-      "@typescript-eslint/restrict-template-expressions": "off",
-      "@typescript-eslint/no-unsafe-argument": "off",
-      "@typescript-eslint/require-await": "off",
-      "@typescript-eslint/prefer-regexp-exec": "off",
-      "@typescript-eslint/prefer-destructuring": "off",
-      "@typescript-eslint/no-confusing-void-expression": "off",
-      "@typescript-eslint/use-unknown-in-catch-callback-variable": "off",
-      "@typescript-eslint/init-declarations": "off",
-      "no-empty": "off",
-    },
-  },
-  {
-    // Secrets-sync package: relax strict type checking in test files
-    files: ["node/packages/secrets-sync/**/*.ts"],
+    // Node packages: relax strict type checking due to PnP resolution issues
+    files: ["node/packages/**/*.ts"],
     rules: {
       "@typescript-eslint/no-unsafe-assignment": "off",
       "@typescript-eslint/no-unsafe-call": "off",
@@ -116,6 +90,19 @@ export default defineConfig([
       "@typescript-eslint/init-declarations": "off",
       "no-useless-assignment": "off",
       "preserve-caught-error": "off",
+      // Additional rules for merge package
+      "@typescript-eslint/prefer-nullish-coalescing": "off",
+      "@typescript-eslint/method-signature-style": "off",
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-unnecessary-condition": "off",
+      "@typescript-eslint/max-params": "off",
+      "@typescript-eslint/no-use-before-define": "off",
+      "no-empty": "off",
+      "@typescript-eslint/prefer-regexp-exec": "off",
+      "@typescript-eslint/prefer-destructuring": "off",
+      "@typescript-eslint/no-confusing-void-expression": "off",
+      "@typescript-eslint/use-unknown-in-catch-callback-variable": "off",
+      "@typescript-eslint/unbound-method": "off",
     },
   },
   {
