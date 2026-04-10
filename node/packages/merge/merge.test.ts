@@ -213,6 +213,44 @@ Let's also add filters.
     mockExit.mockRestore();
     mockConsoleLog.mockRestore();
   });
+
+  it("should handle AI output with prefixes", async () => {
+    const fs = createMockFs();
+    const aiOutput = `Here's a suggested commit:
+
+feat: add new feature
+
+- Implementation detail 1
+- Implementation detail 2`;
+
+    await parseAndWriteMessage(aiOutput, "/tmp/title.txt", "/tmp/body.txt", fs);
+
+    expect(fs.writeFileSync).toHaveBeenCalledWith("/tmp/title.txt", "feat: add new feature\n", { encoding: "utf8" });
+  });
+
+  it("should filter AI fluff from body", async () => {
+    const fs = createMockFs();
+    const aiOutput = `feat: implement search
+
+I'll implement the search feature.
+- Add search index
+Sure, here's the implementation:
+- Update UI
+Let's also add filters.
+- Add filters`;
+
+    await parseAndWriteMessage(aiOutput, "/tmp/title.txt", "/tmp/body.txt", fs);
+
+    const bodyCall = (fs.writeFileSync as ReturnType<typeof vi.fn>).mock.calls.find(
+      (call: [string, string, object]) => call[0] === "/tmp/body.txt",
+    );
+    expect(bodyCall?.[1]).not.toContain("I'll implement");
+    expect(bodyCall?.[1]).not.toContain("Sure, here's");
+    expect(bodyCall?.[1]).not.toContain("Let's also add");
+    expect(bodyCall?.[1]).toContain("- Add search index");
+    expect(bodyCall?.[1]).toContain("- Update UI");
+    expect(bodyCall?.[1]).toContain("- Add filters");
+  });
 });
 
 describe("getBranch", () => {
