@@ -479,10 +479,17 @@ export class PrMessageCommand extends Command {
     description: "AI engine to use (kimi, junie, copilot)",
   });
 
+  private readonly runner: CommandRunner;
+
+  public constructor(runner: CommandRunner = defaultRunner) {
+    super();
+    this.runner = runner;
+  }
+
   public async execute(): Promise<number> {
     const tmpDir = mkdtempSync(join(tmpdir(), "prmsg-"));
     try {
-      await generateMessage(this.titleFile, this.bodyFile, tmpDir, defaultRunner, this.engine as Engine);
+      await generateMessage(this.titleFile, this.bodyFile, tmpDir, this.runner, this.engine as Engine);
       return 0;
     } catch (e) {
       console.error(e instanceof Error ? e.message : String(e));
@@ -508,27 +515,34 @@ export class MergeCommand extends Command {
     description: "AI engine to use (kimi, junie, copilot)",
   });
 
+  private readonly runner: CommandRunner;
+
+  public constructor(runner: CommandRunner = defaultRunner) {
+    super();
+    this.runner = runner;
+  }
+
   public async execute(): Promise<number> {
     try {
       // Full merge workflow
       // Capture branch name BEFORE any git operations that might change it
-      const currentBranch = getBranch();
+      const currentBranch = getBranch(this.runner);
       console.log(`Current branch: ${currentBranch}`);
 
       console.log("Fetching and merging origin/HEAD...");
-      defaultRunner.run("git fetch --all --prune --prune-tags --tags --force");
-      defaultRunner.run("git merge origin/HEAD");
+      this.runner.run("git fetch --all --prune --prune-tags --tags --force");
+      this.runner.run("git merge origin/HEAD");
 
       console.log("Pushing...");
-      defaultRunner.run("git push");
+      this.runner.run("git push");
 
-      const hasExistingPR = hasPR(currentBranch);
+      const hasExistingPR = hasPR(currentBranch, this.runner);
 
       if (hasExistingPR) {
         await waitForChecks();
-        await createOrUpdatePR(currentBranch, defaultRunner, undefined, this.engine as Engine);
+        await createOrUpdatePR(currentBranch, this.runner, undefined, this.engine as Engine);
       } else {
-        await createOrUpdatePR(currentBranch, defaultRunner, undefined, this.engine as Engine);
+        await createOrUpdatePR(currentBranch, this.runner, undefined, this.engine as Engine);
         await waitForChecks();
       }
 
@@ -538,7 +552,7 @@ export class MergeCommand extends Command {
       }
 
       // Merge squash
-      const hasUncommitted = defaultRunner.runSilent("git", ["status", "--porcelain=1"]) !== "";
+      const hasUncommitted = this.runner.runSilent("git", ["status", "--porcelain=1"]) !== "";
       if (hasUncommitted) {
         console.warn("WARNING: Uncommitted changes detected. Review before merge.");
       }
@@ -561,7 +575,7 @@ export class MergeCommand extends Command {
         return 1;
       }
 
-      defaultRunner.run("gh pr merge --squash --delete-branch --admin");
+      this.runner.run("gh pr merge --squash --delete-branch --admin");
       return 0;
     } catch (e) {
       console.error(e instanceof Error ? e.message : String(e));
