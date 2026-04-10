@@ -13,12 +13,13 @@ import { join } from "path";
 export type Engine = "kimi" | "junie" | "copilot";
 
 export interface CommandRunner {
-  run(cmd: string, opts?: { cwd?: string; env?: Record<string, string> }): string;
-  runSilent(cmd: string, args: string[], opts?: { cwd?: string }): string;
+  run: (cmd: string, opts?: { cwd?: string; env?: Record<string, string> }) => string;
+  runSilent: (cmd: string, args: string[], opts?: { cwd?: string }) => string;
   // Safer argv-based execution to avoid shell injection
-  runArgv(cmd: string, args: string[], opts?: { cwd?: string; env?: Record<string, string> }): string;
+  runArgv: (cmd: string, args: string[], opts?: { cwd?: string; env?: Record<string, string> }) => string;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type FileSystem = any;
 
 /**
@@ -185,7 +186,9 @@ ${diff}`;
     try {
       unlinkSync(promptFile);
       unlinkSync(kimiOut);
-    } catch {}
+    } catch {
+      // Ignore cleanup errors
+    }
   }
 }
 
@@ -223,7 +226,9 @@ ${diff}`;
   } finally {
     try {
       unlinkSync(promptFile);
-    } catch {}
+    } catch {
+      // Ignore cleanup errors
+    }
   }
 }
 
@@ -270,7 +275,7 @@ ${diff}`;
   const copilotErr = join(tmpDir, "copilot-err.txt");
 
   try {
-    const model = process.env.COPILOT_PRMSG_MODEL || "gpt-5.1-codex-mini";
+    const model = process.env.COPILOT_PRMSG_MODEL ?? "gpt-5.1-codex-mini";
     try {
       const result = execFileSync("copilot", ["--model", model, "-s", "-p", promptFile], {
         encoding: "utf8",
@@ -285,7 +290,7 @@ ${diff}`;
     const err = readFileSync(copilotErr, "utf8");
 
     if (!output && err.includes("enable this model")) {
-      const fallback = process.env.COPILOT_PRMSG_FALLBACK_MODEL || "gpt-5.1-codex";
+      const fallback = process.env.COPILOT_PRMSG_FALLBACK_MODEL ?? "gpt-5.1-codex";
       try {
         const result = execFileSync("copilot", ["--model", fallback, "-s", "-p", promptFile], {
           encoding: "utf8",
@@ -303,7 +308,9 @@ ${diff}`;
       unlinkSync(promptFile);
       unlinkSync(copilotOut);
       unlinkSync(copilotErr);
-    } catch {}
+    } catch {
+      // Ignore cleanup errors
+    }
   }
 }
 
@@ -338,11 +345,13 @@ export async function parseAndWriteMessage(
     // Check if there's an existing valid PR message to preserve
     try {
       const existing = fs.readFileSync(titleFile, { encoding: "utf8" }).trim();
-      if (existing && !existing.match(/^error\([^)]+\):/)) {
+      if (existing && !/^error\([^)]+\):/.exec(existing)) {
         console.log("Preserving existing PR message");
         process.exit(0);
       }
-    } catch {}
+    } catch {
+      // No existing message to preserve
+    }
 
     console.error("ERROR: Failed to generate valid conventional commit subject");
     if (aiOutput) {
@@ -371,7 +380,7 @@ export async function parseAndWriteMessage(
 
   // Clean up body
   const body = bodyLines
-    .filter((l) => !l.match(/^(I'll|I will|Sure|Here's|Proposed|Suggested|I inspected|Let's)\b/i))
+    .filter((l) => !/^(I'll|I will|Sure|Here's|Proposed|Suggested|I inspected|Let's)\b/i.exec(l))
     .slice(0, 12)
     .join("\n")
     .trim();
@@ -447,7 +456,9 @@ export async function createOrUpdatePR(
   } finally {
     try {
       fs.rmSync(tmpDir, { recursive: true, force: true });
-    } catch {}
+    } catch {
+      // Ignore cleanup errors
+    }
   }
 }
 
@@ -479,7 +490,9 @@ export class PrMessageCommand extends Command {
     } finally {
       try {
         rmSync(tmpDir, { recursive: true, force: true });
-      } catch {}
+      } catch {
+        // Ignore cleanup errors
+      }
     }
   }
 }
@@ -538,7 +551,9 @@ export class MergeCommand extends Command {
       }
 
       const reply = await new Promise<string>((resolve) => {
-        process.stdin.once("data", (data) => resolve(data.toString().trim().toLowerCase()));
+        process.stdin.once("data", (data) => {
+          resolve(data.toString().trim().toLowerCase());
+        });
       });
 
       if (reply === "n" || reply === "no") {
@@ -556,6 +571,7 @@ export class MergeCommand extends Command {
 }
 
 // Only run CLI if this file is executed directly (not imported for testing)
+// eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
 const isMainModule = process.argv[1]?.endsWith("merge.ts") || process.argv[1]?.endsWith("merge.js");
 if (isMainModule) {
   const cli = new Cli({

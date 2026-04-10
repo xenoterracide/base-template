@@ -90,19 +90,10 @@ export default defineConfig([
       "@typescript-eslint/init-declarations": "off",
       "no-useless-assignment": "off",
       "preserve-caught-error": "off",
-      // Additional rules for merge package
-      "@typescript-eslint/prefer-nullish-coalescing": "off",
-      "@typescript-eslint/method-signature-style": "off",
-      "@typescript-eslint/no-explicit-any": "off",
+      // Complex refactor needed
       "@typescript-eslint/no-unnecessary-condition": "off",
       "@typescript-eslint/max-params": "off",
       "@typescript-eslint/no-use-before-define": "off",
-      "no-empty": "off",
-      "@typescript-eslint/prefer-regexp-exec": "off",
-      "@typescript-eslint/prefer-destructuring": "off",
-      "@typescript-eslint/no-confusing-void-expression": "off",
-      "@typescript-eslint/use-unknown-in-catch-callback-variable": "off",
-      "@typescript-eslint/unbound-method": "off",
     },
   },
   {

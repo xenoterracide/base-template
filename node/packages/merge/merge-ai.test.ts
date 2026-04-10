@@ -153,8 +153,11 @@ describe("generateWithCopilot", () => {
     await generateWithCopilot(titleFile, bodyFile, diff, files, tmpDir);
 
     // Verify copilot was called
-    const calls = (execFileSync as ReturnType<typeof vi.fn>).mock.calls;
-    const copilotCall = calls.find((call) => call[0] === "copilot");
+    const { calls } = (execFileSync as ReturnType<typeof vi.fn>).mock;
+    const copilotCall = calls.find((call) => {
+      const [cmd] = call;
+      return cmd === "copilot";
+    });
     expect(copilotCall).toBeDefined();
 
     process.env.COPILOT_PRMSG_MODEL = originalModel;
