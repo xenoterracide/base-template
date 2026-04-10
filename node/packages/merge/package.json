@@ -2,6 +2,9 @@
   "name": "@xenoterracide/merge",
   "license": "GPL-3.0-or-later",
   "packageManager": "yarn@4.13.0",
+  "dependencies": {
+    "clipanion": "^4.0.0-rc.4"
+  },
   "devDependencies": {
     "@types/node": "^24.12.0",
     "tsx": "^4.21.0",
@@ -9,9 +12,9 @@
     "vitest": "^4.1.2"
   },
   "scripts": {
-    "merge:copilot": "ENGINE=copilot tsx merge.ts",
-    "merge:junie": "ENGINE=junie tsx merge.ts",
-    "merge:kimi": "ENGINE=kimi tsx merge.ts",
+    "merge:copilot": "tsx merge.ts --engine copilot",
+    "merge:junie": "tsx merge.ts --engine junie",
+    "merge:kimi": "tsx merge.ts --engine kimi",
     "test": "vitest run && yarn typecheck",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit merge.ts"

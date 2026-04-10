@@ -4,12 +4,13 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+import { Command, Option, Cli } from "clipanion";
 import { execFileSync, execSync } from "child_process";
 import { existsSync, mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
 
-const ENGINE = process.env.ENGINE || "kimi";
+export type Engine = "kimi" | "junie" | "copilot";
 
 export interface CommandRunner {
   run(cmd: string, opts?: { cwd?: string; env?: Record<string, string> }): string;
@@ -110,6 +111,7 @@ export async function generateMessage(
   bodyFile: string,
   tmpDir: string,
   runner: CommandRunner = defaultRunner,
+  engine: Engine = "kimi",
 ): Promise<void> {
   const diffRange = "origin/HEAD...HEAD";
 
@@ -125,9 +127,9 @@ export async function generateMessage(
   const changedFiles = runner.run(`git diff --name-only ${diffRange}`).split("\n").slice(0, 400).join("\n");
   const changedDiff = runner.run(`git diff ${diffRange}`).split("\n").slice(0, 2000).join("\n");
 
-  if (ENGINE === "kimi") {
+  if (engine === "kimi") {
     await generateWithKimi(titleFile, bodyFile, changedDiff, tmpDir);
-  } else if (ENGINE === "junie") {
+  } else if (engine === "junie") {
     await generateWithJunie(titleFile, bodyFile, changedDiff, tmpDir);
   } else {
     await generateWithCopilot(titleFile, bodyFile, changedDiff, changedFiles, tmpDir);
@@ -393,6 +395,7 @@ export async function createOrUpdatePR(
   branch: string,
   runner: CommandRunner = defaultRunner,
   fs: FileSystem = { existsSync, readFileSync, writeFileSync, unlinkSync, mkdtempSync, rmSync },
+  engine: Engine = "kimi",
 ): Promise<void> {
   const tmpDir = fs.mkdtempSync(join(tmpdir(), "pr-"));
   const titleFile = join(tmpDir, "title.txt");
@@ -405,12 +408,12 @@ export async function createOrUpdatePR(
       console.log("Updating PR message...");
     }
 
-    await generateMessage(titleFile, bodyFile, tmpDir, runner);
+    await generateMessage(titleFile, bodyFile, tmpDir, runner, engine);
     const headAfter = getHead(runner);
 
     // Regenerate if HEAD changed during generation
     if (headBefore !== headAfter) {
-      await generateMessage(titleFile, bodyFile, tmpDir, runner);
+      await generateMessage(titleFile, bodyFile, tmpDir, runner, engine);
     }
 
     const title = fs.readFileSync(titleFile, { encoding: "utf8" }).trim();
@@ -448,95 +451,121 @@ export async function createOrUpdatePR(
   }
 }
 
-async function main(): Promise<void> {
-  const args = process.argv.slice(2);
-  const command = args[0];
-  const dryRun = args.includes("--dry-run");
+export class PrMessageCommand extends Command {
+  public static paths = [["pr-message"]];
 
-  if (command === "pr-message") {
-    let titleFile = "";
-    let bodyFile = "";
+  public titleFile = Option.String("--title-file", {
+    required: true,
+    description: "Path to write PR title",
+  });
 
-    for (let i = 1; i < args.length; i += 2) {
-      if (args[i] === "--title-file") titleFile = args[i + 1];
-      if (args[i] === "--body-file") bodyFile = args[i + 1];
-    }
+  public bodyFile = Option.String("--body-file", {
+    required: true,
+    description: "Path to write PR body",
+  });
 
-    if (!titleFile || !bodyFile) {
-      console.error("Usage: merge.ts pr-message --title-file PATH --body-file PATH");
-      process.exit(2);
-    }
+  public engine = Option.String("--engine,-e", "kimi", {
+    description: "AI engine to use (kimi, junie, copilot)",
+  });
 
+  public async execute(): Promise<number> {
     const tmpDir = mkdtempSync(join(tmpdir(), "prmsg-"));
     try {
-      await generateMessage(titleFile, bodyFile, tmpDir);
+      await generateMessage(this.titleFile, this.bodyFile, tmpDir, defaultRunner, this.engine as Engine);
+      return 0;
+    } catch (e) {
+      console.error(e instanceof Error ? e.message : String(e));
+      return 1;
     } finally {
       try {
         rmSync(tmpDir, { recursive: true, force: true });
       } catch {}
     }
-    return;
   }
-
-  // Full merge workflow
-  // Capture branch name BEFORE any git operations that might change it
-  const currentBranch = getBranch();
-  console.log(`Current branch: ${currentBranch}`);
-
-  console.log("Fetching and merging origin/HEAD...");
-  defaultRunner.run("git fetch --all --prune --prune-tags --tags --force");
-  defaultRunner.run("git merge origin/HEAD");
-
-  console.log("Pushing...");
-  defaultRunner.run("git push");
-
-  const hasExistingPR = hasPR(currentBranch);
-
-  if (hasExistingPR) {
-    await waitForChecks();
-    await createOrUpdatePR(currentBranch);
-  } else {
-    await createOrUpdatePR(currentBranch);
-    await waitForChecks();
-  }
-
-  if (dryRun) {
-    console.log("\n[Dry Run] Would proceed with squash merge. Exiting without merging.");
-    process.exit(0);
-  }
-
-  // Merge squash
-  const hasUncommitted = defaultRunner.runSilent("git", ["status", "--porcelain=1"]) !== "";
-  if (hasUncommitted) {
-    console.warn("WARNING: Uncommitted changes detected. Review before merge.");
-  }
-
-  process.stdout.write("Proceed with squash merge? [Y/n] ");
-
-  if (!process.stdin.isTTY) {
-    console.error("Interactive confirmation required, but no TTY is available. Aborting squash merge.");
-    process.exit(1);
-  }
-
-  const reply = await new Promise<string>((resolve) => {
-    process.stdin.once("data", (data) => resolve(data.toString().trim().toLowerCase()));
-  });
-
-  if (reply === "n" || reply === "no") {
-    console.log("Merge cancelled.");
-    process.exit(1);
-  }
-
-  defaultRunner.run("gh pr merge --squash --delete-branch --admin");
-  process.exit(0);
 }
 
-// Only run main if this file is executed directly (not imported for testing)
-// Check if we're the entry point by comparing process.argv[1]
+export class MergeCommand extends Command {
+  public static paths = [["merge"], Command.Default];
+
+  public dryRun = Option.Boolean("--dry-run", false, {
+    description: "Show what would be done without making changes",
+  });
+
+  public engine = Option.String("--engine,-e", "kimi", {
+    description: "AI engine to use (kimi, junie, copilot)",
+  });
+
+  public async execute(): Promise<number> {
+    try {
+      // Full merge workflow
+      // Capture branch name BEFORE any git operations that might change it
+      const currentBranch = getBranch();
+      console.log(`Current branch: ${currentBranch}`);
+
+      console.log("Fetching and merging origin/HEAD...");
+      defaultRunner.run("git fetch --all --prune --prune-tags --tags --force");
+      defaultRunner.run("git merge origin/HEAD");
+
+      console.log("Pushing...");
+      defaultRunner.run("git push");
+
+      const hasExistingPR = hasPR(currentBranch);
+
+      if (hasExistingPR) {
+        await waitForChecks();
+        await createOrUpdatePR(currentBranch, defaultRunner, undefined, this.engine as Engine);
+      } else {
+        await createOrUpdatePR(currentBranch, defaultRunner, undefined, this.engine as Engine);
+        await waitForChecks();
+      }
+
+      if (this.dryRun) {
+        console.log("\n[Dry Run] Would proceed with squash merge. Exiting without merging.");
+        return 0;
+      }
+
+      // Merge squash
+      const hasUncommitted = defaultRunner.runSilent("git", ["status", "--porcelain=1"]) !== "";
+      if (hasUncommitted) {
+        console.warn("WARNING: Uncommitted changes detected. Review before merge.");
+      }
+
+      process.stdout.write("Proceed with squash merge? [Y/n] ");
+
+      if (!process.stdin.isTTY) {
+        console.error("Interactive confirmation required, but no TTY is available. Aborting squash merge.");
+        return 1;
+      }
+
+      const reply = await new Promise<string>((resolve) => {
+        process.stdin.once("data", (data) => resolve(data.toString().trim().toLowerCase()));
+      });
+
+      if (reply === "n" || reply === "no") {
+        console.log("Merge cancelled.");
+        return 1;
+      }
+
+      defaultRunner.run("gh pr merge --squash --delete-branch --admin");
+      return 0;
+    } catch (e) {
+      console.error(e instanceof Error ? e.message : String(e));
+      return 1;
+    }
+  }
+}
+
+// Only run CLI if this file is executed directly (not imported for testing)
 const isMainModule = process.argv[1]?.endsWith("merge.ts") || process.argv[1]?.endsWith("merge.js");
 if (isMainModule) {
-  main().catch((e) => {
-    console.error(e);
-    process.exit(1);
+  const cli = new Cli({
+    binaryLabel: "merge",
+    binaryName: "merge",
+    binaryVersion: "1.0.0",
   });
+
+  cli.register(PrMessageCommand);
+  cli.register(MergeCommand);
+
+  void cli.runExit(process.argv.slice(2), Cli.defaultContext);
 }
