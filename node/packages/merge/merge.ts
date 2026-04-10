@@ -12,6 +12,16 @@ import { join } from "path";
 
 export type Engine = "kimi" | "junie" | "copilot";
 
+const ENGINES: Engine[] = ["kimi", "junie", "copilot"];
+
+function validateEngine(engine: string): Engine {
+  if (ENGINES.includes(engine as Engine)) {
+    return engine as Engine;
+  }
+  console.error(`Error: Invalid engine "${engine}". Valid engines: ${ENGINES.join(", ")}`);
+  process.exit(1);
+}
+
 export interface CommandRunner {
   run: (cmd: string, opts?: { cwd?: string; env?: Record<string, string> }) => string;
   runSilent: (cmd: string, args: string[], opts?: { cwd?: string }) => string;
@@ -121,8 +131,8 @@ export async function generateMessage(
     runner.run(`git diff --quiet --exit-code ${diffRange}`);
     console.log("No changes to generate message for");
     process.exit(2);
-  } catch {
-    // Has changes, continue
+  } catch (e) {
+    console.debug("git diff-tree failed (expected if there are changes):", e);
   }
 
   const changedFiles = runner.run(`git diff --name-only ${diffRange}`).split("\n").slice(0, 400).join("\n");
@@ -167,8 +177,8 @@ ${diff}`;
         encoding: "utf8",
         shell: "/bin/bash",
       });
-    } catch {
-      // Ignore errors, check output below
+    } catch (e) {
+      console.debug("kimi output check failed:", e);
     }
 
     try {
@@ -186,8 +196,8 @@ ${diff}`;
     try {
       unlinkSync(promptFile);
       unlinkSync(kimiOut);
-    } catch {
-      // Ignore cleanup errors
+    } catch (e) {
+      console.debug("Failed to cleanup temp file:", e);
     }
   }
 }
@@ -226,8 +236,8 @@ ${diff}`;
   } finally {
     try {
       unlinkSync(promptFile);
-    } catch {
-      // Ignore cleanup errors
+    } catch (e) {
+      console.debug("Failed to cleanup junie temp file:", e);
     }
   }
 }
@@ -273,9 +283,13 @@ ${diff}`;
 
   const copilotOut = join(tmpDir, "copilot-out.txt");
   const copilotErr = join(tmpDir, "copilot-err.txt");
+  // Ensure files exist even if copilot fails immediately
+  writeFileSync(copilotOut, "", "utf8");
+  writeFileSync(copilotErr, "", "utf8");
 
   try {
-    const model = process.env.COPILOT_PRMSG_MODEL ?? "gpt-5.1-codex-mini";
+    // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
+    const model = process.env.COPILOT_PRMSG_MODEL || "gpt-5.1-codex-mini";
     try {
       const result = execFileSync("copilot", ["--model", model, "-s", "-p", promptFile], {
         encoding: "utf8",
@@ -290,7 +304,8 @@ ${diff}`;
     const err = readFileSync(copilotErr, "utf8");
 
     if (!output && err.includes("enable this model")) {
-      const fallback = process.env.COPILOT_PRMSG_FALLBACK_MODEL ?? "gpt-5.1-codex";
+      // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
+      const fallback = process.env.COPILOT_PRMSG_FALLBACK_MODEL || "gpt-5.1-codex";
       try {
         const result = execFileSync("copilot", ["--model", fallback, "-s", "-p", promptFile], {
           encoding: "utf8",
@@ -308,8 +323,8 @@ ${diff}`;
       unlinkSync(promptFile);
       unlinkSync(copilotOut);
       unlinkSync(copilotErr);
-    } catch {
-      // Ignore cleanup errors
+    } catch (e) {
+      console.debug("Failed to cleanup copilot temp files:", e);
     }
   }
 }
@@ -350,7 +365,7 @@ export async function parseAndWriteMessage(
         process.exit(0);
       }
     } catch {
-      // No existing message to preserve
+      console.debug("No existing PR message to preserve");
     }
 
     console.error("ERROR: Failed to generate valid conventional commit subject");
@@ -456,8 +471,8 @@ export async function createOrUpdatePR(
   } finally {
     try {
       fs.rmSync(tmpDir, { recursive: true, force: true });
-    } catch {
-      // Ignore cleanup errors
+    } catch (e) {
+      console.debug("Failed to cleanup temp directory:", e);
     }
   }
 }
@@ -489,7 +504,7 @@ export class PrMessageCommand extends Command {
   public async execute(): Promise<number> {
     const tmpDir = mkdtempSync(join(tmpdir(), "prmsg-"));
     try {
-      await generateMessage(this.titleFile, this.bodyFile, tmpDir, this.runner, this.engine as Engine);
+      await generateMessage(this.titleFile, this.bodyFile, tmpDir, this.runner, validateEngine(this.engine));
       return 0;
     } catch (e) {
       console.error(e instanceof Error ? e.message : String(e));
@@ -497,8 +512,8 @@ export class PrMessageCommand extends Command {
     } finally {
       try {
         rmSync(tmpDir, { recursive: true, force: true });
-      } catch {
-        // Ignore cleanup errors
+      } catch (e) {
+        console.debug("Failed to cleanup temp directory:", e);
       }
     }
   }
@@ -538,11 +553,12 @@ export class MergeCommand extends Command {
 
       const hasExistingPR = hasPR(currentBranch, this.runner);
 
+      const engine = validateEngine(this.engine);
       if (hasExistingPR) {
         await waitForChecks();
-        await createOrUpdatePR(currentBranch, this.runner, undefined, this.engine as Engine);
+        await createOrUpdatePR(currentBranch, this.runner, undefined, engine);
       } else {
-        await createOrUpdatePR(currentBranch, this.runner, undefined, this.engine as Engine);
+        await createOrUpdatePR(currentBranch, this.runner, undefined, engine);
         await waitForChecks();
       }
 

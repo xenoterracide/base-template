@@ -4,7 +4,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { generateWithKimi, generateWithJunie, generateWithCopilot } from "./merge";
-import { mkdtempSync, writeFileSync } from "fs";
+import { mkdtempSync, writeFileSync, rmSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
 
@@ -33,6 +33,7 @@ describe("generateWithKimi", () => {
 
   afterEach(() => {
     process.exit = originalExit;
+    rmSync(tmpDir, { recursive: true, force: true });
     vi.clearAllMocks();
   });
 
@@ -67,6 +68,7 @@ describe("generateWithJunie", () => {
 
   afterEach(() => {
     process.exit = originalExit;
+    rmSync(tmpDir, { recursive: true, force: true });
     vi.clearAllMocks();
   });
 
@@ -117,6 +119,7 @@ describe("generateWithCopilot", () => {
 
   afterEach(() => {
     process.exit = originalExit;
+    rmSync(tmpDir, { recursive: true, force: true });
     vi.clearAllMocks();
   });
 
