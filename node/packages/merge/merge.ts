@@ -306,7 +306,7 @@ ${diff}`;
       });
       writeFileSync(copilotOut, result, "utf8");
     } catch (e: unknown) {
-      const stderr = e && typeof e === "object" && "stderr" in e ? String((e as { stderr: unknown }).stderr) : "";
+      const stderr = e && typeof e === "object" && "stderr" in e ? String(e.stderr) : "";
       writeFileSync(copilotErr, stderr, "utf8");
     }
 

@@ -23,7 +23,7 @@ describe("generateMessage", () => {
   beforeEach(() => {
     tmpDir = mkdtempSync(join(tmpdir(), "msg-test-"));
     originalExit = process.exit;
-    process.exit = vi.fn() as unknown as typeof process.exit;
+    process.exit = vi.fn();
     vi.clearAllMocks();
   });
 
@@ -65,7 +65,7 @@ describe("waitForChecks", () => {
 
   it("should exit when checks fail", async () => {
     const originalExit = process.exit;
-    process.exit = vi.fn() as unknown as typeof process.exit;
+    process.exit = vi.fn();
 
     (execFileSync as ReturnType<typeof vi.fn>).mockImplementation(() => {
       throw new Error("checks failed");

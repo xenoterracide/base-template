@@ -27,7 +27,7 @@ describe("generateWithKimi", () => {
     titleFile = join(tmpDir, "title.txt");
     bodyFile = join(tmpDir, "body.txt");
     originalExit = process.exit;
-    process.exit = vi.fn() as unknown as typeof process.exit;
+    process.exit = vi.fn();
     vi.clearAllMocks();
   });
 
@@ -62,7 +62,7 @@ describe("generateWithJunie", () => {
     titleFile = join(tmpDir, "title.txt");
     bodyFile = join(tmpDir, "body.txt");
     originalExit = process.exit;
-    process.exit = vi.fn() as unknown as typeof process.exit;
+    process.exit = vi.fn();
     vi.clearAllMocks();
   });
 
@@ -113,7 +113,7 @@ describe("generateWithCopilot", () => {
     titleFile = join(tmpDir, "title.txt");
     bodyFile = join(tmpDir, "body.txt");
     originalExit = process.exit;
-    process.exit = vi.fn() as unknown as typeof process.exit;
+    process.exit = vi.fn();
     vi.clearAllMocks();
   });
 

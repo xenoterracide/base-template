@@ -63,15 +63,14 @@ describe("findMainRepoRoot", () => {
 });
 
 describe("parseAndWriteMessage", () => {
-  const createMockFs = (): FileSystem =>
-    ({
-      existsSync: vi.fn(() => true),
-      readFileSync: vi.fn(() => ""),
-      writeFileSync: vi.fn(),
-      unlinkSync: vi.fn(),
-      mkdtempSync: vi.fn(() => "/tmp/test-123"),
-      rmSync: vi.fn(),
-    }) as unknown as FileSystem;
+  const createMockFs = (): FileSystem => ({
+    existsSync: vi.fn(() => true),
+    readFileSync: vi.fn(() => ""),
+    writeFileSync: vi.fn(),
+    unlinkSync: vi.fn(),
+    mkdtempSync: vi.fn(() => "/tmp/test-123"),
+    rmSync: vi.fn(),
+  });
 
   it("should extract conventional commit subject and body", async () => {
     const fs = createMockFs();
@@ -383,7 +382,7 @@ describe("createOrUpdatePR", () => {
       unlinkSync: vi.fn(),
       mkdtempSync: vi.fn(() => "/tmp/test-123"),
       rmSync: vi.fn(),
-    } as unknown as FileSystem;
+    };
 
     const consoleSpy = vi.spyOn(console, "log").mockImplementation(vi.fn());
 

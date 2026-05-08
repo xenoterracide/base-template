@@ -90,7 +90,7 @@ export default defineConfig([
       "@typescript-eslint/init-declarations": "off",
       "no-useless-assignment": "off",
       "preserve-caught-error": "off",
-      "no-empty": ["error", { "allowEmptyCatch": false }],
+      "no-empty": ["error", { allowEmptyCatch: false }],
       "@typescript-eslint/no-empty-function": "error",
       // Complex refactor needed
       "@typescript-eslint/no-unnecessary-condition": "off",
