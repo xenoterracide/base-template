@@ -142,7 +142,7 @@ export async function generateMessage(
     console.log("No changes to generate message for");
     process.exit(2);
   } catch (e) {
-    console.debug("git diff-tree failed (expected if there are changes):", e);
+    console.debug("git diff-tree failed (expected if there are changes):", e instanceof Error ? e.message : String(e));
   }
 
   const changedFiles = runner.run(`git diff --name-only ${diffRange}`).split("\n").slice(0, 400).join("\n");
@@ -188,7 +188,7 @@ ${diff}`;
         shell: "/bin/bash",
       });
     } catch (e) {
-      console.debug("kimi output check failed:", e);
+      console.debug("kimi output check failed:", e instanceof Error ? e.message : String(e));
     }
 
     try {
@@ -207,7 +207,7 @@ ${diff}`;
       unlinkSync(promptFile);
       unlinkSync(kimiOut);
     } catch (e) {
-      console.debug("Failed to cleanup temp file:", e);
+      console.debug("Failed to cleanup temp file:", e instanceof Error ? e.message : String(e));
     }
   }
 }
@@ -247,7 +247,7 @@ ${diff}`;
     try {
       unlinkSync(promptFile);
     } catch (e) {
-      console.debug("Failed to cleanup junie temp file:", e);
+      console.debug("Failed to cleanup junie temp file:", e instanceof Error ? e.message : String(e));
     }
   }
 }
@@ -334,7 +334,7 @@ ${diff}`;
       unlinkSync(copilotOut);
       unlinkSync(copilotErr);
     } catch (e) {
-      console.debug("Failed to cleanup copilot temp files:", e);
+      console.debug("Failed to cleanup copilot temp files:", e instanceof Error ? e.message : String(e));
     }
   }
 }
@@ -494,7 +494,7 @@ export async function createOrUpdatePR(
     try {
       fs.rmSync(tmpDir, { recursive: true, force: true });
     } catch (e) {
-      console.debug("Failed to cleanup temp directory:", e);
+      console.debug("Failed to cleanup temp directory:", e instanceof Error ? e.message : String(e));
     }
   }
 }
@@ -535,7 +535,7 @@ export class PrMessageCommand extends Command {
       try {
         rmSync(tmpDir, { recursive: true, force: true });
       } catch (e) {
-        console.debug("Failed to cleanup temp directory:", e);
+        console.debug("Failed to cleanup temp directory:", e instanceof Error ? e.message : String(e));
       }
     }
   }
