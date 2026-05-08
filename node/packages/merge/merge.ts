@@ -113,6 +113,16 @@ export function hasPR(branch?: string, runner: CommandRunner = defaultRunner): b
   }
 }
 
+export function isPRMerged(branch: string, runner: CommandRunner = defaultRunner): boolean {
+  try {
+    const output = runner.runArgv("gh", ["pr", "view", branch, "--json", "state"]);
+    const parsed = JSON.parse(output) as { state: string };
+    return parsed.state === "MERGED";
+  } catch {
+    return false;
+  }
+}
+
 export function getHead(runner: CommandRunner = defaultRunner): string {
   return runner.run("git rev-parse --verify HEAD");
 }
@@ -428,7 +438,14 @@ export async function createOrUpdatePR(
   const headBefore = getHead(runner);
 
   try {
-    if (hasPR(branch, runner)) {
+    const hasExistingPR = hasPR(branch, runner);
+
+    if (hasExistingPR && isPRMerged(branch, runner)) {
+      console.log("PR already merged, skipping title/description update.");
+      return;
+    }
+
+    if (hasExistingPR) {
       console.log("Updating PR message...");
     }
 
@@ -442,7 +459,12 @@ export async function createOrUpdatePR(
 
     const title = fs.readFileSync(titleFile, { encoding: "utf8" }).trim();
 
-    if (hasPR(branch, runner)) {
+    if (hasExistingPR) {
+      // Double-check merged status after generation
+      if (isPRMerged(branch, runner)) {
+        console.log("PR already merged, skipping title/description update.");
+        return;
+      }
       // Use runArgv to avoid shell injection with title
       runner.runArgv("gh", ["pr", "edit", branch, "--title", title, "--body-file", bodyFile]);
       try {

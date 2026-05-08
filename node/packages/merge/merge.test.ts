@@ -9,6 +9,8 @@ import {
   getBranch,
   hasPR,
   getHead,
+  isPRMerged,
+  createOrUpdatePR,
   type CommandRunner,
   type FileSystem,
 } from "./merge";
@@ -317,6 +319,84 @@ describe("getHead", () => {
     const result = getHead(runner);
     expect(result).toBe("abc123def456");
     expect(runner.run).toHaveBeenCalledWith("git rev-parse --verify HEAD");
+  });
+});
+
+describe("isPRMerged", () => {
+  it("should return true when PR state is MERGED", () => {
+    const runner: CommandRunner = {
+      run: vi.fn(),
+      runSilent: vi.fn(),
+      runArgv: vi.fn(() => '{"state": "MERGED"}'),
+    };
+
+    const result = isPRMerged("feature/test", runner);
+    expect(result).toBe(true);
+    expect(runner.runArgv).toHaveBeenCalledWith("gh", ["pr", "view", "feature/test", "--json", "state"]);
+  });
+
+  it("should return false when PR state is OPEN", () => {
+    const runner: CommandRunner = {
+      run: vi.fn(),
+      runSilent: vi.fn(),
+      runArgv: vi.fn(() => '{"state": "OPEN"}'),
+    };
+
+    const result = isPRMerged("feature/test", runner);
+    expect(result).toBe(false);
+  });
+
+  it("should return false when command fails", () => {
+    const runner: CommandRunner = {
+      run: vi.fn(),
+      runSilent: vi.fn(),
+      runArgv: vi.fn(() => {
+        throw new Error("not found");
+      }),
+    };
+
+    const result = isPRMerged("feature/test", runner);
+    expect(result).toBe(false);
+  });
+});
+
+describe("createOrUpdatePR", () => {
+  it("should skip update when PR is already merged", async () => {
+    const runner: CommandRunner = {
+      run: vi.fn(),
+      runSilent: vi.fn(),
+      runArgv: vi.fn((cmd: string, args: string[]) => {
+        if (args.includes("--json") && args.includes("number")) {
+          return '{"number": 42}';
+        }
+        if (args.includes("--json") && args.includes("state")) {
+          return '{"state": "MERGED"}';
+        }
+        return "";
+      }),
+    };
+
+    const fs: FileSystem = {
+      existsSync: vi.fn(() => true),
+      readFileSync: vi.fn(() => "feat: test message"),
+      writeFileSync: vi.fn(),
+      unlinkSync: vi.fn(),
+      mkdtempSync: vi.fn(() => "/tmp/test-123"),
+      rmSync: vi.fn(),
+    } as unknown as FileSystem;
+
+    const consoleSpy = vi.spyOn(console, "log").mockImplementation(vi.fn());
+
+    await createOrUpdatePR("feature/test", runner, fs, "kimi");
+
+    expect(consoleSpy).toHaveBeenCalledWith("PR already merged, skipping title/description update.");
+    // Should not call pr edit
+    const editCall = (runner.runArgv as ReturnType<typeof vi.fn>).mock.calls.find((call: [string, string[]]) =>
+      call[1].includes("edit"),
+    );
+    expect(editCall).toBeUndefined();
+
+    consoleSpy.mockRestore();
   });
 });
 
