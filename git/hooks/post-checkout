@@ -14,24 +14,5 @@ CHECKOUT_TYPE="$3"
 # Only run on branch checkouts (not file checkouts)
 [ "$CHECKOUT_TYPE" = "1" ] || exit 0
 
-# Check if lockfiles changed between previous and current HEAD
-YARN_LOCK_CHANGED=0
-UV_LOCK_CHANGED=0
-
-if ! git diff --quiet "$PREV_HEAD" HEAD -- yarn.lock 2>/dev/null; then
-  YARN_LOCK_CHANGED=1
-fi
-
-if ! git diff --quiet "$PREV_HEAD" HEAD -- uv.lock 2>/dev/null; then
-  UV_LOCK_CHANGED=1
-fi
-
-if [ "$YARN_LOCK_CHANGED" -eq 1 ]; then
-  echo "yarn.lock changed, running yarn install --immutable..."
-  yarn install --immutable
-fi
-
-if [ "$UV_LOCK_CHANGED" -eq 1 ]; then
-  echo "uv.lock changed, running uv sync --frozen..."
-  uv sync --frozen
-fi
+SCRIPT_DIR="$(dirname "$0")"
+exec "$SCRIPT_DIR/sync-tooling" "$PREV_HEAD"

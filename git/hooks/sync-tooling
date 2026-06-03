@@ -1,0 +1,60 @@
+#!/bin/sh
+
+# SPDX-FileCopyrightText: Copyright © 2026 Caleb Cushing
+#
+# SPDX-License-Identifier: MIT
+
+# Shared helper for post-checkout and post-merge hooks.
+# Syncs tooling when lockfiles or .tool-versions change between two refs.
+# Usage: sync-tooling <before_ref>
+
+BEFORE_REF="$1"
+
+# Skip in CI environments
+[ -n "$CI" ] && exit 0
+
+# Require a before ref to compare against
+[ -n "$BEFORE_REF" ] || exit 0
+
+TOOL_VERSIONS_CHANGED=0
+YARN_LOCK_CHANGED=0
+UV_LOCK_CHANGED=0
+
+if [ -f ".tool-versions" ] && ! git diff --quiet "$BEFORE_REF" HEAD -- .tool-versions 2>/dev/null; then
+  TOOL_VERSIONS_CHANGED=1
+fi
+
+if ! git diff --quiet "$BEFORE_REF" HEAD -- yarn.lock 2>/dev/null; then
+  YARN_LOCK_CHANGED=1
+fi
+
+if ! git diff --quiet "$BEFORE_REF" HEAD -- uv.lock 2>/dev/null; then
+  UV_LOCK_CHANGED=1
+fi
+
+if [ "$TOOL_VERSIONS_CHANGED" -eq 1 ]; then
+  if command -v asdf >/dev/null 2>&1; then
+    echo ".tool-versions changed, running asdf install..."
+    asdf install
+    asdf reshim
+    if grep -q "^nodejs " .tool-versions 2>/dev/null; then
+      echo "Node.js managed by asdf, running corepack enable..."
+      corepack enable
+      asdf reshim
+    fi
+    YARN_LOCK_CHANGED=1
+    UV_LOCK_CHANGED=1
+  else
+    echo ".tool-versions changed but asdf is not installed, skipping asdf steps."
+  fi
+fi
+
+if [ "$YARN_LOCK_CHANGED" -eq 1 ]; then
+  echo "yarn.lock changed, running yarn install --immutable..."
+  yarn install --immutable
+fi
+
+if [ "$UV_LOCK_CHANGED" -eq 1 ]; then
+  echo "uv.lock changed, running uv sync --frozen..."
+  uv sync --frozen
+fi
