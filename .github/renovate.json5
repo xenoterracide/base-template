@@ -28,6 +28,14 @@
       automerge: true,
     },
     {
+      // Use exact version in branch name to avoid reuse after merge.
+      // Renovate's default major-version grouping (e.g. 2.x) recycles branch
+      // names, which breaks platformAutomerge on already-merged branches.
+      matchManagers: ["npm"],
+      branchTopic: "{{{depNameSanitized}}}-{{{newVersion}}}",
+      automerge: true,
+    },
+    {
       // Pin xenoterracide org actions to commit SHAs for build reproducibility
       // Only these get digest pins; other actions get normal version tag updates
       matchManagers: ["github-actions"],
