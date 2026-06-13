@@ -9,17 +9,15 @@ SPDX-License-Identifier: CC-BY-NC-SA-4.0
 
 This is **share** (also referenced as `template-main`), a shared configuration and tooling repository that provides:
 
-1. **AI-assisted PR merge workflows** - Automated PR creation, message generation, and merging using AI tools (Kimi, Junie, GitHub Copilot)
-2. **Git hooks** - Automated dependency syncing and commit validation
-3. **License compliance** - REUSE specification compliance for copyright and licensing
+1. **Git hooks** - Automated dependency syncing and commit validation
+2. **License compliance** - REUSE specification compliance for copyright and licensing
 
-The project uses a hybrid Python + Node.js architecture with Yarn workspaces for package management.
+The project uses Python for scripting and Node.js-based developer tools (Prettier, lint-staged, git-conventional-commits) managed via Yarn Plug'n'Play.
 
 ## Technology Stack
 
-- **Python**: 3.12+ (managed via `uv`)
-- **Node.js**: 24.11.1 (managed via `yarn` 4.12.0 with Plug'n'Play)
-- **TypeScript**: For tooling scripts (executed via `tsx`)
+- **Python**: 3.14+ (managed via `uv`)
+- **Node.js**: 24.16.0 (managed via `yarn` 4.16.0 with Plug'n'Play)
 - **Git**: With custom hooks for workflow automation
 
 ## Project Structure
@@ -31,24 +29,15 @@ The project uses a hybrid Python + Node.js architecture with Yarn workspaces for
 │   ├── post-checkout           # Auto-install deps on branch switch
 │   ├── post-merge              # Auto-install deps after merge
 │   └── pre-commit              # Lint-staged runner
-├── node/packages/              # Yarn workspaces
-│   └── merge/                  # AI-assisted merge workflow tool
-│       ├── merge.ts            # Main TypeScript implementation
-│       └── package.json
 ├── .github/workflows/          # GitHub Actions
-├── .share/                     # Symlink to project root (for git hooks path)
 ├── pyproject.toml              # Python project configuration (PEP 621)
-├── package.json                # Root Node.js configuration
-├── Makefile                    # Additional workflow commands
+├── package.json                # Node.js developer tools configuration
 └── git-conventional-commits.yaml  # Conventional commits config
 ```
 
 ## Build and Test Commands
 
 ```bash
-# Run all tests across workspaces
-yarn test
-
 # Linting (all)
 yarn lint
 
@@ -99,15 +88,14 @@ yarn up
 
 ### File Type Conventions
 
-| File Type                              | License          | Formatter            |
-| -------------------------------------- | ---------------- | -------------------- |
-| `*.ts`, `*.java`                       | GPL-3.0-or-later | Prettier             |
-| `*.js`, `*.cjs`, `*.yml`               | MIT              | Prettier             |
-| `package.json`                         | MIT              | Prettier             |
-| `*.json` (non-package)                 | CC0-1.0          | Prettier             |
-| `*.md`, `*.adoc`                       | CC-BY-NC-SA-4.0  | Prettier             |
-| `*.xml`, `*.yaml`, `*.toml`, `*.json5` | CC0-1.0          | Prettier             |
-| Shell scripts                          | MIT              | shfmt (python style) |
+| File Type                              | License         | Formatter            |
+| -------------------------------------- | --------------- | -------------------- |
+| `*.js`, `*.cjs`, `*.yml`               | MIT             | Prettier             |
+| `package.json`                         | MIT             | Prettier             |
+| `*.json` (non-package)                 | CC0-1.0         | Prettier             |
+| `*.md`, `*.adoc`                       | CC-BY-NC-SA-4.0 | Prettier             |
+| `*.xml`, `*.yaml`, `*.toml`, `*.json5` | CC0-1.0         | Prettier             |
+| Shell scripts                          | MIT             | shfmt (python style) |
 
 ### Licensing
 
@@ -116,18 +104,16 @@ All files MUST have SPDX license headers. The project uses:
 - **REUSE specification** for license compliance
 - **lint-staged** automatically adds headers via `reuse annotate`
 
-## Testing Instructions
+## Verification
 
-1. **TypeScript type checking**: `yarn workspace @xenoterracide/merge run test` (runs `tsc --noEmit`)
-2. **All workspace tests**: `yarn test`
-3. **License compliance**: `yarn lint:reuse`
-4. **Formatting**: `yarn lint:prettier`
+1. **License compliance**: `yarn lint:reuse`
+2. **Formatting**: `yarn lint:prettier`
 
 ## Git Workflow
 
 ### Git Hooks
 
-The project uses custom git hooks (configured via `git config core.hooksPath .share/git/hooks`):
+The project uses custom git hooks (configured via `git config core.hooksPath git/hooks`):
 
 1. **pre-commit**: Runs `lint-staged` to format and add license headers
 2. **commit-msg**: Validates conventional commit format via `git-conventional-commits`
@@ -141,41 +127,10 @@ Allowed types (from `git-conventional-commits.yaml`):
 - `ci`, `feat`, `fix`, `perf`, `refactor`, `style`, `test`
 - `build`, `ops`, `docs`, `chore`, `merge`, `revert`
 
-### Merge Workflow
-
-The `node/packages/merge` tool provides AI-assisted PR workflows:
-
-```bash
-# Generate PR message and merge using different AI engines
-yarn merge:kimi      # Uses Kimi CLI
-yarn merge:junie     # Uses Junie CLI
-yarn merge:copilot   # Uses GitHub Copilot CLI
-```
-
-The merge script:
-
-1. Fetches and merges `origin/HEAD`
-2. Pushes current branch
-3. Creates/updates PR with AI-generated conventional commit message
-4. Waits for CI checks
-5. Interactive squash merge prompt
-
-### Makefile Commands
-
-```bash
-make merge          # Full merge workflow (fetch, push, PR, merge)
-make create-pr      # Create/update PR with AI-generated message
-make merge-head     # Fetch and merge origin/HEAD
-make push           # Push to remote
-make watch-full     # Watch GitHub Actions workflow
-```
-
 ## Security Considerations
 
 1. **CI Detection**: All git hooks check `[ -n "$CI" ]` and exit early in CI environments
-2. **GitHub CLI**: Requires `gh` CLI authenticated for PR operations
-3. **Lockfile Integrity**: `--immutable` flag ensures lockfiles are not modified unexpectedly
-4. **Path Security**: Scripts use `execFileSync` with arrays to prevent command injection
+2. **Lockfile Integrity**: `--immutable` flag ensures lockfiles are not modified unexpectedly
 
 ## Development Setup
 
