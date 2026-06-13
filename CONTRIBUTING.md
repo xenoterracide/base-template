@@ -9,6 +9,15 @@ SPDX-License-Identifier: CC-BY-NC-SA-4.0
 This repository is shared configuration and tooling. Most changes affect
 linting, formatting, licensing, or automation across multiple projects.
 
+## Repository overview
+
+- **Git hooks** in `git/hooks/` for conventional commits, lint-staged, and
+  automatic dependency syncing.
+- **Formatting and linting** via Prettier and REUSE.
+- **Conventional commit validation** via `git-conventional-commits`.
+- **GitHub Actions workflows** for license, prettier, and node-cli checks.
+- **Renovate configuration** for automated dependency updates.
+
 ## Setup
 
 ```bash

@@ -14,15 +14,6 @@ This repository is intended to be consumed as either a **git submodule** or a
 are viewing the standalone project. If it appears inside a subdirectory, it has
 been included as a git subtree.
 
-## Features
-
-- **Git hooks** in `git/hooks/` for conventional commits, lint-staged, and
-  automatic dependency syncing.
-- **Formatting and linting** via Prettier and REUSE.
-- **Conventional commit validation** via `git-conventional-commits`.
-- **GitHub Actions workflows** for license, prettier, and node-cli checks.
-- **Renovate configuration** for automated dependency updates.
-
 ## Installation
 
 ```bash
