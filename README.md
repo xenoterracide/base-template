@@ -52,6 +52,7 @@ git submodule add https://github.com/xenoterracide/subtree-share.git .share
 ## Development
 
 - See [`AGENTS.md`](./AGENTS.md) for guidance for AI coding agents.
+- See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for human contributor guidance.
 
 ## License
 
