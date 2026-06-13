@@ -14,7 +14,7 @@ This repository is intended to be consumed as either a **git submodule** or a
 are viewing the standalone project. If it appears inside a subdirectory, it has
 been included as a git subtree.
 
-## What it provides
+## Features
 
 - **Git hooks** in `git/hooks/` for conventional commits, lint-staged, and
   automatic dependency syncing.
@@ -23,7 +23,7 @@ been included as a git subtree.
 - **GitHub Actions workflows** for license, prettier, and node-cli checks.
 - **Renovate configuration** for automated dependency updates.
 
-## Setup
+## Installation
 
 ```bash
 # Install Node.js and Python tools listed in .tool-versions
@@ -33,7 +33,9 @@ asdf install
 yarn contribute
 ```
 
-## Usage in another repository
+## Usage
+
+Include this repository in another project with git subtree or submodule:
 
 ### Git subtree
 
@@ -47,7 +49,10 @@ git subtree add --prefix .share https://github.com/xenoterracide/subtree-share.g
 git submodule add https://github.com/xenoterracide/subtree-share.git .share
 ```
 
-## See also
+## Development
 
-- [`AGENTS.md`](./AGENTS.md) — instructions for AI coding agents working in
-  this repository.
+- See [`AGENTS.md`](./AGENTS.md) for guidance for AI coding agents.
+
+## License
+
+[CC-BY-NC-SA-4.0](LICENSES/CC-BY-NC-SA-4.0.txt)
