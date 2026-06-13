@@ -13,7 +13,7 @@
     "prettier-plugin-toml": "^2.0.6"
   },
   "scripts": {
-    "check": "yarn lint",
+    "check": "yarn lint:prettier",
     "contribute": "uv sync --frozen && git config core.hooksPath git/hooks",
     "lint:prettier": "prettier --ignore-unknown --cache --check '**'",
     "lint:reuse": "uv run --frozen --group dev reuse lint",
