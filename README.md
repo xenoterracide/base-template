@@ -14,16 +14,6 @@ This repository is intended to be consumed as either a **git submodule** or a
 are viewing the standalone project. If it appears inside a subdirectory, it has
 been included as a git subtree.
 
-## Installation
-
-```bash
-# Install Node.js and Python tools listed in .tool-versions
-asdf install
-
-# Install dependencies, sync Python environment, and configure git hooks
-yarn contribute
-```
-
 ## Usage
 
 Include this repository in another project with git subtree or submodule:
