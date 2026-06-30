@@ -13,6 +13,10 @@ linting, formatting, licensing, or automation across multiple projects.
 
 - **Git hooks** in `git/hooks/` for conventional commits, lint-staged, and
   automatic dependency syncing.
+
+  Hooks are also published for consumption via pre-commit. See
+  `.pre-commit-hooks.yaml` and `README.md` for details.
+
 - **Formatting and linting** via Prettier and REUSE.
 - **Conventional commit validation** via `git-conventional-commits`.
 - **GitHub Actions workflows** for license, prettier, and node-cli checks.

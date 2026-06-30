@@ -31,6 +31,9 @@ Python scripting via `uv`.
 - lint-staged + git hooks enforce formatting and license annotation.
 - Git hooks live in `git/hooks/` and are enabled by `yarn contribute`.
 
+  The hooks can also be consumed as a pre-commit source from another repository.
+  See `README.md` for the consumer workflow.
+
 ## Maintenance
 
 Update this file when you change workflows or conventions it describes.
