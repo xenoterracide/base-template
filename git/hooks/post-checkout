@@ -7,6 +7,8 @@
 # Skip in CI environments
 [ -n "$CI" ] && exit 0
 
+"$(dirname "$0")/check-yarn-env" || exit $?
+
 # post-checkout receives: $1 = previous HEAD, $2 = new HEAD, $3 = flag (1=branch, 0=file)
 PREV_HEAD="$1"
 CHECKOUT_TYPE="$3"
