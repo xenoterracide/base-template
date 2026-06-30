@@ -30,6 +30,45 @@ git subtree add --prefix .share https://github.com/xenoterracide/subtree-share.g
 git submodule add https://github.com/xenoterracide/subtree-share.git .share
 ```
 
+## Git hooks
+
+This repository's git hooks are available as pre-commit hooks.
+
+Add them to another project:
+
+1. Install pre-commit:
+
+   ```bash
+   uv add --group dev pre-commit
+   ```
+
+2. Add to `.pre-commit-config.yaml`:
+
+   ```yaml
+   ---
+   repos:
+     - repo: https://github.com/xenoterracide/subtree-share
+       rev: vX.Y.Z
+       hooks:
+         - id: share-commit-msg
+         - id: share-pre-commit
+         - id: share-post-checkout
+         - id: share-post-merge
+   ```
+
+3. Install the hooks:
+
+   ```bash
+   pre-commit install \
+     --hook-type commit-msg \
+     --hook-type pre-commit \
+     --hook-type post-checkout \
+     --hook-type post-merge
+   ```
+
+For local development of this repository, run `yarn contribute` to configure
+`core.hooksPath` to `git/hooks`.
+
 ## Development
 
 - See [`AGENTS.md`](./AGENTS.md) for guidance for AI coding agents.
