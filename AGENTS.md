@@ -6,9 +6,15 @@ SPDX-License-Identifier: CC-BY-NC-SA-4.0
 
 # share
 
-Shared configuration and tooling repository. Uses Node.js-based developer tools
-(Prettier, lint-staged, git-conventional-commits) managed via Yarn PnP, with
-Python scripting via `uv`.
+Shared configuration, git hooks, and tooling repository. Uses Node.js-based
+developer tools (Prettier, lint-staged, git-conventional-commits) managed via
+Yarn PnP, with Python scripting via `uv`.
+
+Hooks in `git/hooks/` are also exposed as pre-commit hooks for downstream
+repositories. Changes to hooks must respect both native git invocation and the
+pre-commit framework (for example, `post-checkout` may receive arguments via
+`PRE_COMMIT_FROM_REF` and `PRE_COMMIT_CHECKOUT_TYPE` environment variables when
+invoked by pre-commit).
 
 ## Build and Test
 
@@ -24,12 +30,17 @@ Python scripting via `uv`.
 - Python dependencies → `pyproject.toml`, `uv.lock`
 - Conventional commit types → `git-conventional-commits.yaml`
 - Renovate configuration → `.github/renovate.json5`
+- Git hooks → `git/hooks/`
+- pre-commit hook manifest → `.pre-commit-hooks.yaml`
 
 ## Conventions
 
 - All files MUST have SPDX license headers.
 - lint-staged + git hooks enforce formatting and license annotation.
 - Git hooks live in `git/hooks/` and are enabled by `yarn contribute`.
+
+  The hooks can also be consumed as a pre-commit source from another repository.
+  See `README.md` for the consumer workflow.
 
 ## Maintenance
 

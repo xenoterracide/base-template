@@ -1,0 +1,32 @@
+# SPDX-FileCopyrightText: Copyright © 2026 Caleb Cushing
+#
+# SPDX-License-Identifier: CC0-1.0
+
+---
+- id: share-commit-msg
+  name: Validate conventional commit message
+  entry: git/hooks/commit-msg
+  language: script
+  stages: [commit-msg]
+
+- id: share-pre-commit
+  name: Run lint-staged
+  entry: git/hooks/pre-commit
+  language: script
+  stages: [pre-commit]
+
+- id: share-post-checkout
+  name: Sync tooling after checkout
+  entry: git/hooks/post-checkout
+  language: script
+  always_run: true
+  pass_filenames: false
+  stages: [post-checkout]
+
+- id: share-post-merge
+  name: Sync tooling after merge
+  entry: git/hooks/post-merge
+  language: script
+  always_run: true
+  pass_filenames: false
+  stages: [post-merge]
