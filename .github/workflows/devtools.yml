@@ -5,8 +5,8 @@ name: precommit
 on: [push, workflow_call]
 jobs:
   license:
-    uses: xenoterracide/github/.github/workflows/license.yml@f3c82147662e154713ca45808b4c0f5a2416f03d # develop
+    uses: xenoterracide/github/.github/workflows/license.yml@909643eba7881535e43fc6507a5e981e7ac8b529 # develop
   prettier:
-    uses: xenoterracide/github/.github/workflows/prettier.yml@f3c82147662e154713ca45808b4c0f5a2416f03d # develop
+    uses: xenoterracide/github/.github/workflows/prettier.yml@909643eba7881535e43fc6507a5e981e7ac8b529 # develop
   node-cli:
-    uses: xenoterracide/github/.github/workflows/node-cli.yml@f3c82147662e154713ca45808b4c0f5a2416f03d # develop
+    uses: xenoterracide/github/.github/workflows/node-cli.yml@909643eba7881535e43fc6507a5e981e7ac8b529 # develop
