@@ -7,5 +7,7 @@
 # Skip in CI environments
 [ -n "$CI" ] && exit 0
 
+"$(dirname "$0")/check-yarn-env" || exit $?
+
 SCRIPT_DIR="$(dirname "$0")"
 exec "$SCRIPT_DIR/sync-tooling" "HEAD@{1}"
