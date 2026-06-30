@@ -1,0 +1,39 @@
+#!/bin/sh
+
+# SPDX-FileCopyrightText: Copyright © 2026 Caleb Cushing
+#
+# SPDX-License-Identifier: MIT
+
+# Verify that yarn is available and functional before hooks try to use it.
+# Exits 0 if yarn works; otherwise prints a diagnostic message and exits 1.
+
+if command -v yarn >/dev/null 2>&1 && yarn --version >/dev/null 2>&1; then
+  exit 0
+fi
+
+echo "ERROR: 'yarn' is not available or not working in this environment." >&2
+
+if command -v asdf >/dev/null 2>&1; then
+  echo "" >&2
+  echo "asdf is installed, but the active Node.js version does not provide a" >&2
+  echo "working yarn command. Common causes:" >&2
+  echo "" >&2
+  echo "  - The version listed in .tool-versions is not installed." >&2
+  echo "  - Node.js 25+ no longer bundles corepack, so yarn/corepack shims" >&2
+  echo "    may be missing unless corepack is installed separately." >&2
+  echo "" >&2
+
+  if [ -f .tool-versions ]; then
+    echo "Current .tool-versions:" >&2
+    sed 's/^/  /' .tool-versions >&2
+    echo "" >&2
+  fi
+
+  echo "Possible fixes:" >&2
+  echo "  asdf install                          # install missing versions" >&2
+  echo "  asdf set nodejs <installed-version>   # switch Node version" >&2
+  echo "  npm install -g corepack && corepack enable  # restore corepack on Node 25+" >&2
+  echo "" >&2
+fi
+
+exit 1

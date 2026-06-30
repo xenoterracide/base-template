@@ -7,6 +7,8 @@
 # Skip in CI environments
 [ -n "$CI" ] && exit 0
 
+"$(dirname "$0")/check-yarn-env" || exit $?
+
 # Check if lockfiles changed in this merge (HEAD@{1} is the state before the merge)
 YARN_LOCK_CHANGED=0
 UV_LOCK_CHANGED=0
