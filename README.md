@@ -66,6 +66,11 @@ Add them to another project:
      --hook-type post-merge
    ```
 
+The `share-post-checkout` hook also runs `pre-commit autoupdate` after syncing
+tooling. This keeps the configured `rev:` current when `develop` moves forward,
+without requiring versioned tags. Autoupdate failures (for example, due to no
+network) are reported but do not block the checkout.
+
 For local development of this repository, run `yarn contribute` to configure
 `core.hooksPath` to `git/hooks`.
 
