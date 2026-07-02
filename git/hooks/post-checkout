@@ -18,4 +18,11 @@ CHECKOUT_TYPE="${3:-$PRE_COMMIT_CHECKOUT_TYPE}"
 [ "$CHECKOUT_TYPE" = "1" ] || exit 0
 
 SCRIPT_DIR="$(dirname "$0")"
-exec "$SCRIPT_DIR/sync-tooling" "$PREV_HEAD"
+"$SCRIPT_DIR/sync-tooling" "$PREV_HEAD"
+
+command -v uv >/dev/null 2>&1 || {
+  echo "ERROR: uv is required but not found." >&2
+  exit 1
+}
+
+uv run --frozen pre-commit autoupdate || true
