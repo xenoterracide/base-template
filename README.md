@@ -48,7 +48,7 @@ Add them to another project:
    ---
    repos:
      - repo: https://github.com/xenoterracide/subtree-share
-       rev: vX.Y.Z
+       rev: develop
        hooks:
          - id: share-commit-msg
          - id: share-pre-commit

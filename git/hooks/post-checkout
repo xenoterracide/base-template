@@ -18,7 +18,7 @@ CHECKOUT_TYPE="${3:-$PRE_COMMIT_CHECKOUT_TYPE}"
 [ "$CHECKOUT_TYPE" = "1" ] || exit 0
 
 SCRIPT_DIR="$(dirname "$0")"
-"$SCRIPT_DIR/sync-tooling" "$PREV_HEAD"
+"$SCRIPT_DIR/sync-tooling" "$PREV_HEAD" || exit $?
 
 command -v uv >/dev/null 2>&1 || {
   echo "ERROR: uv is required but not found." >&2
