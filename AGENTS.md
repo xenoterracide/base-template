@@ -16,6 +16,12 @@ pre-commit framework (for example, `post-checkout` may receive arguments via
 `PRE_COMMIT_FROM_REF` and `PRE_COMMIT_CHECKOUT_TYPE` environment variables when
 invoked by pre-commit).
 
+The `post-checkout` hook runs `pre-commit autoupdate` as a best-effort step
+after tooling sync; hook changes must not break this behavior or assume it is
+the only way consumers receive updates. The hook requires `uv` and will fail if
+`uv` is missing; errors from `pre-commit autoupdate` are explicitly swallowed
+with `|| true`.
+
 ## Build and Test
 
 - Lint/format: `yarn lint`
