@@ -51,7 +51,6 @@ Add them to another project:
        rev: develop
        hooks:
          - id: share-commit-msg
-         - id: share-pre-commit
          - id: share-post-checkout
          - id: share-post-merge
    ```
@@ -73,8 +72,8 @@ installed, the hook fails. `pre-commit autoupdate` failures (for example, due
 to no network) are explicitly swallowed with `|| true` and do not block the
 checkout.
 
-For local development of this repository, run `yarn contribute` to configure
-`core.hooksPath` to `git/hooks`.
+For local development of this repository, run `yarn contribute` to install the
+pre-commit hooks.
 
 ## Development
 
