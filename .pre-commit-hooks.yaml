@@ -16,7 +16,7 @@
   stages: [pre-commit]
 
 - id: share-post-checkout
-  name: Sync tooling after checkout
+  name: Sync tooling and autoupdate pre-commit hooks after checkout
   entry: git/hooks/post-checkout
   language: script
   always_run: true

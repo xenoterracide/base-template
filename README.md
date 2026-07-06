@@ -48,7 +48,7 @@ Add them to another project:
    ---
    repos:
      - repo: https://github.com/xenoterracide/subtree-share
-       rev: vX.Y.Z
+       rev: develop
        hooks:
          - id: share-commit-msg
          - id: share-pre-commit
@@ -65,6 +65,13 @@ Add them to another project:
      --hook-type post-checkout \
      --hook-type post-merge
    ```
+
+The `share-post-checkout` hook also runs `pre-commit autoupdate` after syncing
+tooling. This keeps the configured `rev:` current when `develop` moves forward,
+without requiring versioned tags. The hook requires `uv`; if `uv` is not
+installed, the hook fails. `pre-commit autoupdate` failures (for example, due
+to no network) are explicitly swallowed with `|| true` and do not block the
+checkout.
 
 For local development of this repository, run `yarn contribute` to configure
 `core.hooksPath` to `git/hooks`.
