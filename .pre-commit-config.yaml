@@ -23,13 +23,13 @@ repos:
         entry: uv run --frozen --group dev reuse annotate
         args:
           - --copyright
-          - 'Caleb Cushing'
+          - "Caleb Cushing"
           - --merge-copyrights
           - --skip-existing
           - --copyright-prefix
           - spdx-string-symbol
           - --license
-          - 'CC0-1.0'
+          - "CC0-1.0"
           - --fallback-dot-license
         language: system
         files: '^(?!package\.json$).+\.json$'
@@ -39,13 +39,13 @@ repos:
         entry: uv run --frozen --group dev reuse annotate
         args:
           - --copyright
-          - 'Caleb Cushing'
+          - "Caleb Cushing"
           - --merge-copyrights
           - --skip-existing
           - --copyright-prefix
           - spdx-string-symbol
           - --license
-          - 'MIT'
+          - "MIT"
           - --fallback-dot-license
         language: system
         files: '^package\.json$'
@@ -55,13 +55,13 @@ repos:
         entry: uv run --frozen --group dev reuse annotate
         args:
           - --copyright
-          - 'Caleb Cushing'
+          - "Caleb Cushing"
           - --merge-copyrights
           - --skip-existing
           - --copyright-prefix
           - spdx-string-symbol
           - --license
-          - 'CC-BY-NC-SA-4.0'
+          - "CC-BY-NC-SA-4.0"
         language: system
         files: '\.(md|adoc)$'
 
@@ -70,13 +70,13 @@ repos:
         entry: uv run --frozen --group dev reuse annotate
         args:
           - --copyright
-          - 'Caleb Cushing'
+          - "Caleb Cushing"
           - --merge-copyrights
           - --skip-existing
           - --copyright-prefix
           - spdx-string-symbol
           - --license
-          - 'MIT'
+          - "MIT"
           - --fallback-dot-license
           - --style
           - python
@@ -88,11 +88,11 @@ repos:
         entry: uv run --frozen --group dev reuse annotate
         args:
           - --copyright
-          - 'Caleb Cushing'
+          - "Caleb Cushing"
           - --merge-copyrights
           - --skip-existing
           - --license
-          - 'CC0-1.0'
+          - "CC0-1.0"
         language: system
         files: '\.properties$'
 
@@ -101,11 +101,11 @@ repos:
         entry: uv run --frozen --group dev reuse annotate
         args:
           - --copyright
-          - 'Caleb Cushing'
+          - "Caleb Cushing"
           - --merge-copyrights
           - --skip-existing
           - --license
-          - 'CC0-1.0'
+          - "CC0-1.0"
           - --copyright-prefix
           - spdx-string-symbol
         language: system
@@ -116,13 +116,13 @@ repos:
         entry: uv run --frozen --group dev reuse annotate
         args:
           - --copyright
-          - 'Caleb Cushing'
+          - "Caleb Cushing"
           - --merge-copyrights
           - --skip-existing
           - --copyright-prefix
           - spdx-string-symbol
           - --license
-          - 'MIT'
+          - "MIT"
           - --fallback-dot-license
         language: system
         files: '\.(js|cjs|yml)$'
@@ -132,12 +132,12 @@ repos:
         entry: uv run --frozen --group dev reuse annotate
         args:
           - --copyright
-          - 'Caleb Cushing'
+          - "Caleb Cushing"
           - --merge-copyrights
           - --skip-existing
           - --copyright-prefix
           - spdx-string-symbol
           - --license
-          - 'CC0-1.0'
+          - "CC0-1.0"
         language: system
         files: '^\.(\*ignore|editorconfig|gitattributes|mailmap)$'
