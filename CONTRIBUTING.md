@@ -11,8 +11,8 @@ linting, formatting, licensing, or automation across multiple projects.
 
 ## Repository overview
 
-- **Git hooks** in `git/hooks/` for conventional commits, lint-staged, and
-  automatic dependency syncing.
+- **Git hooks** in `git/hooks/` for conventional commits, pre-commit staged
+  checks, and automatic dependency syncing.
 
   Hooks are also published for consumption via pre-commit. See
   `.pre-commit-hooks.yaml` and `README.md` for details.

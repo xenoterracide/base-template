@@ -7,7 +7,7 @@ SPDX-License-Identifier: CC-BY-NC-SA-4.0
 # share
 
 Shared configuration, git hooks, and tooling repository. Uses Node.js-based
-developer tools (Prettier, lint-staged, git-conventional-commits) managed via
+developer tools (Prettier, pre-commit, git-conventional-commits) managed via
 Yarn PnP, with Python scripting via `uv`.
 
 Hooks in `git/hooks/` are also exposed as pre-commit hooks for downstream
@@ -38,12 +38,13 @@ with `|| true`.
 - Renovate configuration → `.github/renovate.json5`
 - Git hooks → `git/hooks/`
 - pre-commit hook manifest → `.pre-commit-hooks.yaml`
+- pre-commit configuration → `.pre-commit-config.yaml`
 
 ## Conventions
 
 - All files MUST have SPDX license headers.
-- lint-staged + git hooks enforce formatting and license annotation.
-- Git hooks live in `git/hooks/` and are enabled by `yarn contribute`.
+- pre-commit hooks enforce formatting and license annotation.
+- Git hooks live in `git/hooks/` and are installed by `yarn contribute`.
 
   The hooks can also be consumed as a pre-commit source from another repository.
   See `README.md` for the consumer workflow.
