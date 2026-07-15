@@ -7,8 +7,14 @@ on: push
 permissions:
   contents: read
 jobs:
-  node-cli:
-    uses: xenoterracide/github/.github/workflows/node-cli.yml@2cbe15e8b03a049a30e364c16cde78038c443eda # develop
+  regression-prettier:
+    uses: xenoterracide/github/.github/workflows/regression-devtool-prettier.yml@develop
+  regression-git-conventional-commits:
+    uses: xenoterracide/github/.github/workflows/regression-devtool-git-conventional-commits.yml@develop
+  regression-pre-commit:
+    uses: xenoterracide/github/.github/workflows/regression-devtool-pre-commit.yml@develop
+  regression-reuse:
+    uses: xenoterracide/github/.github/workflows/regression-devtool-reuse.yml@develop
   shell:
     runs-on: ubuntu-24.04
     steps:
