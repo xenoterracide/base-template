@@ -12,12 +12,14 @@ repos:
         entry: yarn prettier --cache --ignore-unknown --write
         language: system
         types: [text]
+        stages: [pre-commit]
 
       - id: shfmt
         name: shfmt
         entry: shfmt --write
         language: system
         files: '(\.config/git/hooks/.*|.*\.sh)$'
+        stages: [pre-commit]
 
       - id: reuse-config
         name: REUSE annotate config files
@@ -34,6 +36,7 @@ repos:
           - --fallback-dot-license
         language: system
         files: '^(?!package\.json$).+\.json$'
+        stages: [pre-commit]
 
       - id: reuse-package-json
         name: REUSE annotate package.json
@@ -50,6 +53,7 @@ repos:
           - --fallback-dot-license
         language: system
         files: '^package\.json$'
+        stages: [pre-commit]
 
       - id: reuse-docs
         name: REUSE annotate docs
@@ -65,6 +69,7 @@ repos:
           - "CC-BY-NC-SA-4.0"
         language: system
         files: '\.(md|adoc)$'
+        stages: [pre-commit]
 
       - id: reuse-shell
         name: REUSE annotate shell scripts
@@ -83,6 +88,7 @@ repos:
           - python
         language: system
         files: '(\.config/git/hooks/.*|.*\.sh)$'
+        stages: [pre-commit]
 
       - id: reuse-properties
         name: REUSE annotate properties files
@@ -96,6 +102,7 @@ repos:
           - "CC0-1.0"
         language: system
         files: '\.properties$'
+        stages: [pre-commit]
 
       - id: reuse-misc-config
         name: REUSE annotate misc config
@@ -111,6 +118,7 @@ repos:
           - spdx-string-symbol
         language: system
         files: '\.(xml|yaml|properties|toml|json5)$'
+        stages: [pre-commit]
 
       - id: reuse-scripts
         name: REUSE annotate scripts and workflows
@@ -127,6 +135,7 @@ repos:
           - --fallback-dot-license
         language: system
         files: '\.(js|cjs|yml)$'
+        stages: [pre-commit]
 
       - id: reuse-dotfiles
         name: REUSE annotate dotfiles
@@ -142,3 +151,4 @@ repos:
           - "CC0-1.0"
         language: system
         files: '^\.(\*ignore|editorconfig|gitattributes|mailmap)$'
+        stages: [pre-commit]
