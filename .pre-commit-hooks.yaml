@@ -9,12 +9,6 @@
   language: script
   stages: [commit-msg]
 
-- id: share-pre-commit
-  name: Run lint-staged
-  entry: git/hooks/pre-commit
-  language: script
-  stages: [pre-commit]
-
 - id: share-post-checkout
   name: Sync tooling and autoupdate pre-commit hooks after checkout
   entry: git/hooks/post-checkout
