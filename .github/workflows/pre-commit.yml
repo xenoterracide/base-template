@@ -8,9 +8,9 @@ permissions:
   contents: read
 jobs:
   license:
-    uses: xenoterracide/github/.github/workflows/license.yml@93b2f2bc37fd6d4c095231a880adc9c8723bda3c # develop
+    uses: xenoterracide/github/.github/workflows/license.yml@332e498e3a58f28fd6782259cadd8c238fa737d7 # develop
   prettier:
-    uses: xenoterracide/github/.github/workflows/prettier.yml@93b2f2bc37fd6d4c095231a880adc9c8723bda3c # develop
+    uses: xenoterracide/github/.github/workflows/prettier.yml@332e498e3a58f28fd6782259cadd8c238fa737d7 # develop
   shfmt:
     runs-on: ubuntu-24.04
     steps:
