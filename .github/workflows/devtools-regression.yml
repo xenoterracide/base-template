@@ -8,13 +8,13 @@ permissions:
   contents: read
 jobs:
   regression-prettier:
-    uses: xenoterracide/github/.github/workflows/regression-devtool-prettier.yml@332e498e3a58f28fd6782259cadd8c238fa737d7 # develop
+    uses: xenoterracide/github/.github/workflows/regression-devtool-prettier.yml@c46126074f550526aff9244dff668410678a3ba0 # develop
   regression-git-conventional-commits:
-    uses: xenoterracide/github/.github/workflows/regression-devtool-git-conventional-commits.yml@332e498e3a58f28fd6782259cadd8c238fa737d7 # develop
+    uses: xenoterracide/github/.github/workflows/regression-devtool-git-conventional-commits.yml@c46126074f550526aff9244dff668410678a3ba0 # develop
   regression-pre-commit:
-    uses: xenoterracide/github/.github/workflows/regression-devtool-pre-commit.yml@332e498e3a58f28fd6782259cadd8c238fa737d7 # develop
+    uses: xenoterracide/github/.github/workflows/regression-devtool-pre-commit.yml@c46126074f550526aff9244dff668410678a3ba0 # develop
   regression-reuse:
-    uses: xenoterracide/github/.github/workflows/regression-devtool-reuse.yml@332e498e3a58f28fd6782259cadd8c238fa737d7 # develop
+    uses: xenoterracide/github/.github/workflows/regression-devtool-reuse.yml@c46126074f550526aff9244dff668410678a3ba0 # develop
   shell:
     runs-on: ubuntu-24.04
     steps:
