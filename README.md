@@ -73,7 +73,7 @@ to no network) are explicitly swallowed with `|| true` and do not block the
 checkout.
 
 For local development of this repository, run `yarn contribute` to install the
-pre-commit hooks.
+git hooks, which run lint-staged on staged files.
 
 ## Development
 
