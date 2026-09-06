@@ -13,7 +13,7 @@
   },
   "scripts": {
     "check": "yarn lint:prettier",
-    "contribute": "uv sync --frozen && uv run --frozen pre-commit install --hook-type commit-msg --hook-type pre-commit --hook-type post-checkout --hook-type post-merge",
+    "contribute": "yarn install --immutable && uv sync --frozen && git config core.hooksPath git/hooks",
     "lint:prettier": "prettier --ignore-unknown --cache --check '**'",
     "lint:reuse": "uv run --frozen --group dev reuse lint",
     "lint": "yarn lint:prettier && yarn lint:reuse"
