@@ -32,45 +32,13 @@ git submodule add https://github.com/xenoterracide/subtree-share.git .share
 
 ## Git hooks
 
-This repository's git hooks are available as pre-commit hooks.
+This repository's git hooks live in `git/hooks/` and are installed locally via
+`yarn contribute`, which configures git `core.hooksPath` to point at them. The
+hooks run lint-staged on staged files, validate conventional commit messages,
+and sync tooling on checkout and merge.
 
-Add them to another project:
-
-1. Install pre-commit:
-
-   ```bash
-   uv add --group dev pre-commit
-   ```
-
-2. Add to `.pre-commit-config.yaml`:
-
-   ```yaml
-   ---
-   repos:
-     - repo: https://github.com/xenoterracide/subtree-share
-       rev: develop
-       hooks:
-         - id: share-commit-msg
-         - id: share-post-checkout
-         - id: share-post-merge
-   ```
-
-3. Install the hooks:
-
-   ```bash
-   pre-commit install \
-     --hook-type commit-msg \
-     --hook-type pre-commit \
-     --hook-type post-checkout \
-     --hook-type post-merge
-   ```
-
-The `share-post-checkout` hook also runs `pre-commit autoupdate` after syncing
-tooling. This keeps the configured `rev:` current when `develop` moves forward,
-without requiring versioned tags. The hook requires `uv`; if `uv` is not
-installed, the hook fails. `pre-commit autoupdate` failures (for example, due
-to no network) are explicitly swallowed with `|| true` and do not block the
-checkout.
+Downstream projects that consume this repository via git subtree or submodule
+can install the hooks from `git/hooks/` in their own `core.hooksPath`.
 
 For local development of this repository, run `yarn contribute` to install the
 git hooks, which run lint-staged on staged files.
