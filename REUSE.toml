@@ -31,3 +31,18 @@ SPDX-License-Identifier = "CC0-1.0"
 path = "gradle/wrapper/*"
 SPDX-FileCopyrightText = "See MANIFEST.MF in jar"
 SPDX-License-Identifier = "Apache-2.0"
+[[annotations]]
+path = "copier.yml"
+SPDX-FileCopyrightText = "Copyright © 2026 Caleb Cushing"
+SPDX-License-Identifier = "CC0-1.0"
+[[annotations]]
+# jvm.config is a static authoring copy with no SPDX header and no .license
+# sibling in the authoring tree (the consumer gets .mvn/jvm.config.license
+# from the .jinja render). Annotation matches the literal conditional path.
+path = "{% if template_type == 'java' %}.mvn{% endif %}/jvm.config"
+SPDX-FileCopyrightText = "NONE"
+SPDX-License-Identifier = "CC0-1.0"
+[[annotations]]
+path = "**/*.jinja"
+SPDX-FileCopyrightText = "NONE"
+SPDX-License-Identifier = "CC0-1.0"

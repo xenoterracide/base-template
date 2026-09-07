@@ -13,3 +13,5 @@ gradlew*
 gradle/wrapper/*
 .agents/
 coverage/
+copier.yml
+*.jinja
