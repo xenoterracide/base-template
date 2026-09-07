@@ -11,8 +11,8 @@ jobs:
     uses: xenoterracide/github/.github/workflows/regression-devtool-prettier.yml@836e9f662ac920420ea5123930f657fadb86d9dd # develop
   regression-git-conventional-commits:
     uses: xenoterracide/github/.github/workflows/regression-devtool-git-conventional-commits.yml@836e9f662ac920420ea5123930f657fadb86d9dd # develop
-  #  regression-lint-staged:
-  #    uses: xenoterracide/github/.github/workflows/regression-devtool-lint-staged.yml@836e9f662ac920420ea5123930f657fadb86d9dd # develop
+  regression-lint-staged:
+    uses: xenoterracide/github/.github/workflows/regression-devtool-lint-staged.yml@836e9f662ac920420ea5123930f657fadb86d9dd # develop
   regression-reuse:
     uses: xenoterracide/github/.github/workflows/regression-devtool-reuse.yml@836e9f662ac920420ea5123930f657fadb86d9dd # develop
   shell:
