@@ -1,0 +1,24 @@
+<!-- {{ spdx_copyright_line }} -->
+
+<!-- {{ spdx_license_line }} -->
+
+# {{ project_title }}
+
+## Build and Test
+
+- `yarn contribute` — bootstrap tooling (run once after clone)
+- `yarn check` — run all linters and, for typescript, typecheck + tests
+- `yarn lint:prettier` — prettier check
+- `yarn lint:reuse` — REUSE compliance check
+  {% if template_type == 'java' %}
+- `./mvnw -q verify` — Maven build + checkstyle + spotbugs + jacoco + tests
+  {% else %}
+- `yarn typecheck` — TypeScript type check
+- `yarn test` — vitest with coverage
+  {% endif %}
+
+## Source of Truth
+
+- Template: `copier.yml` in [xenoterracide/base-template](https://github.com/xenoterracide/base-template)
+- Answers: `.copier-answers.yml` in this repo
+- Updates: `copier update --trust` refreshes from template

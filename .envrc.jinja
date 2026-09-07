@@ -1,0 +1,10 @@
+#!/bin/sh
+
+# {{ spdx_copyright_line }}
+#
+# SPDX-License-Identifier: MIT
+
+asdf install
+if ! git config core.hooksPath 2>/dev/null | grep -q "git/hooks"; then
+  echo "Git hooks not configured. Run: yarn contribute"
+fi

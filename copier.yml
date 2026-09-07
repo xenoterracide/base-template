@@ -108,6 +108,11 @@ project_license_line:
   default: "SPDX-License-Identifier: {{ license }}"
   when: false
 
+spdx_license_line:
+  type: str
+  default: "SPDX-License-Identifier: {{ license }}"
+  when: false
+
 license_url:
   type: str
   default: >-
