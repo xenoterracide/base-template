@@ -28,7 +28,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: anomalyco/opencode/github@v2.0.0
+      - uses: anomalyco/opencode/github@v2.0.1
         env:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
         with:
