@@ -12,7 +12,7 @@ jobs:
   prettier:
     uses: xenoterracide/github/.github/workflows/prettier.yml@d23d29d5edb6e3e2e15bef37723151d49f0e0c91 # develop
   shfmt:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v7.0.1
       - uses: actions/cache@v6.1.0
