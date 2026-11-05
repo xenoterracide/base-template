@@ -1,6 +1,6 @@
 {
   "name": "@xenoterracide/share",
-  "packageManager": "yarn@4.18.1",
+  "packageManager": "pnpm@12.16.1",
   "private": true,
   "license": "MIT",
   "devDependencies": {
@@ -10,13 +10,17 @@
     "prettier": "^3.6.2",
     "prettier-plugin-java": "^2.7.5",
     "prettier-plugin-properties": "^0.3.0",
-    "prettier-plugin-toml": "^2.0.6"
+    "prettier-plugin-toml": "^4.0.0"
   },
   "scripts": {
-    "check": "yarn lint:prettier",
-    "contribute": "yarn install --immutable && uv sync --frozen && git config core.hooksPath git/hooks",
+    "check": "pnpm lint",
+    "contribute": "sh .config/git/hooks/heal.sh",
     "lint:prettier": "prettier --ignore-unknown --cache --check '**'",
-    "lint:reuse": "uv run --frozen --group dev reuse lint",
-    "lint": "yarn lint:prettier && yarn lint:reuse"
+    "lint:reuse": "pnpm reuse lint",
+    "lint": "pnpm lint:prettier && pnpm lint:reuse",
+    "precontribute": "pnpm setup:corepack && pnpm setup:pnpm",
+    "reuse": "uv run --frozen --group dev reuse",
+    "setup:corepack": "npm install --global corepack && corepack enable --install-directory ~/.local/bin",
+    "setup:pnpm": "pnpm install --frozen-lockfile"
   }
 }

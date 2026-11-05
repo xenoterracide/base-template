@@ -1,0 +1,28 @@
+<!-- {{ spdx_copyright_line }} -->
+
+<!-- {{ spdx_license_line }} -->
+
+# {{ project_title }}
+
+<!-- Body below: CC-BY-NC-SA-4.0 -->
+
+## Getting started
+
+Run these commands to bootstrap your development environment:
+
+- `yarn contribute` installs Node and Python tools and configures git hooks.
+- `direnv allow` (if you use direnv) loads the environment.
+
+For typescript projects, copy workflows into place:
+
+    cp -r staged/.github/workflows .github/workflows
+    git add .github/workflows
+
+For java projects:
+
+    ./mvnw -q verify
+
+This project is managed with [copier](https://copier.readthedocs.io). To
+refresh from the template:
+
+    copier update --trust

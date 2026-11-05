@@ -1,0 +1,137 @@
+# SPDX-FileCopyrightText: Copyright © 2026 Caleb Cushing
+#
+# SPDX-License-Identifier: CC0-1.0
+# SPDX-License-Identifier: MIT
+
+_min_copier_version: "9.0.0"
+
+_exclude:
+  - .github/workflows
+  - docs/
+  - tests/
+  - yarn.lock
+  - uv.lock
+  - LICENSES
+  - .yarn/
+  - .pnp.*
+  - node_modules
+  - .venv
+  - copier.yml
+  - .python-version
+
+_tasks:
+  - npx --yes prettier@3.6.2 --ignore-unknown --write .
+  - uvx reuse@6.2.0 download --all
+
+_message_after_copy: |
+  Your new {{ project_title }} project is ready.
+  Run `yarn contribute` to install tooling and set up git hooks.
+  For typescript projects, copy staged/.github/workflows/* into .github/workflows/.
+
+_envops:
+  undefined: jinja2.StrictUndefined
+
+# Question order matters under StrictUndefined: a default can only reference
+# answers declared BEFORE it. The base answers come first; computed answers
+# (when: false) come last so they can see every dependency.
+template_type:
+  type: str
+  help: Which project template?
+  choices:
+    Java: java
+    TypeScript: typescript
+  default: typescript
+
+project_name:
+  type: str
+  help: Repository slug (e.g. java-commons)
+
+project_title:
+  type: str
+  default: "{{ project_name }}"
+  help: Human-readable name for README/AGENTS
+
+license:
+  type: str
+  choices:
+    GPL-3.0-or-later: GPL-3.0-or-later
+    Apache-2.0: Apache-2.0
+    MIT: MIT
+  default: GPL-3.0-or-later
+
+copyright_holder:
+  type: str
+  default: Caleb Cushing
+
+copyright_year:
+  type: str
+  default: "{{ '%Y' | strftime }}"
+  when: false
+
+use_opencode:
+  type: bool
+  default: true
+
+java_group_id:
+  type: str
+  default: com.xenoterracide
+  when: "{{ template_type == 'java' }}"
+
+java_module:
+  type: str
+  default: "{{ project_name }}"
+  when: "{{ template_type == 'java' }}"
+
+java_version:
+  type: str
+  default: 0.0.0
+  when: "{{ template_type == 'java' }}"
+
+ts_scope:
+  type: str
+  default: "@xenoterracide"
+  when: "{{ template_type == 'typescript' }}"
+
+first_package:
+  type: str
+  default: "{{ project_name }}"
+  when: "{{ template_type == 'typescript' }}"
+
+# Computed answers — not re-asked; recomputed on copier update
+# `SPDX-*` templates below render to real headers in generated projects; they
+# are not valid SPDX expressions in this source form, so REUSE ignores them.
+# REUSE-IgnoreStart
+spdx_copyright_line:
+  type: str
+  default: "SPDX-FileCopyrightText: Copyright © {{ copyright_year }} {{ copyright_holder }}"
+  when: false
+
+project_license_line:
+  type: str
+  default: "SPDX-License-Identifier: {{ license }}"
+  when: false
+
+spdx_license_line:
+  type: str
+  default: "SPDX-License-Identifier: {{ license }}"
+  when: false
+
+license_url:
+  type: str
+  default: >-
+    {% if license == 'GPL-3.0-or-later' %}https://www.gnu.org/licenses/gpl-3.0.txt{% elif license == 'Apache-2.0' %}https://www.apache.org/licenses/LICENSE-2.0.txt{% else %}https://opensource.org/licenses/MIT{% endif %}
+  when: false
+
+java_package:
+  type: str
+  default: "{{ java_group_id }}.{{ java_module | replace('-', '_') }}"
+  when: "{{ template_type == 'java' }}"
+
+# Derived from java_package: dots -> slashes for use in file paths. Copier splits
+# relative template paths on '/' BEFORE rendering, so a `replace('.', '/')` filter
+# inside a moustache path component breaks. Compute it here instead.
+java_package_path:
+  type: str
+  default: "{{ java_package | replace('.', '/') }}"
+  when: "{{ template_type == 'java' }}"
+# REUSE-IgnoreEnd
