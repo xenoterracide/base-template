@@ -285,6 +285,12 @@ def test_answers_record_no_header_machinery(generated):
     assert "spdx_" not in answers
 
 
+def test_reuse_toml_carries_no_gitmodules(generated):
+    """The consumer REUSE.toml annotates exemptions, not speculative files."""
+    dst, _ = generated
+    assert ".gitmodules" not in (dst / "REUSE.toml").read_text()
+
+
 def test_package_json_scope_is_answerable(tmp_path):
     """The root package name keeps its npm scope when the consumer has one."""
     dst = copy_template(tmp_path / "scoped", {**ANSWERS["config"], "npm_scope": "@xenoterracide"})
