@@ -40,12 +40,20 @@ if [ -f package.json ]; then
   corepack enable --install-directory ~/.local/bin || echo "heal: corepack enable failed" >&2
 fi
 
-if [ -f pnpm-lock.yaml ]; then
-  pnpm install --frozen-lockfile --reporter=silent || echo "heal: pnpm install failed" >&2
+if [ -f package.json ]; then
+  if [ -f pnpm-lock.yaml ]; then
+    pnpm install --frozen-lockfile --reporter=silent || echo "heal: pnpm install failed" >&2
+  else
+    pnpm install --reporter=silent || echo "heal: pnpm install failed" >&2
+  fi
 fi
 
-if [ -f uv.lock ]; then
-  uv sync --frozen --quiet || echo "heal: uv sync failed" >&2
+if [ -f pyproject.toml ]; then
+  if [ -f uv.lock ]; then
+    uv sync --frozen --quiet || echo "heal: uv sync failed" >&2
+  else
+    uv sync --quiet || echo "heal: uv sync failed" >&2
+  fi
 fi
 
 git config core.hooksPath .config/git/hooks || echo "heal: hooksPath config failed" >&2
