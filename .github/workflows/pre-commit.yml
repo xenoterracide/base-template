@@ -8,17 +8,10 @@ permissions:
   contents: read
 jobs:
   license:
-    uses: xenoterracide/github/.github/workflows/license.yml@6b2c992992444007ec6f549dee1f2de2720125cd # develop
+    uses: xenoterracide/github/.github/workflows/license.yml@0581f01dc0d31c44a5acee5e63b0233d71b97e7b # develop
   prettier:
-    uses: xenoterracide/github/.github/workflows/prettier.yml@6b2c992992444007ec6f549dee1f2de2720125cd # develop
+    uses: xenoterracide/github/.github/workflows/prettier.yml@0581f01dc0d31c44a5acee5e63b0233d71b97e7b # develop
   shfmt:
-    runs-on: ubuntu-26.04
-    steps:
-      - uses: actions/checkout@v7.0.1
-      - uses: actions/cache@v6.1.0
-        with:
-          path: ~/.asdf
-          key: asdf-${{ runner.os }}-${{ hashFiles('.tool-versions') }}
-          restore-keys: asdf-${{ runner.os }}-
-      - uses: asdf-vm/actions/install@v4.0.1
-      - run: shfmt -d git/hooks/
+    uses: xenoterracide/github/.github/workflows/shfmt.yml@0581f01dc0d31c44a5acee5e63b0233d71b97e7b # develop
+  shellcheck:
+    uses: xenoterracide/github/.github/workflows/shellcheck.yml@0581f01dc0d31c44a5acee5e63b0233d71b97e7b # develop
