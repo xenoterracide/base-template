@@ -259,14 +259,30 @@ def test_renders_carry_no_blank_line_scaffolding(generated):
         assert "\n\n\n" not in path.read_text(), f"blank scaffolding: {path.name}"
 
 
-def test_answers_file_declares_the_yml_license(generated):
-    """The answers file is a .yml; lint-staged annotates .yml as MIT."""
+def test_renders_carry_no_baked_headers(generated):
+    """reuse annotate, not the template, writes SPDX headers."""
     dst, _ = generated
-    content = (dst / ".copier-answers.yml").read_text()
-    # REUSE-IgnoreStart
-    assert "SPDX-License-Identifier: MIT" in content
-    # REUSE-IgnoreEnd
-    assert "CC0-1.0" not in content
+    for path in dst.rglob("*"):
+        if not path.is_file() or path.name == "REUSE.toml":
+            continue
+        text = path.read_text()
+        assert "SPDX-FileCopyrightText" not in text, path.name
+        assert "SPDX-License-Identifier" not in text, path.name
+    assert "# SPDX-License-Identifier" not in (dst / "REUSE.toml").read_text()
+
+
+def test_no_license_sidecars_rendered(generated):
+    """Annotate, not the template, creates .license sidecars."""
+    dst, _ = generated
+    assert not [p for p in dst.rglob("*.license")]
+
+
+def test_answers_record_no_header_machinery(generated):
+    """copyright_year and spdx_* answers no longer exist."""
+    dst, _ = generated
+    answers = (dst / ".copier-answers.yml").read_text()
+    assert "copyright_year" not in answers
+    assert "spdx_" not in answers
 
 
 def test_package_json_scope_is_answerable(tmp_path):
@@ -274,20 +290,6 @@ def test_package_json_scope_is_answerable(tmp_path):
     dst = copy_template(tmp_path / "scoped", {**ANSWERS["config"], "npm_scope": "@xenoterracide"})
     data = json.loads((dst / "package.json").read_text())
     assert data["name"] == "@xenoterracide/sample"
-
-
-def test_docs_render_with_the_doc_license(generated):
-    """Docs carry CC-BY-NC-SA in the block form reuse annotate writes."""
-    dst, _ = generated
-    # REUSE-IgnoreStart
-    want = "SPDX-License-Identifier: CC-BY-NC-SA-4.0"
-    reject = "SPDX-License-Identifier: GPL-3.0-or-later"
-    # REUSE-IgnoreEnd
-    for rel in ("README.md", "AGENTS.md", "CONTRIBUTING.md", "staged/README"):
-        content = (dst / rel).read_text()
-        assert want in content, rel
-        assert reject not in content, rel
-        assert content.startswith("<!--\nSPDX-FileCopyrightText"), rel
 
 
 def test_lintstagedrc_licenses_by_file_class(generated):
