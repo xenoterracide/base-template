@@ -152,6 +152,12 @@ operator is the sync mechanism, and that is the problem.
      `copier update`, resolve `.rej`, wire `update-downstream.yml`. Then
      java-commons on the java variant.
 
+**Full decision records.** The hooks choices summarized here live in
+`2026-11-04-hooks-healing-design.md`; the pnpm migration in
+`2026-11-04-pnpm-migration-design.md`. Both were moved from the consumer
+repos this template now supplies. Read them there; this file keeps the
+summary.
+
 ## What's left to the builder
 
 - The exact file list for phase 1 (package.json, `.envrc`, `.gitignore`,
