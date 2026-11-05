@@ -12,8 +12,10 @@ const licenseConfiguration = "--license 'CC0-1.0' --fallback-dot-license";
 const licenseDocumentation = "--license 'CC-BY-NC-SA-4.0'";
 const licenseScripts = "--license 'MIT' --fallback-dot-license";
 
-// pnpm-lock.yaml is generated; a header comment breaks it as a lockfile
-const withoutGenerated = (files) => files.filter((file) => !/(^|\/)pnpm-lock\.yaml$/.test(file));
+// pnpm-lock.yaml and the maven wrapper properties are generated; header
+// comments and formatting break them
+const withoutGenerated = (files) =>
+  files.filter((file) => !/(^|\/)(pnpm-lock\.yaml|maven-wrapper\.properties)$/.test(file));
 
 const withFiles = (command, files) => `${command} ${files.map((file) => `"${file.replace(/"/g, '\\"')}"`).join(" ")}`;
 

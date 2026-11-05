@@ -1,0 +1,10 @@
+// {{ spdx_copyright_line }}
+//
+// {{ project_license_line }}
+
+module {{ java_package }}.blackbox {
+  requires {{ java_package }};
+  requires org.junit.jupiter.api;
+  requires org.assertj.core;
+  opens {{ java_package }}.blackbox to org.junit.platform.commons;
+}

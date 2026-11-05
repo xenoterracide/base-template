@@ -1,0 +1,18 @@
+// {{ spdx_copyright_line }}
+//
+// {{ project_license_line }}
+
+package {{ java_package }}.blackbox;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import {{ java_package }}.Example;
+import org.junit.jupiter.api.Test;
+
+class ExampleTest {
+
+  @Test
+  void value() {
+    assertThat(new Example().value()).isEqualTo("example");
+  }
+}
