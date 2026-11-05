@@ -214,6 +214,14 @@ def test_skeleton_suppressed(tmp_path):
     assert "packages/" not in vitest, "vitest project rooted at a missing package"
 
 
+def test_lintstagedrc_uses_the_answered_holder(tmp_path):
+    """A consumer's files must carry the consumer's copyright, not the author's."""
+    dst = copy_template(tmp_path / "holder", {**JAVA_ANSWERS, "copyright_holder": "Sample Owner"})
+    content = (dst / ".lintstagedrc.cjs").read_text()
+    assert "Sample Owner" in content
+    assert "Caleb Cushing" not in content
+
+
 def test_consumer_contribute_bootstraps_without_lockfile(generated):
     """Fresh consumers have no lockfile; precontribute must not freeze."""
     dst, _ = generated

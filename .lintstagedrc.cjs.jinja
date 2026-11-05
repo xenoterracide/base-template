@@ -5,7 +5,7 @@
 const shfmt = "shfmt --write";
 const prettier = "prettier --cache --ignore-unknown --write";
 const reuse = "uv run --frozen --group dev reuse annotate";
-const copyright = "--copyright 'Caleb Cushing' --merge-copyrights";
+const copyright = "--copyright '{{ copyright_holder }}' --merge-copyrights";
 const symbol = "--copyright-prefix spdx-string-symbol";
 
 const licenseConfiguration = "--license '{{ license }}' --fallback-dot-license";
