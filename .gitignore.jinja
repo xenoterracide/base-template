@@ -16,9 +16,9 @@ node_modules
 !LICENSES/*.txt
 
 # Coverage reports
-coverage/
+coverage/{% if template_type == 'java' %}
 
-{% if template_type == 'java' %}# Java
+# Java
 target/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
@@ -43,9 +43,7 @@ target/
 .sts4-cache
 
 ### VS Code ###
-.vscode/
-{% endif %}
+.vscode/{% endif %}{% if template_type == 'typescript' %}
 
-{% if template_type == 'typescript' %}# TypeScript
-dist/
-{% endif %}
+# TypeScript
+dist/{% endif %}
