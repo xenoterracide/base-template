@@ -9,11 +9,9 @@ _exclude:
   - .github/workflows
   - docs/
   - tests/
-  - yarn.lock
+  - pnpm-lock.yaml
   - uv.lock
   - LICENSES
-  - .yarn/
-  - .pnp.*
   - node_modules
   - .venv
   - copier.yml
@@ -25,7 +23,7 @@ _tasks:
 
 _message_after_copy: |
   Your new {{ project_title }} project is ready.
-  Run `yarn contribute` to install tooling and set up git hooks.
+  Run `pnpm contribute` to install tooling and set up git hooks.
   For typescript projects, copy staged/.github/workflows/* into .github/workflows/.
 
 _envops:
@@ -40,6 +38,7 @@ template_type:
   choices:
     Java: java
     TypeScript: typescript
+    Config: config
   default: typescript
 
 project_name:
@@ -57,6 +56,7 @@ license:
     GPL-3.0-or-later: GPL-3.0-or-later
     Apache-2.0: Apache-2.0
     MIT: MIT
+    CC0-1.0: CC0-1.0
   default: GPL-3.0-or-later
 
 copyright_holder:
@@ -71,6 +71,11 @@ copyright_year:
 use_opencode:
   type: bool
   default: true
+
+include_skeleton:
+  type: bool
+  default: true
+  help: Generate the example module/package? Adopted consumers seed this false.
 
 java_group_id:
   type: str
@@ -119,7 +124,7 @@ spdx_license_line:
 license_url:
   type: str
   default: >-
-    {% if license == 'GPL-3.0-or-later' %}https://www.gnu.org/licenses/gpl-3.0.txt{% elif license == 'Apache-2.0' %}https://www.apache.org/licenses/LICENSE-2.0.txt{% else %}https://opensource.org/licenses/MIT{% endif %}
+    {% if license == 'GPL-3.0-or-later' %}https://www.gnu.org/licenses/gpl-3.0.txt{% elif license == 'Apache-2.0' %}https://www.apache.org/licenses/LICENSE-2.0.txt{% elif license == 'CC0-1.0' %}https://creativecommons.org/publicdomain/zero/1.0/legalcode{% else %}https://opensource.org/licenses/MIT{% endif %}
   when: false
 
 java_package:
