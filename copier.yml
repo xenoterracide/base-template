@@ -6,6 +6,9 @@
 _min_copier_version: "9.0.0"
 
 _exclude:
+  # Copier replaces its DEFAULT_EXCLUDE (which contains .git) when _exclude is
+  # set, so the defaults that must hold get restated here.
+  - .git
   - .github/workflows
   - docs/
   - tests/
@@ -16,6 +19,15 @@ _exclude:
   - .venv
   - copier.yml
   - .python-version
+
+# Seed once, then the consumer owns them: their Renovate updates .tool-versions
+# and the Maven wrapper from then on. Copier leaves existing files alone and
+# recreates deleted ones.
+_skip_if_exists:
+  - .tool-versions
+  - mvnw
+  - mvnw.cmd
+  - .mvn/wrapper/maven-wrapper.properties
 
 _tasks:
   - npx --yes prettier@3.6.2 --ignore-unknown --write .

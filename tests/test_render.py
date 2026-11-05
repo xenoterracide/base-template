@@ -93,10 +93,27 @@ def test_rendered_supersedes_static(generated):
         assert ".share" not in content
 
 
+def test_tool_versions_matches_authoring(generated):
+    """Renders carry the authoring common pins plus the variant's lines."""
+    dst, answers = generated
+    common = (TEMPLATE / ".tool-versions").read_text()
+    rendered = (dst / ".tool-versions").read_text()
+    if answers["template_type"] == "java":
+        assert rendered == "java temurin-25.0.5+8.0.LTS\nktlint 1.8.0\n" + common
+    else:
+        assert rendered == common
+
+
 def test_heal_is_executable(generated):
     dst, _ = generated
     st = (dst / ".config/git/hooks/heal.sh").stat()
     assert st.st_mode & stat.S_IXUSR
+
+
+def test_no_git_dir_in_render(generated):
+    """Copier replaces its default excludes when _exclude is set; .git must stay."""
+    dst, _ = generated
+    assert not (dst / ".git").exists(), "template clone's .git leaked into render"
 
 
 def test_no_lockfiles_in_output(generated):
@@ -116,12 +133,11 @@ def _strip_jinja(text: str) -> str:
     return re.sub(r"\{\{[^{}]*\}\}", "x", text)
 
 
-def test_package_json_ranges_match_authoring():
-    """Renovate bumps the authoring package.json; the template must follow."""
+def test_package_json_defines_the_shared_tool_set():
+    """The authoring package.json names the shared tools; ranges are floors."""
     authoring = json.loads((TEMPLATE / "package.json").read_text())
     rendered = json.loads(_strip_jinja((TEMPLATE / "package.json.jinja").read_text()))
-    for dep, spec in authoring["devDependencies"].items():
-        assert rendered["devDependencies"].get(dep) == spec, f"range drift: {dep}"
+    assert set(authoring["devDependencies"]) <= set(rendered["devDependencies"])
 
 
 def test_pyproject_toml_is_valid(generated):
