@@ -6,53 +6,27 @@ SPDX-License-Identifier: CC-BY-NC-SA-4.0
 
 # Contributing
 
-This repository is shared configuration and tooling. Most changes affect
-linting, formatting, licensing, or automation across multiple projects.
-
-## Repository overview
-
-- **Git hooks** in `git/hooks/` for conventional commits, lint-staged staged
-  checks, and automatic dependency syncing.
-
-- **Formatting and linting** via Prettier and REUSE.
-- **Conventional commit validation** via `git-conventional-commits`.
-- **GitHub Actions workflows** for license, prettier, shfmt, and devtool
-  regression checks.
-- **Renovate configuration** for automated dependency updates.
-
 ## Setup
 
-```bash
-# Install Node.js, Python, and other tools listed in .tool-versions
-asdf install
+    git clone https://github.com/xenoterracide/base-template
+    cd base-template
+    pnpm contribute
 
-# Install Node dependencies, sync Python environment, and configure git hooks
-yarn contribute
-```
+## Lint
 
-## Build, Test, and Lint
+    pnpm lint
 
-```bash
-# Run all checks (prettier + REUSE)
-yarn lint
+## Adding template files
 
-# Check formatting only
-yarn lint:prettier
+- Shared config, identical in every consumer: place it verbatim at the root.
+  Inline SPDX headers. CC0 for configs, MIT for scripts.
+- Shared but answer-dependent: write `*.jinja` with baked whole-line SPDX
+  moustaches. Do not list the target name in `_exclude`. The render wins.
+- Variant-only: gate the filename with `{% if template_type == '…' %}`.
 
-# Check REUSE license compliance
-yarn lint:reuse
-```
+## Pull requests
 
-## Pull Requests
-
-- Follow the project's [conventional commit
-  conventions](git-conventional-commits.yaml).
-- Update `README.md` if user-facing behavior changes.
-- Update `AGENTS.md` if build processes, tools, or agent workflows change.
-- Update `CONTRIBUTING.md` if contributor-facing commands or workflows change.
-- Ensure all GitHub checks pass before requesting review.
-
-## License
-
-By contributing, you agree to license your work under the project's
-[CC-BY-NC-SA-4.0](LICENSES/CC-BY-NC-SA-4.0.txt) license.
+- Conventional commits. `git-conventional-commits.yaml` lists the types.
+- The agent token cannot push `.github/workflows/**`. A human pushes those.
+- Update `README.md` when user-facing behavior changes.
+- Update `AGENTS.md` when build processes or tooling change.

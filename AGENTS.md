@@ -4,42 +4,49 @@ SPDX-FileCopyrightText: Copyright © 2026 Caleb Cushing
 SPDX-License-Identifier: CC-BY-NC-SA-4.0
 -->
 
-# share
+# base-template
 
-Shared configuration, git hooks, and tooling repository. Uses Node.js-based
-developer tools (Prettier, lint-staged, git-conventional-commits) managed via
-Yarn PnP, with Python scripting via `uv`.
-
-Hooks in `git/hooks/` are installed directly via git `core.hooksPath` (see
-`yarn contribute`). Hooks run as native git hooks (for example, `post-checkout`
-receives scope and checkout type as positional arguments).
-
-The `post-checkout` hook runs `sync-tooling` after checkout; downstream
-consumers update tooling when they pull the latest subtree or submodule.
-
-## Build and Test
-
-- Lint/format: `yarn lint`
-- Prettier check: `yarn lint:prettier`
-- REUSE compliance: `yarn lint:reuse`
-- Setup after clone: `yarn contribute`
+Copier template for Java and TypeScript projects. This repo wears two hats:
+authoring checkout and template source. Every shared file serves both.
 
 ## Source of Truth
 
-- Tool versions → `.tool-versions`
-- Node scripts and dev dependencies → `package.json`
-- Python dependencies → `pyproject.toml`, `uv.lock`
-- Conventional commit types → `git-conventional-commits.yaml`
-- Renovate configuration → `.github/renovate.json5`
-- Git hooks → `git/hooks/`
-- lint-staged configuration → `.lintstagedrc.cjs`
+Read these files instead of trusting a copy of their contents here.
+
+| For                            | See                                |
+| ------------------------------ | ---------------------------------- |
+| Install, update, usage         | `README.md`                        |
+| Tool versions                  | `.tool-versions`                   |
+| pnpm version                   | `packageManager` in `package.json` |
+| Node dev dependencies          | `package.json`, `pnpm-lock.yaml`   |
+| Python dependencies            | `pyproject.toml`, `uv.lock`        |
+| Formatting rules               | `.editorconfig`, `.prettierrc.cjs` |
+| Conventional commit types      | `git-conventional-commits.yaml`    |
+| Pre-commit rules               | `.lintstagedrc.cjs`                |
+| License headers                | `REUSE.toml`, `.lintstagedrc.cjs`  |
+| Git hooks                      | `.config/git/hooks`                |
+| Template questions and answers | `copier.yml`                       |
+| Design decisions               | `docs/superpowers/specs/`          |
+| CI workflows                   | `.github/workflows/`               |
+| Renovate config                | `.github/renovate.json5`           |
+
+## Build and Test
+
+```bash
+pnpm contribute # bootstrap once after clone: tools, deps, hooks
+pnpm lint # prettier + REUSE
+```
 
 ## Conventions
 
-- All files MUST have SPDX license headers.
-- lint-staged enforces formatting and license annotation on staged files.
-- Git hooks live in `git/hooks/` and are installed by `yarn contribute`.
+- Every file carries an SPDX header. `.jinja` sources bake headers as
+  whole-line moustaches.
+- Variant-only files gate through conditional path parts:
+  `{% if template_type == 'java' %}…{% endif %}`.
+- Hooks heal the toolchain. `.envrc`, `contribute`, and the post hooks call
+  `.config/git/hooks/heal.sh`. A failed heal never breaks a checkout.
+- Renovate pins move weekly. Expect `develop` to move.
 
 ## Maintenance
 
-Update this file when you change workflows or conventions it describes.
+Update this file when conventions change.
