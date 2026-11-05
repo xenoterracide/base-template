@@ -346,21 +346,53 @@ def test_precommit_content(generated):
     assert "shellcheck.yml@" in content
 
 
-def test_reuse_lint(generated):
-    """Generated projects must pass reuse lint offline (after license fetch)."""
-    dst, _ = generated
+@pytest.mark.parametrize("variant", ["java", "typescript", "config"])
+def test_reuse_lint(tmp_path, variant):
+    """A bare render turns REUSE-compliant once lint-staged annotates it."""
+    dst = copy_template(tmp_path, ANSWERS[variant])
+    subprocess.run(["git", "init", "--quiet"], cwd=dst, check=True)
     subprocess.run(
-        ["uvx", "reuse@6.2.0", "download", "--all"],
+        ["pnpm", "install", "--reporter=silent"],
         cwd=dst,
         check=True,
         capture_output=True,
-        timeout=120,
+        timeout=600,
+    )
+    subprocess.run(
+        ["uv", "sync", "--quiet"],
+        cwd=dst,
+        check=True,
+        capture_output=True,
+        timeout=600,
+    )
+    subprocess.run(["git", "add", "-A"], cwd=dst, check=True)
+    subprocess.run(
+        ["pnpm", "exec", "lint-staged"],
+        cwd=dst,
+        check=True,
+        capture_output=True,
+        timeout=600,
+    )
+    subprocess.run(["git", "add", "-A"], cwd=dst, check=True)
+    subprocess.run(
+        [
+            "git",
+            "-c",
+            "user.name=verify",
+            "-c",
+            "user.email=verify@localhost",
+            "commit",
+            "-qm",
+            "verify render",
+        ],
+        cwd=dst,
+        check=True,
     )
     result = subprocess.run(
-        ["uvx", "reuse@6.2.0", "lint"],
+        ["pnpm", "lint:reuse"],
         cwd=dst,
         capture_output=True,
         text=True,
-        timeout=120,
+        timeout=300,
     )
     assert result.returncode == 0, f"reuse lint failed:\n{result.stdout}\n{result.stderr}"

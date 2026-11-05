@@ -33,9 +33,10 @@ uv sync --quiet
 
 # reuse needs a committed tree to honor nested ignored dirs (git 2.56
 # drops them from ls-files --ignored when untracked siblings exist)
-echo "Committing the render..."
+echo "Committing the render (lint-staged annotates headers)..."
 git init --quiet
 git add -A
+pnpm exec lint-staged
 git -c user.name=verify -c user.email=verify@localhost commit -qm "verify render"
 
 echo "Running prettier check..."
