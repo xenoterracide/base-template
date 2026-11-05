@@ -250,8 +250,34 @@ def test_skeleton_suppressed(tmp_path):
     assert "packages/" not in vitest, "vitest project rooted at a missing package"
 
 
+def test_renders_carry_no_blank_line_scaffolding(generated):
+    """False variant blocks must not leave blank lines behind."""
+    dst, _ = generated
+    for path in dst.rglob("*"):
+        if not path.is_file() or "LICENSES" in path.parts:
+            continue
+        assert "\n\n\n" not in path.read_text(), f"blank scaffolding: {path.name}"
+
+
+def test_answers_file_declares_the_yml_license(generated):
+    """The answers file is a .yml; lint-staged annotates .yml as MIT."""
+    dst, _ = generated
+    content = (dst / ".copier-answers.yml").read_text()
+    # REUSE-IgnoreStart
+    assert "SPDX-License-Identifier: MIT" in content
+    # REUSE-IgnoreEnd
+    assert "CC0-1.0" not in content
+
+
+def test_package_json_scope_is_answerable(tmp_path):
+    """The root package name keeps its npm scope when the consumer has one."""
+    dst = copy_template(tmp_path / "scoped", {**ANSWERS["config"], "npm_scope": "@xenoterracide"})
+    data = json.loads((dst / "package.json").read_text())
+    assert data["name"] == "@xenoterracide/sample"
+
+
 def test_docs_render_with_the_doc_license(generated):
-    """Docs carry CC-BY-NC-SA, matching lint-staged's doc row."""
+    """Docs carry CC-BY-NC-SA in the block form reuse annotate writes."""
     dst, _ = generated
     # REUSE-IgnoreStart
     want = "SPDX-License-Identifier: CC-BY-NC-SA-4.0"
@@ -261,6 +287,7 @@ def test_docs_render_with_the_doc_license(generated):
         content = (dst / rel).read_text()
         assert want in content, rel
         assert reject not in content, rel
+        assert content.startswith("<!--\nSPDX-FileCopyrightText"), rel
 
 
 def test_lintstagedrc_licenses_by_file_class(generated):

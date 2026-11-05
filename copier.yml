@@ -1,6 +1,5 @@
 # SPDX-FileCopyrightText: Copyright © 2026 Caleb Cushing
 #
-# SPDX-License-Identifier: CC0-1.0
 # SPDX-License-Identifier: MIT
 
 _min_copier_version: "9.0.0"
@@ -67,6 +66,11 @@ project_title:
   default: "{{ project_name }}"
   help: Human-readable name for README/AGENTS
 
+npm_scope:
+  type: str
+  default: ""
+  help: npm scope for the root package.json name (empty for unscoped)
+
 license:
   type: str
   choices:
@@ -80,10 +84,12 @@ copyright_holder:
   type: str
   default: Caleb Cushing
 
+# A real question, not computed: the answers file records it, so a
+# consumer's year range (e.g. 2024-2026) survives every update.
 copyright_year:
   type: str
   default: "{{ '%Y' | strftime }}"
-  when: false
+  help: Copyright year or range for SPDX headers
 
 use_opencode:
   type: bool
