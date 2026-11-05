@@ -6,7 +6,7 @@ SPDX-License-Identifier: CC-BY-NC-SA-4.0
 
 # Revive base-template as the Source of Truth
 
-Status: Draft for review
+Status: Accepted
 
 Supersedes the toolchain choices in
 [`2026-09-07-template-repo-design.md`](2026-09-07-template-repo-design.md).
