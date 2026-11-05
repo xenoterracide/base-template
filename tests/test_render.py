@@ -250,6 +250,19 @@ def test_skeleton_suppressed(tmp_path):
     assert "packages/" not in vitest, "vitest project rooted at a missing package"
 
 
+def test_docs_render_with_the_doc_license(generated):
+    """Docs carry CC-BY-NC-SA, matching lint-staged's doc row."""
+    dst, _ = generated
+    # REUSE-IgnoreStart
+    want = "SPDX-License-Identifier: CC-BY-NC-SA-4.0"
+    reject = "SPDX-License-Identifier: GPL-3.0-or-later"
+    # REUSE-IgnoreEnd
+    for rel in ("README.md", "AGENTS.md", "CONTRIBUTING.md", "staged/README"):
+        content = (dst / rel).read_text()
+        assert want in content, rel
+        assert reject not in content, rel
+
+
 def test_lintstagedrc_licenses_by_file_class(generated):
     """Config files get CC0; code files get the answered license."""
     dst, _ = generated
