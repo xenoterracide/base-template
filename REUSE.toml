@@ -40,9 +40,9 @@ SPDX-FileCopyrightText = "Copyright © 2026 Caleb Cushing"
 SPDX-License-Identifier = "CC0-1.0"
 
 [[annotations]]
-# jvm.config is a static authoring copy with no SPDX header and no .license
-# sibling; the consumer renders it headerless and annotate adds the sidecar.
-# Annotation matches the literal conditional path.
+# jvm.config is a static authoring copy with no SPDX header; both the
+# authoring and consumer REUSE.toml license it by annotation (CC0-1.0).
+# This annotation matches the literal conditional path in the authoring tree.
 path = "{% if template_type == 'java' %}.mvn{% endif %}/jvm.config"
 SPDX-FileCopyrightText = "NONE"
 SPDX-License-Identifier = "CC0-1.0"
