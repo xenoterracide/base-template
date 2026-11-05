@@ -4,6 +4,7 @@
 
 """The update contract: behavior is managed, versions are seeded."""
 
+import re
 import shutil
 import subprocess
 
@@ -78,7 +79,7 @@ def test_update_leaves_consumer_versions_alone(template_repo, tmp_path):
     """Consumer bumps survive an update; template version bumps do not land."""
     proj = render(template_repo, tmp_path / "proj")
     tv = proj / ".tool-versions"
-    tv.write_text(tv.read_text().replace("nodejs 26.13.0", "nodejs 99.0.0"))
+    tv.write_text(re.sub(r"nodejs \S+", "nodejs 99.0.0", tv.read_text()))
     mvnw = proj / "mvnw"
     mvnw.write_text(mvnw.read_text() + "\n# consumer edit\n")
     git("add", "-A", cwd=proj)
@@ -112,7 +113,40 @@ def test_fresh_copy_seeds_current_authoring_pins(template_repo, tmp_path):
     """Renovate bumps the authoring .tool-versions; fresh copies follow."""
     authoring = template_repo / ".tool-versions"
     authoring.write_text(
-        authoring.read_text().replace("nodejs 26.13.0", "nodejs 99.0.0")
+        re.sub(r"nodejs \S+", "nodejs 99.0.0", authoring.read_text())
     )
     proj = render(template_repo, tmp_path / "proj")
     assert "nodejs 99.0.0" in (proj / ".tool-versions").read_text()
+
+
+def test_render_excludes_editor_junk(template_repo, tmp_path):
+    """Restated copier defaults keep editor junk out of renders."""
+    (template_repo / ".DS_Store").write_text("junk")
+    (template_repo / "~draft.md").write_text("junk")
+    git("add", "-A", cwd=template_repo)
+    git("commit", "-qm", "junk lands in checkout", cwd=template_repo)
+    proj = render(template_repo, tmp_path / "proj")
+    assert not (proj / ".DS_Store").exists()
+    assert not (proj / "~draft.md").exists()
+
+
+def test_update_recreates_deleted_seeds(template_repo, tmp_path):
+    """Deleted seeds come back; only skip-listed files do."""
+    proj = render(template_repo, tmp_path / "proj")
+    seeds = (".tool-versions", "mvnw", "mvnw.cmd", ".mvn/wrapper/maven-wrapper.properties")
+    for rel in seeds:
+        (proj / rel).unlink()
+    git("add", "-A", cwd=proj)
+    git("commit", "-qm", "consumer deletes seeds", cwd=proj)
+
+    copier.run_update(
+        dst_path=str(proj),
+        defaults=True,
+        unsafe=True,
+        quiet=True,
+        skip_tasks=True,
+        overwrite=True,
+    )
+
+    for rel in seeds:
+        assert (proj / rel).exists(), f"deleted seed not recreated: {rel}"

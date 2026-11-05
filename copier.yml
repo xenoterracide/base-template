@@ -6,9 +6,14 @@
 _min_copier_version: "9.0.0"
 
 _exclude:
-  # Copier replaces its DEFAULT_EXCLUDE (which contains .git) when _exclude is
-  # set, so the defaults that must hold get restated here.
+  # Copier replaces its DEFAULT_EXCLUDE when _exclude is set, so its
+  # entries are restated here.
   - .git
+  - .DS_Store
+  - .svn
+  - '~*'
+  - '*.py[co]'
+  - __pycache__
   - .github/workflows
   - docs/
   - tests/
