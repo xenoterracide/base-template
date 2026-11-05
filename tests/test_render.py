@@ -291,6 +291,12 @@ def test_reuse_toml_carries_no_gitmodules(generated):
     assert ".gitmodules" not in (dst / "REUSE.toml").read_text()
 
 
+def test_reuse_toml_annotates_python_version(generated):
+    """A .python-version pin is licensed in every variant, not just java."""
+    dst, _ = generated
+    assert ".python-version" in (dst / "REUSE.toml").read_text()
+
+
 def test_package_json_scope_is_answerable(tmp_path):
     """The root package name keeps its npm scope when the consumer has one."""
     dst = copy_template(tmp_path / "scoped", {**ANSWERS["config"], "npm_scope": "@xenoterracide"})
