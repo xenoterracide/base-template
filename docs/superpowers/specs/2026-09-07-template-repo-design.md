@@ -6,7 +6,7 @@ SPDX-License-Identifier: CC-BY-NC-SA-4.0
 
 # Template Repo Design
 
-Status: Draft for review
+Status: Accepted (superseded in part — see Deviations)
 
 Date: 2026-09-07
 
@@ -479,3 +479,20 @@ Python dev deps to add: `copier`, `pytest`, `jinja2` (already a copier dep),
   needed so lint-staged doesn't mangle `{% %}`.
 - `copier` numbering/lockfile handling in `uv`: how `uv.lock` treats the
   copier/pytest dev group (standard).
+
+## Deviations (recorded 2026-11-04)
+
+The 2026-11-04 design
+(`2026-11-04-revive-source-of-truth-design.md`) supersedes this spec's
+toolchain choices. Its plan records the execution rulings. Summary:
+
+- yarn 4.18 became pnpm 12.16.1; `yarn.yml` no longer exists upstream.
+- `git/hooks/` became `.config/git/hooks/` with `heal.sh`; `sync-tooling`
+  and `check-yarn-env` were deleted.
+- A `config` variant and an `include_skeleton` answer were added.
+- The skeleton's test toolchain BOM ships in the parent pom; product
+  dependencies stay local.
+- GitHub's `${{ secrets.* }}` expressions collide with Jinja and need
+  `{% raw %}` wrapping.
+- The post-copy prettier task runs without plugins, so `.jinja` sources
+  must render prettier-clean unaided.

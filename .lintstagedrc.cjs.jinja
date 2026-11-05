@@ -5,19 +5,22 @@
 const shfmt = "shfmt --write";
 const prettier = "prettier --cache --ignore-unknown --write";
 const reuse = "uv run --frozen --group dev reuse annotate";
-const copyright = "--copyright 'Caleb Cushing' --merge-copyrights";
+const copyright = "--copyright '{{ copyright_holder }}' --merge-copyrights";
 const symbol = "--copyright-prefix spdx-string-symbol";
 
 const licenseConfiguration = "--license '{{ license }}' --fallback-dot-license";
 const licenseDocumentation = "--license 'CC-BY-NC-SA-4.0'";
 const licenseScripts = "--license 'MIT' --fallback-dot-license";
 
-const withoutYarn = (files) => files.filter((file) => !file.includes("/.yarn/") && !file.startsWith(".yarn/"));
+// pnpm-lock.yaml and the maven wrapper properties are generated; header
+// comments and formatting break them
+const withoutGenerated = (files) =>
+  files.filter((file) => !/(^|\/)(pnpm-lock\.yaml|maven-wrapper\.properties)$/.test(file));
 
 const withFiles = (command, files) => `${command} ${files.map((file) => `"${file.replace(/"/g, '\\"')}"`).join(" ")}`;
 
 const run = (commands) => (files) => {
-  const filtered = withoutYarn(files);
+  const filtered = withoutGenerated(files);
 
   if (!filtered.length) {
     return [];
@@ -31,7 +34,7 @@ module.exports = {
   "!(package).json": run([`${reuse} ${copyright} ${symbol} ${licenseConfiguration}`, prettier]),
   // package.json can contain logic via the scripts segment
   "package.json": run([`${reuse} ${copyright} ${symbol} ${licenseScripts}`, prettier]),
-  "{git/hooks/**,**/*.*sh}": run([`${reuse} ${copyright} ${symbol} ${licenseScripts} --style python`, shfmt]),
+  "{.config/git/hooks/**,**/*.*sh}": run([`${reuse} ${copyright} ${symbol} ${licenseScripts} --style python`, shfmt]),
   "*.{md,adoc}": run([`${reuse} ${copyright} ${symbol} ${licenseDocumentation}`, prettier]),
   "*.{xml,yaml,properties,toml,json5}": run([`${reuse} ${copyright} ${licenseConfiguration} ${symbol}`, prettier]),
   // yml is different from yaml extension as the only known yaml required file is for git-conventional-commits, but yml

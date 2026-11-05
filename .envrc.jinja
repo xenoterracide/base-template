@@ -4,7 +4,5 @@
 #
 # SPDX-License-Identifier: MIT
 
-asdf install
-if ! git config core.hooksPath 2>/dev/null | grep -q "git/hooks"; then
-  echo "Git hooks not configured. Run: yarn contribute"
-fi
+# direnv entry: everything heals through one script.
+./.config/git/hooks/heal.sh

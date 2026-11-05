@@ -35,10 +35,14 @@ Read these files instead of trusting a copy of their contents here.
 ```bash
 pnpm contribute # bootstrap once after clone: tools, deps, hooks
 pnpm lint # prettier + REUSE
+uv run --group dev pytest tests/ -q # render all variants, assert structure
+./tests/verify.sh config # full check of a generated project (java|typescript|config)
 ```
 
 ## Conventions
 
+- Read `.editorconfig` before editing. Every text file ends with a newline,
+  including `.jinja` sources, which prettier cannot check.
 - Every file carries an SPDX header. `.jinja` sources bake headers as
   whole-line moustaches.
 - Variant-only files gate through conditional path parts:

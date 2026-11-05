@@ -1,0 +1,21 @@
+# {{ spdx_copyright_line }}
+#
+# SPDX-License-Identifier: MIT
+
+name: test
+on: push
+permissions:
+  contents: read
+jobs:
+{% if template_type == 'java' %}
+  maven:
+    uses: xenoterracide/github/.github/workflows/maven.yml@0581f01dc0d31c44a5acee5e63b0233d71b97e7b # develop
+    permissions:
+      actions: write
+      contents: read
+      packages: read
+{% endif %}
+{% if template_type == 'typescript' %}
+  pnpm:
+    uses: xenoterracide/github/.github/workflows/pnpm.yml@0581f01dc0d31c44a5acee5e63b0233d71b97e7b # develop
+{% endif %}

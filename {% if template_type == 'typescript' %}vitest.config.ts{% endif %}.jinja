@@ -1,0 +1,29 @@
+// {{ spdx_copyright_line }}
+//
+// {{ project_license_line }}
+
+import { defineConfig } from "vitest/config";
+
+export default defineConfig({
+  test: {
+    exclude: ["**/node_modules/**", "**/.agents/**"],{% if include_skeleton %}
+    projects: [
+      {
+        test: {
+          name: "{{ first_package }}",
+          root: "./packages/{{ first_package }}",
+          include: ["**/*.test.ts"],
+        },
+      },
+    ],{% endif %}
+    coverage: {
+      exclude: ["**/node_modules/**", "**/*.test.ts", "**/coverage/**"],
+      thresholds: {
+        statements: 70,
+        branches: 58,
+        functions: 72,
+        lines: 70,
+      },
+    },
+  },
+});
