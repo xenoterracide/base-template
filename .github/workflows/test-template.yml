@@ -53,6 +53,7 @@ jobs:
       - uses: actions/setup-java@v6.1.0
         with:
           distribution: temurin
+          # no `cache: maven`: this repo has no pom.xml, the java pom is
+          # rendered per-variant, and setup-java fails the job without one
           java-version: 25.0.5+8.0.LTS
-          cache: maven
       - run: ./tests/verify.sh java
