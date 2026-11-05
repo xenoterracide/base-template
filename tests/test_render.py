@@ -140,6 +140,26 @@ def test_package_json_defines_the_shared_tool_set():
     assert set(authoring["devDependencies"]) <= set(rendered["devDependencies"])
 
 
+def test_tracked_files_end_with_a_newline():
+    """insert_final_newline holds where prettier cannot check."""
+    vendored = {
+        # upstream maven wrapper sources, kept byte-faithful; their renders
+        # end with a newline through the raw block instead
+        "{% if template_type == 'java' %}mvnw{% endif %}.jinja",
+        "{% if template_type == 'java' %}mvnw.cmd{% endif %}.jinja",
+    }
+    tracked = subprocess.run(
+        ["git", "ls-files", "-z"], cwd=TEMPLATE, capture_output=True, check=True
+    ).stdout.split(b"\0")
+    for raw in tracked:
+        if not raw:
+            continue
+        rel = raw.decode()
+        if rel in vendored:
+            continue
+        assert (TEMPLATE / rel).read_bytes().endswith(b"\n"), f"no final newline: {rel}"
+
+
 def test_pyproject_toml_is_valid(generated):
     dst, _ = generated
     data = tomllib.loads((dst / "pyproject.toml").read_text())

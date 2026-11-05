@@ -41,6 +41,8 @@ uv run --group dev pytest tests/ -q # render all variants, assert structure
 
 ## Conventions
 
+- Read `.editorconfig` before editing. Every text file ends with a newline,
+  including `.jinja` sources, which prettier cannot check.
 - Every file carries an SPDX header. `.jinja` sources bake headers as
   whole-line moustaches.
 - Variant-only files gate through conditional path parts:
