@@ -250,6 +250,25 @@ def test_skeleton_suppressed(tmp_path):
     assert "packages/" not in vitest, "vitest project rooted at a missing package"
 
 
+def test_lintstagedrc_licenses_by_file_class(generated):
+    """Config files get CC0; code files get the answered license."""
+    dst, _ = generated
+    content = (dst / ".lintstagedrc.cjs").read_text()
+    assert "const licenseCode = \"--license 'GPL-3.0-or-later'\";" in content
+    assert (
+        "const licenseConfiguration = \"--license 'CC0-1.0' --fallback-dot-license\";"
+        in content
+    )
+    assert (
+        '"*.ts": run([`${reuse} ${copyright} ${symbol} ${licenseCode}`, prettier])'
+        in content
+    )
+    assert (
+        '"*.java": run([`${reuse} ${copyright} ${symbol} ${licenseCode}`, prettier])'
+        in content
+    )
+
+
 def test_lintstagedrc_uses_the_answered_holder(tmp_path):
     """A consumer's files must carry the consumer's copyright, not the author's."""
     dst = copy_template(tmp_path / "holder", {**JAVA_ANSWERS, "copyright_holder": "Sample Owner"})

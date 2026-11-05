@@ -8,6 +8,7 @@ const reuse = "uv run --frozen --group dev reuse annotate";
 const copyright = "--copyright 'Caleb Cushing' --merge-copyrights";
 const symbol = "--copyright-prefix spdx-string-symbol";
 
+const licenseCode = "--license 'GPL-3.0-or-later'";
 const licenseConfiguration = "--license 'CC0-1.0' --fallback-dot-license";
 const licenseDocumentation = "--license 'CC-BY-NC-SA-4.0'";
 const licenseScripts = "--license 'MIT' --fallback-dot-license";
@@ -47,4 +48,8 @@ module.exports = {
   // JetBrains obnoxiously assume that properties files aren't utf8 by default, and so to avoid rendering issues we
   // avoid adding the Unicode copyright symbol
   "*.properties": run([`${reuse} ${copyright} ${licenseConfiguration}`, prettier]),
+  // TypeScript code
+  "*.ts": run([`${reuse} ${copyright} ${symbol} ${licenseCode}`, prettier]),
+  // Java code
+  "*.java": run([`${reuse} ${copyright} ${symbol} ${licenseCode}`, prettier]),
 };
