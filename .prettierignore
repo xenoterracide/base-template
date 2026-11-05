@@ -4,6 +4,7 @@
 
 .agents/
 .superpowers/
+.pytest_cache/
 pnpm-lock.yaml
 uv.lock
 .venv/
