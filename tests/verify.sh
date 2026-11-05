@@ -9,19 +9,34 @@
 set -eu
 
 VARIANT="${1:-java}"
-TMPDIR=$(mktemp -d /tmp/opencode/verify.XXXXXXXX)
-trap 'rm -rf "$TMPDIR"' EXIT
+case "$VARIANT" in
+java | typescript | config) ;;
+*)
+  echo "usage: $0 [java|typescript|config]" >&2
+  exit 2
+  ;;
+esac
 
-echo "Generating $VARIANT project into $TMPDIR..."
+WORK=$(mktemp -d)
+trap 'rm -rf "$WORK"' EXIT
+
+echo "Generating $VARIANT project into $WORK..."
 uv run --group dev copier copy --trust --defaults \
   --data template_type="$VARIANT" \
   --data project_name=sample \
-  . "$TMPDIR/sample" >/dev/null
+  . "$WORK/sample" >/dev/null
 
-cd "$TMPDIR/sample"
+cd "$WORK/sample"
 echo "Installing dependencies..."
 pnpm install --reporter=silent
 uv sync --quiet
+
+# reuse needs a committed tree to honor nested ignored dirs (git 2.56
+# drops them from ls-files --ignored when untracked siblings exist)
+echo "Committing the render..."
+git init --quiet
+git add -A
+git -c user.name=verify -c user.email=verify@localhost commit -qm "verify render"
 
 echo "Running prettier check..."
 pnpm lint:prettier

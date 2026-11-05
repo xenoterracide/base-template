@@ -183,6 +183,13 @@ def test_config_layout(generated):
     assert (dst / ".config/git/hooks/heal.sh").exists()
 
 
+def test_no_stray_variant_files_at_root(generated):
+    """Variant filenames must vanish whole, not leave extension-only strays."""
+    dst, _ = generated
+    for stray in (".cts", ".ts", ".license"):
+        assert not (dst / stray).exists(), f"stray root file: {stray}"
+
+
 def test_maven_wrapper_executable(generated):
     dst, answers = generated
     if answers["template_type"] != "java":
@@ -199,6 +206,20 @@ def test_skeleton_suppressed(tmp_path):
         assert not (dst / "packages").exists(), "ts skeleton leaked"
         assert not list(dst.rglob("Example.java"))
         assert not list(dst.rglob("ExampleTest.java"))
+    java = copy_template(tmp_path / "java-x", {**JAVA_ANSWERS, "include_skeleton": False})
+    pom = (java / "pom.xml").read_text()
+    assert "<modules>" not in pom, "parent pom references a module that does not exist"
+    ts = copy_template(tmp_path / "ts-x", {**ANSWERS["typescript"], "include_skeleton": False})
+    vitest = (ts / "vitest.config.ts").read_text()
+    assert "packages/" not in vitest, "vitest project rooted at a missing package"
+
+
+def test_consumer_contribute_bootstraps_without_lockfile(generated):
+    """Fresh consumers have no lockfile; precontribute must not freeze."""
+    dst, _ = generated
+    scripts = json.loads((dst / "package.json").read_text())["scripts"]
+    assert scripts["precontribute"] == "pnpm setup:corepack"
+    assert "setup:pnpm" not in scripts
 
 
 def test_opencode_workflow_absent_when_disabled(tmp_path):

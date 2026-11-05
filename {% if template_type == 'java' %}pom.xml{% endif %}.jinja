@@ -15,10 +15,10 @@ SPDX-License-Identifier: CC0-1.0
   <version>{{ java_version }}</version>
   <packaging>pom</packaging>
   <name>{{ project_title }} Parent</name>
-  <description>{{ project_title }}</description>
+  <description>{{ project_title }}</description>{% if include_skeleton %}
   <modules>
     <module>module/{{ java_module }}</module>
-  </modules>
+  </modules>{% endif %}
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.release>21</maven.compiler.release>
