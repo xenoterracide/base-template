@@ -17,6 +17,9 @@ java | typescript | config) ;;
   ;;
 esac
 
+# lint-staged's shell row needs shfmt; CI runners do not provision it.
+"$(dirname "$0")/install-shfmt.sh"
+
 WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT
 
