@@ -51,6 +51,9 @@ uv run --group dev pytest tests/ -q # render all variants, assert structure
 - Hooks heal the toolchain. `.envrc`, `contribute`, and the post hooks call
   `.config/git/hooks/heal.sh`. A failed heal never breaks a checkout.
 - Renovate pins move weekly. Expect `develop` to move.
+- Release tags are calver, `vYY.MM.micro` (`v26.11.0`): a dated checkpoint,
+  not a compatibility contract. The `v` lives on the git ref; manifests carry
+  the bare version. Bump micro for a second release in the same month.
 
 ## Maintenance
 
