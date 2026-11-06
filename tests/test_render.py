@@ -303,13 +303,16 @@ def test_envrc_keeps_its_shebang(generated):
     assert (dst / ".envrc").read_text().startswith("#!/bin/sh")
 
 
-def test_pom_opens_with_the_xml_declaration(generated):
-    """The rendered pom keeps its xml declaration; annotate stamps below it."""
+def test_xml_files_open_with_the_xml_declaration(generated):
+    """Rendered xml keeps its declaration; annotate stamps below it."""
     dst, answers = generated
     if answers["template_type"] != "java":
         pytest.skip()
-    for rel in ("pom.xml", "module/sample/pom.xml"):
-        assert (dst / rel).read_text().startswith(
+    xmls = sorted(dst.rglob("*.xml"))
+    assert xmls, "expected rendered xml files"
+    for path in xmls:
+        rel = path.relative_to(dst)
+        assert path.read_text().startswith(
             '<?xml version="1.0" encoding="UTF-8" ?>'
         ), f"{rel} lost its xml declaration"
 
