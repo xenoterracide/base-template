@@ -303,6 +303,17 @@ def test_envrc_keeps_its_shebang(generated):
     assert (dst / ".envrc").read_text().startswith("#!/bin/sh")
 
 
+def test_pom_opens_with_the_xml_declaration(generated):
+    """The rendered pom keeps its xml declaration; annotate stamps below it."""
+    dst, answers = generated
+    if answers["template_type"] != "java":
+        pytest.skip()
+    for rel in ("pom.xml", "module/sample/pom.xml"):
+        assert (dst / rel).read_text().startswith(
+            '<?xml version="1.0" encoding="UTF-8" ?>'
+        ), f"{rel} lost its xml declaration"
+
+
 def test_package_json_scope_is_answerable(tmp_path):
     """The root package name keeps its npm scope when the consumer has one."""
     dst = copy_template(tmp_path / "scoped", {**ANSWERS["config"], "npm_scope": "@xenoterracide"})
