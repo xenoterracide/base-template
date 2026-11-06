@@ -17,6 +17,7 @@ jobs:
     uses: xenoterracide/github/.github/workflows/regression-devtool-reuse.yml@daaa0efa357cb56f7e46ff5f461ef4c053c4cfb2 # develop
   shell:
     runs-on: ubuntu-26.04
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v7.0.1
       - uses: actions/cache@v6.1.0
