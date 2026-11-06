@@ -556,7 +556,7 @@ wheels = [
 
 [[package]]
 name = "share"
-version = "0.1.0"
+version = "26.11.0"
 source = { virtual = "." }
 
 [package.dev-dependencies]
