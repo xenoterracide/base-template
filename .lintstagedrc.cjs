@@ -33,9 +33,11 @@ const run = (commands) => (files) => {
 };
 
 module.exports = {
-  "!(package).json": run([`${reuse} ${copyright} ${symbol} ${licenseConfiguration}`, prettier]),
+  // JSON cannot carry headers; its licensing lives in REUSE.toml. Companion
+  // files confused agents and regenerate even when REUSE.toml covers the file.
+  "!(package).json": run(prettier),
   // package.json can contain logic via the scripts segment
-  "package.json": run([`${reuse} ${copyright} ${symbol} ${licenseScripts}`, prettier]),
+  "package.json": run(prettier),
   "{.config/git/hooks/**,**/*.*sh,.envrc}": run([
     `${reuse} ${copyright} ${symbol} ${licenseScripts} --style python`,
     shfmt,
