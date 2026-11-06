@@ -25,6 +25,6 @@ jobs:
       fail-fast: false
       matrix:
         variant: [java, typescript, config]
-    uses: xenoterracide/github/.github/workflows/copier.yml@06a950fc90d1c75f2cb7a917c141165e005ef45c # develop
+    uses: xenoterracide/github/.github/workflows/copier.yml@4c770150dc379159efd35fb5e1169f864ad5644c # develop
     with:
       variant: ${{ matrix.variant }}
