@@ -24,7 +24,7 @@
   },
   "scripts": {
     "check": "pnpm lint:prettier{% if template_type == 'typescript' %} && pnpm lint:eslint && pnpm typecheck && pnpm test{% endif %}",
-    "contribute": "sh .config/git/hooks/heal.sh",
+    "contribute": "if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then uvx reuse@6.2.0 download --all; fi && sh .config/git/hooks/heal.sh",
     "lint:prettier": "prettier --ignore-unknown --cache --check '**'",
     "lint:reuse": "pnpm reuse download --all && pnpm reuse lint",
     "precontribute": "pnpm setup:corepack",

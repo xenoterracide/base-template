@@ -422,3 +422,31 @@ def test_reuse_lint(tmp_path, variant):
         timeout=300,
     )
     assert result.returncode == 0, f"reuse lint failed:\n{result.stdout}\n{result.stderr}"
+
+
+def test_copier_runs_no_tasks():
+    """The hosted Renovate app never runs trusted tasks; _tasks block it."""
+    assert "\n_tasks:" not in (TEMPLATE / "copier.yml").read_text()
+
+
+def test_contribute_downloads_the_license_texts(generated):
+    """A fresh consumer's contribute populates LICENSES, replacing the task.
+
+    Only inside a git work tree: without one reuse scans `node_modules` and
+    seeds licenses the project never uses, which then fails `reuse lint`.
+    """
+    dst, _ = generated
+    scripts = json.loads((dst / "package.json").read_text())["scripts"]
+    assert scripts["contribute"] == (
+        "if git rev-parse --is-inside-work-tree >/dev/null 2>&1; "
+        "then uvx reuse@6.2.0 download --all; fi && sh .config/git/hooks/heal.sh"
+    )
+
+
+def test_renovate_copier_updates_merge_by_hand(generated):
+    """Copier PRs can carry .rej files, so they must not automerge."""
+    dst, _ = generated
+    content = (dst / ".github/renovate.json5").read_text()
+    assert re.search(
+        r'matchManagers: \["copier"\],\s*automerge: false', content
+    ), "copier manager is not pinned to manual merges"

@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: CC0-1.0
 
+# Copier owns the generated answers file; its YAML style is not ours.
+.copier-answers.yml
 .superpowers/
 .pytest_cache/
 pnpm-lock.yaml

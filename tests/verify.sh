@@ -24,7 +24,7 @@ WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT
 
 echo "Generating $VARIANT project into $WORK..."
-uv run --group dev copier copy --trust --defaults \
+uv run --group dev copier copy --vcs-ref HEAD --trust --defaults \
   --data template_type="$VARIANT" \
   --data project_name=sample \
   . "$WORK/sample" >/dev/null

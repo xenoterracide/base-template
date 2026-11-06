@@ -5,13 +5,10 @@
 - `pnpm contribute` — bootstrap tooling (run once after clone)
 - `pnpm check` — run all checks
 - `pnpm lint:prettier` — prettier check
-- `pnpm lint:reuse` — REUSE compliance check
-{% if template_type == 'java' %}
-- `./mvnw -q verify` — Maven build + checkstyle + spotbugs + jacoco + tests
-{% elif template_type == 'typescript' %}
+- `pnpm lint:reuse` — REUSE compliance check{% if template_type == 'java' %}
+- `./mvnw -q verify` — Maven build + checkstyle + spotbugs + jacoco + tests{% elif template_type == 'typescript' %}
 - `pnpm typecheck` — TypeScript type check
-- `pnpm test` — vitest with coverage
-{% endif %}
+- `pnpm test` — vitest with coverage{% endif %}
 
 ## Source of Truth
 
