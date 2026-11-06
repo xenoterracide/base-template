@@ -259,14 +259,62 @@ def test_renders_carry_no_blank_line_scaffolding(generated):
         assert "\n\n\n" not in path.read_text(), f"blank scaffolding: {path.name}"
 
 
-def test_answers_file_declares_the_yml_license(generated):
-    """The answers file is a .yml; lint-staged annotates .yml as MIT."""
+def test_renders_carry_no_baked_headers(generated):
+    """reuse annotate, not the template, writes SPDX headers."""
     dst, _ = generated
-    content = (dst / ".copier-answers.yml").read_text()
-    # REUSE-IgnoreStart
-    assert "SPDX-License-Identifier: MIT" in content
-    # REUSE-IgnoreEnd
-    assert "CC0-1.0" not in content
+    for path in dst.rglob("*"):
+        if not path.is_file() or path.name == "REUSE.toml":
+            continue
+        text = path.read_text()
+        assert "SPDX-FileCopyrightText" not in text, path.name
+        assert "SPDX-License-Identifier" not in text, path.name
+    assert "# SPDX-License-Identifier" not in (dst / "REUSE.toml").read_text()
+
+
+def test_no_license_sidecars_rendered(generated):
+    """Annotate, not the template, creates .license sidecars."""
+    dst, _ = generated
+    assert not [p for p in dst.rglob("*.license")]
+
+
+def test_answers_record_no_header_machinery(generated):
+    """copyright_year and spdx_* answers no longer exist."""
+    dst, _ = generated
+    answers = (dst / ".copier-answers.yml").read_text()
+    assert "copyright_year" not in answers
+    assert "spdx_" not in answers
+
+
+def test_reuse_toml_carries_no_gitmodules(generated):
+    """The consumer REUSE.toml annotates exemptions, not speculative files."""
+    dst, _ = generated
+    assert ".gitmodules" not in (dst / "REUSE.toml").read_text()
+
+
+def test_reuse_toml_annotates_python_version(generated):
+    """A .python-version pin is licensed in every variant, not just java."""
+    dst, _ = generated
+    assert ".python-version" in (dst / "REUSE.toml").read_text()
+
+
+def test_envrc_keeps_its_shebang(generated):
+    """The rendered .envrc stays a shell script; shellcheck requires a shebang."""
+    dst, _ = generated
+    assert (dst / ".envrc").read_text().startswith("#!/bin/sh")
+
+
+def test_xml_files_open_with_the_xml_declaration(generated):
+    """Rendered xml keeps its declaration; annotate stamps below it."""
+    dst, answers = generated
+    if answers["template_type"] != "java":
+        pytest.skip()
+    xmls = sorted(dst.rglob("*.xml"))
+    assert xmls, "expected rendered xml files"
+    for path in xmls:
+        rel = path.relative_to(dst)
+        assert path.read_text().startswith(
+            '<?xml version="1.0" encoding="UTF-8" ?>'
+        ), f"{rel} lost its xml declaration"
 
 
 def test_package_json_scope_is_answerable(tmp_path):
@@ -274,20 +322,6 @@ def test_package_json_scope_is_answerable(tmp_path):
     dst = copy_template(tmp_path / "scoped", {**ANSWERS["config"], "npm_scope": "@xenoterracide"})
     data = json.loads((dst / "package.json").read_text())
     assert data["name"] == "@xenoterracide/sample"
-
-
-def test_docs_render_with_the_doc_license(generated):
-    """Docs carry CC-BY-NC-SA in the block form reuse annotate writes."""
-    dst, _ = generated
-    # REUSE-IgnoreStart
-    want = "SPDX-License-Identifier: CC-BY-NC-SA-4.0"
-    reject = "SPDX-License-Identifier: GPL-3.0-or-later"
-    # REUSE-IgnoreEnd
-    for rel in ("README.md", "AGENTS.md", "CONTRIBUTING.md", "staged/README"):
-        content = (dst / rel).read_text()
-        assert want in content, rel
-        assert reject not in content, rel
-        assert content.startswith("<!--\nSPDX-FileCopyrightText"), rel
 
 
 def test_lintstagedrc_licenses_by_file_class(generated):
@@ -338,21 +372,53 @@ def test_precommit_content(generated):
     assert "shellcheck.yml@" in content
 
 
-def test_reuse_lint(generated):
-    """Generated projects must pass reuse lint offline (after license fetch)."""
-    dst, _ = generated
+@pytest.mark.parametrize("variant", ["java", "typescript", "config"])
+def test_reuse_lint(tmp_path, variant):
+    """A bare render turns REUSE-compliant once lint-staged annotates it."""
+    dst = copy_template(tmp_path, ANSWERS[variant])
+    subprocess.run(["git", "init", "--quiet"], cwd=dst, check=True)
     subprocess.run(
-        ["uvx", "reuse@6.2.0", "download", "--all"],
+        ["pnpm", "install", "--reporter=silent"],
         cwd=dst,
         check=True,
         capture_output=True,
-        timeout=120,
+        timeout=600,
+    )
+    subprocess.run(
+        ["uv", "sync", "--quiet"],
+        cwd=dst,
+        check=True,
+        capture_output=True,
+        timeout=600,
+    )
+    subprocess.run(["git", "add", "-A"], cwd=dst, check=True)
+    subprocess.run(
+        ["pnpm", "exec", "lint-staged"],
+        cwd=dst,
+        check=True,
+        capture_output=True,
+        timeout=600,
+    )
+    subprocess.run(["git", "add", "-A"], cwd=dst, check=True)
+    subprocess.run(
+        [
+            "git",
+            "-c",
+            "user.name=verify",
+            "-c",
+            "user.email=verify@localhost",
+            "commit",
+            "-qm",
+            "verify render",
+        ],
+        cwd=dst,
+        check=True,
     )
     result = subprocess.run(
-        ["uvx", "reuse@6.2.0", "lint"],
+        ["pnpm", "lint:reuse"],
         cwd=dst,
         capture_output=True,
         text=True,
-        timeout=120,
+        timeout=300,
     )
     assert result.returncode == 0, f"reuse lint failed:\n{result.stdout}\n{result.stderr}"

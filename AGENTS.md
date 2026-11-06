@@ -43,8 +43,9 @@ uv run --group dev pytest tests/ -q # render all variants, assert structure
 
 - Read `.editorconfig` before editing. Every text file ends with a newline,
   including `.jinja` sources, which prettier cannot check.
-- Every file carries an SPDX header. `.jinja` sources bake headers as
-  whole-line moustaches.
+- The template renders no SPDX headers. `.jinja` sources are headerless and
+  mass-licensed via `REUSE.toml`'s `**/*.jinja` annotation; `reuse annotate`
+  stamps consumer files at their first commit.
 - Variant-only files gate through conditional path parts:
   `{% if template_type == 'java' %}…{% endif %}`.
 - Hooks heal the toolchain. `.envrc`, `contribute`, and the post hooks call

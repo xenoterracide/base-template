@@ -17,6 +17,9 @@ java | typescript | config) ;;
   ;;
 esac
 
+# lint-staged's shell row needs shfmt; CI runners do not provision it.
+"$(dirname "$0")/install-shfmt.sh"
+
 WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT
 
@@ -33,9 +36,10 @@ uv sync --quiet
 
 # reuse needs a committed tree to honor nested ignored dirs (git 2.56
 # drops them from ls-files --ignored when untracked siblings exist)
-echo "Committing the render..."
+echo "Committing the render (lint-staged annotates headers)..."
 git init --quiet
 git add -A
+pnpm exec lint-staged
 git -c user.name=verify -c user.email=verify@localhost commit -qm "verify render"
 
 echo "Running prettier check..."

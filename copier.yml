@@ -23,6 +23,7 @@ _exclude:
   - .venv
   - copier.yml
   - .python-version
+  - package.json.license
 
 # Seed once, then the consumer owns them: their Renovate updates .tool-versions
 # and the Maven wrapper from then on. Copier leaves existing files alone and
@@ -84,13 +85,6 @@ copyright_holder:
   type: str
   default: Caleb Cushing
 
-# A real question, not computed: the answers file records it, so a
-# consumer's year range (e.g. 2024-2026) survives every update.
-copyright_year:
-  type: str
-  default: "{{ '%Y' | strftime }}"
-  help: Copyright year or range for SPDX headers
-
 use_opencode:
   type: bool
   default: true
@@ -126,24 +120,6 @@ first_package:
   when: "{{ template_type == 'typescript' }}"
 
 # Computed answers — not re-asked; recomputed on copier update
-# `SPDX-*` templates below render to real headers in generated projects; they
-# are not valid SPDX expressions in this source form, so REUSE ignores them.
-# REUSE-IgnoreStart
-spdx_copyright_line:
-  type: str
-  default: "SPDX-FileCopyrightText: Copyright © {{ copyright_year }} {{ copyright_holder }}"
-  when: false
-
-project_license_line:
-  type: str
-  default: "SPDX-License-Identifier: {{ license }}"
-  when: false
-
-spdx_license_line:
-  type: str
-  default: "SPDX-License-Identifier: {{ license }}"
-  when: false
-
 license_url:
   type: str
   default: >-
@@ -162,4 +138,3 @@ java_package_path:
   type: str
   default: "{{ java_package | replace('.', '/') }}"
   when: "{{ template_type == 'java' }}"
-# REUSE-IgnoreEnd

@@ -16,7 +16,7 @@
     "check": "pnpm lint",
     "contribute": "sh .config/git/hooks/heal.sh",
     "lint:prettier": "prettier --ignore-unknown --cache --check '**'",
-    "lint:reuse": "pnpm reuse lint",
+    "lint:reuse": "pnpm reuse download --all && pnpm reuse lint",
     "lint": "pnpm lint:prettier && pnpm lint:reuse",
     "precontribute": "pnpm setup:corepack && pnpm setup:pnpm",
     "reuse": "uv run --frozen --group dev reuse",

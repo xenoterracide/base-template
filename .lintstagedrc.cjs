@@ -14,14 +14,15 @@ const licenseDocumentation = "--license 'CC-BY-NC-SA-4.0'";
 const licenseScripts = "--license 'MIT' --fallback-dot-license";
 
 // pnpm-lock.yaml and the maven wrapper properties are generated; header
-// comments and formatting break them
-const withoutGenerated = (files) =>
-  files.filter((file) => !/(^|\/)(pnpm-lock\.yaml|maven-wrapper\.properties)$/.test(file));
+// comments and formatting break them. `.jinja` templates are mass-licensed
+// via REUSE.toml's **/*.jinja annotation, so annotate must not stamp them.
+const withoutManaged = (files) =>
+  files.filter((file) => !/(^|\/)(pnpm-lock\.yaml|maven-wrapper\.properties)$/.test(file) && !/\.jinja$/.test(file));
 
 const withFiles = (command, files) => `${command} ${files.map((file) => `"${file.replace(/"/g, '\\"')}"`).join(" ")}`;
 
 const run = (commands) => (files) => {
-  const filtered = withoutGenerated(files);
+  const filtered = withoutManaged(files);
 
   if (!filtered.length) {
     return [];
@@ -35,12 +36,18 @@ module.exports = {
   "!(package).json": run([`${reuse} ${copyright} ${symbol} ${licenseConfiguration}`, prettier]),
   // package.json can contain logic via the scripts segment
   "package.json": run([`${reuse} ${copyright} ${symbol} ${licenseScripts}`, prettier]),
-  "{.config/git/hooks/**,**/*.*sh}": run([`${reuse} ${copyright} ${symbol} ${licenseScripts} --style python`, shfmt]),
+  "{.config/git/hooks/**,**/*.*sh,.envrc}": run([
+    `${reuse} ${copyright} ${symbol} ${licenseScripts} --style python`,
+    shfmt,
+  ]),
   "*.{md,adoc}": run([`${reuse} ${copyright} ${symbol} ${licenseDocumentation}`, prettier]),
-  "*.{xml,yaml,properties,toml,json5}": run([`${reuse} ${copyright} ${licenseConfiguration} ${symbol}`, prettier]),
+  "*.{xml,yaml,properties,toml,json5,jsonc}": run([
+    `${reuse} ${copyright} ${licenseConfiguration} ${symbol}`,
+    prettier,
+  ]),
   // yml is different from yaml extension as the only known yaml required file is for git-conventional-commits, but yml
   // contains files like GitHub workflows which can have significant logic
-  "*.{js,cjs,yml}": run([`${reuse} ${copyright} ${symbol} ${licenseScripts}`, prettier]),
+  "*.{js,cjs,cts,yml}": run([`${reuse} ${copyright} ${symbol} ${licenseScripts}`, prettier]),
   ".{*ignore,editorconfig,gitattributes,mailmap}": run([
     `${reuse} ${copyright} ${symbol} ${licenseConfiguration}`,
     prettier,

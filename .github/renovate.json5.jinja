@@ -1,0 +1,57 @@
+{% raw %}{
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  extends: ["config:recommended"],
+  dependencyDashboard: true,
+  lockFileMaintenance: {
+    enabled: true,
+    automerge: true,
+    // daily window, after the day's dependency-update PRs have run;
+    // wide enough that the hosted app's runs land inside it, unlike
+    // the default weekly window that never coincided with one
+    schedule: ["before 4am"],
+  },
+  timezone: "UTC",
+  platformAutomerge: true,
+  automergeStrategy: "rebase",
+  // Rebase whenever PR falls behind base branch to keep them mergeable
+  rebaseWhen: "behind-base-branch",
+  // Recreate PRs even when a matching PR was previously merged, so that
+  // re-created branches keep automerge enabled instead of being disabled
+  // by the "merged previously" guard.
+  recreateWhen: "always",
+  // Remove the 'controls' section from PR body to avoid config noise in squash commits
+  prBodyTemplate: "{{{header}}}{{{table}}}{{{notes}}}{{{changelogs}}}{{{footer}}}",
+  hostRules: [
+    {
+      hostType: "maven",
+      matchHost: "https://maven.pkg.github.com",
+    },
+  ],
+  packageRules: [
+    {
+      matchManagers: ["asdf", "maven", "npm", "pyenv", "pep621", "github-actions"],
+      branchTopic: "{{{depNameSanitized}}}-{{{newVersion}}}",
+      automerge: true,
+    },
+    {
+      // Pin xenoterracide org actions to commit SHAs for build reproducibility
+      // Only these get digest pins; other actions get normal version tag updates
+      matchManagers: ["github-actions"],
+      matchDepNames: ["xenoterracide/**"],
+      extends: ["helpers:pinGitHubActionDigests"],
+      branchTopic: "{{{depNameSanitized}}}-{{{newDigest}}}",
+      automerge: true,
+    },
+    {
+      // the branchTopic rules above also match lock file maintenance
+      // updates and render an empty topic, naming the branch "renovate"
+      // instead of "renovate/lock-file-maintenance"; rules override the
+      // lockFileMaintenance object, so restore the default topic here,
+      // after them; negative priority defers maintenance behind
+      // dependency-update PRs within a run
+      matchUpdateTypes: ["lockFileMaintenance"],
+      branchTopic: "lock-file-maintenance",
+      prPriority: -1,
+    },
+  ],
+}{% endraw %}
