@@ -297,6 +297,12 @@ def test_reuse_toml_annotates_python_version(generated):
     assert ".python-version" in (dst / "REUSE.toml").read_text()
 
 
+def test_envrc_keeps_its_shebang(generated):
+    """The rendered .envrc stays a shell script; shellcheck requires a shebang."""
+    dst, _ = generated
+    assert (dst / ".envrc").read_text().startswith("#!/bin/sh")
+
+
 def test_package_json_scope_is_answerable(tmp_path):
     """The root package name keeps its npm scope when the consumer has one."""
     dst = copy_template(tmp_path / "scoped", {**ANSWERS["config"], "npm_scope": "@xenoterracide"})
