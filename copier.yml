@@ -88,10 +88,6 @@ copyright_holder:
   type: str
   default: Caleb Cushing
 
-use_opencode:
-  type: bool
-  default: true
-
 include_skeleton:
   type: bool
   default: true
