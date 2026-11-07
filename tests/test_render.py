@@ -64,6 +64,11 @@ def test_no_copier_yml_leak(generated):
     assert not (dst / "copier.yml").exists()
 
 
+def test_no_opencode_artifacts(generated):
+    dst, _ = generated
+    assert not [p for p in dst.rglob("*") if "opencode" in p.name.lower()]
+
+
 def test_shared_files_present(generated):
     dst, _ = generated
     for rel in SHARED_FILES:

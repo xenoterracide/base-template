@@ -496,3 +496,5 @@ toolchain choices. Its plan records the execution rulings. Summary:
   `{% raw %}` wrapping.
 - The post-copy prettier task runs without plugins, so `.jinja` sources
   must render prettier-clean unaided.
+- The opencode config and comment-bot workflow were removed on 2026-11-07;
+  repos carry no opencode files.
