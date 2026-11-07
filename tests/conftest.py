@@ -14,7 +14,6 @@ COMMON = {
     "project_name": "sample",
     "project_title": "Sample",
     "license": "GPL-3.0-or-later",
-    "use_opencode": True,
 }
 
 JAVA_ANSWERS = {

@@ -38,7 +38,6 @@ SHARED_FILES = [
     ".config/git/hooks/post-merge",
     "staged/.github/workflows/pre-commit.yml",
     "staged/.github/workflows/devtools-regression.yml",
-    "staged/.github/workflows/opencode.yml",
 ]
 
 
@@ -67,6 +66,11 @@ def test_no_jinja_leak(generated):
 def test_no_copier_yml_leak(generated):
     dst, _ = generated
     assert not (dst / "copier.yml").exists()
+
+
+def test_no_opencode_artifacts(generated):
+    dst, _ = generated
+    assert not [p for p in dst.rglob("*") if "opencode" in p.name.lower()]
 
 
 def test_shared_files_present(generated):
@@ -436,11 +440,6 @@ def test_consumer_contribute_bootstraps_without_lockfile(generated):
     scripts = json.loads((dst / "package.json").read_text())["scripts"]
     assert scripts["precontribute"] == "pnpm setup:corepack"
     assert "setup:pnpm" not in scripts
-
-
-def test_opencode_workflow_absent_when_disabled(tmp_path):
-    dst = copy_template(tmp_path / "nooc", {**JAVA_ANSWERS, "use_opencode": False})
-    assert not (dst / "staged/.github/workflows/opencode.yml").exists()
 
 
 def test_precommit_content(generated):
