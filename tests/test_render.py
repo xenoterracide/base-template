@@ -38,7 +38,6 @@ SHARED_FILES = [
     ".config/git/hooks/post-merge",
     "staged/.github/workflows/pre-commit.yml",
     "staged/.github/workflows/devtools-regression.yml",
-    "staged/.github/workflows/opencode.yml",
 ]
 
 
@@ -400,11 +399,6 @@ def test_consumer_contribute_bootstraps_without_lockfile(generated):
     scripts = json.loads((dst / "package.json").read_text())["scripts"]
     assert scripts["precontribute"] == "pnpm setup:corepack"
     assert "setup:pnpm" not in scripts
-
-
-def test_opencode_workflow_absent_when_disabled(tmp_path):
-    dst = copy_template(tmp_path / "nooc", {**JAVA_ANSWERS, "use_opencode": False})
-    assert not (dst / "staged/.github/workflows/opencode.yml").exists()
 
 
 def test_precommit_content(generated):
