@@ -9,12 +9,14 @@ SPDX-License-Identifier: CC0-1.0
   "https://checkstyle.org/dtds/configuration_1_3.dtd">
 <module name="Checker">
   <module name="SuppressWarningsFilter" />
+  <!-- prettier-java keeps a module annotation inline with the module keyword -->
+  <module name="SuppressionSingleFilter">
+    <property name="files" value="(^|/)module\-info\.java$" />
+    <property name="checks" value="AnnotationLocation" />
+  </module>
 
   <!--- PRETTIER START -->
 
-  <module name="BeforeExecutionExclusionFileFilter">
-    <property name="fileNamePattern" value="module\-info\.java$" />
-  </module>
   <module name="TreeWalker">
     <module name="OuterTypeFilename" />
     <module name="NoLineWrap">
@@ -121,16 +123,25 @@ SPDX-License-Identifier: CC0-1.0
 
     <!-- https://checkstyle.sourceforge.io/checks/javadoc/ checked all 2024 -->
     <module name="AtclauseOrder" />
+    <module name="InappropriateJavadocBlockTagsOnField" />
+    <module name="InappropriateJavadocBlockTagsOnPackage" />
+    <module name="InappropriateJavadocBlockTagsOnType" />
     <module name="InvalidJavadocPosition" />
     <module name="JavadocBlockTagLocation" />
     <module name="JavadocContentLocation" />
+    <module name="JavadocEndCommentDelimiter" />
+    <module name="JavadocLinkWellKnownApi" />
     <module name="JavadocMethod" />
     <module name="JavadocMissingLeadingAsterisk" />
     <module name="JavadocMissingWhitespaceAfterAsterisk" />
+    <module name="JavadocNoErrorInThrowsTag" />
     <module name="JavadocParagraph" />
+    <module name="JavadocParamOrder" />
+    <module name="JavadocSeeTagOrder" />
     <module name="JavadocTagContinuationIndentation">
       <property name="violateExecutionOnNonTightHtml" value="true" />
     </module>
+    <module name="JavadocThrowsOrder" />
     <module name="JavadocType">
       <property name="allowUnknownTags" value="true" />
     </module>
@@ -141,6 +152,8 @@ SPDX-License-Identifier: CC0-1.0
     <module name="MissingJavadocPackage" />
     <module name="MissingJavadocType" />
     <module name="NonEmptyAtclauseDescription" />
+    <module name="PreferCodeOrSnippetJavadocInlineTag" />
+    <module name="PreferLiteralJavadocInlineTag" />
     <module name="RequireEmptyLineBeforeBlockTagGroup" />
     <module name="SingleLineJavadoc" />
     <module name="SummaryJavadoc" />
@@ -176,6 +189,7 @@ SPDX-License-Identifier: CC0-1.0
     <module name="IllegalImport" />
     <!-- defaults to sun.* packages -->
     <module name="RedundantImport" />
+    <module name="UnnecessaryFullyQualifiedType" />
     <module name="UnusedImports">
       <property name="processJavadoc" value="false" />
     </module>
@@ -240,10 +254,13 @@ SPDX-License-Identifier: CC0-1.0
     <module name="MutableException" />
 
     <module name="UnnecessaryParentheses" />
+    <module name="UnnecessaryPermitsClause" />
     <module name="UnnecessarySemicolonAfterOuterTypeDeclaration" />
     <module name="UnnecessarySemicolonAfterTypeMemberDeclaration" />
     <module name="UnnecessarySemicolonInEnumeration" />
     <module name="UnnecessarySemicolonInTryWithResources" />
+    <module name="UnnecessaryTypeArgumentsWithRecordPattern" />
+    <module name="UnusedPrivateField" />
     <module name="VariableDeclarationUsageDistance" />
 
     <!-- Modifier Checks                                    -->
@@ -290,6 +307,9 @@ SPDX-License-Identifier: CC0-1.0
     <module name="NoFinalizer" />
     <module name="PackageDeclaration" />
 
+    <!-- modules https://checkstyle.org/checks/modules/ -->
+    <module name="ModuleDirectiveOrder" />
+
     <!-- design https://checkstyle.org/checks/design/ -->
     <module name="FinalClass" />
     <module name="HideUtilityClassConstructor" />
@@ -304,6 +324,7 @@ SPDX-License-Identifier: CC0-1.0
 
     <!-- Miscellaneous https://checkstyle.org/checks/misc/ -->
     <module name="ArrayTypeStyle" />
+    <module name="MultilineCommentLeadingAsteriskPresence" />
     <module name="TodoComment" />
     <module name="UpperEll" />
     <module name="UncommentedMain">
