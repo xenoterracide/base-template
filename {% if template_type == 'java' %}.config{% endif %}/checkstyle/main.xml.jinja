@@ -5,7 +5,7 @@
   <module name="SuppressWarningsFilter" />
   <!-- prettier-java keeps a module annotation inline with the module keyword -->
   <module name="SuppressionSingleFilter">
-    <property name="files" value="module\-info\.java$" />
+    <property name="files" value="(^|/)module\-info\.java$" />
     <property name="checks" value="AnnotationLocation" />
   </module>
 
@@ -115,7 +115,7 @@
     <module name="MissingDeprecated" />
     <module name="MissingOverride" />
 
-    <!-- https://checkstyle.sourceforge.io/checks/javadoc/ checked all 2026 -->
+    <!-- https://checkstyle.sourceforge.io/checks/javadoc/ checked all 2024 -->
     <module name="AtclauseOrder" />
     <module name="InappropriateJavadocBlockTagsOnField" />
     <module name="InappropriateJavadocBlockTagsOnPackage" />
@@ -249,10 +249,10 @@
     <module name="MutableException" />
 
     <module name="UnnecessaryParentheses" />
+    <module name="UnnecessaryPermitsClause" />
     <module name="UnnecessarySemicolonAfterOuterTypeDeclaration" />
     <module name="UnnecessarySemicolonAfterTypeMemberDeclaration" />
     <module name="UnnecessarySemicolonInEnumeration" />
-    <module name="UnnecessaryPermitsClause" />
     <module name="UnnecessarySemicolonInTryWithResources" />
     <module name="UnnecessaryTypeArgumentsWithRecordPattern" />
     <module name="UnusedPrivateField" />
