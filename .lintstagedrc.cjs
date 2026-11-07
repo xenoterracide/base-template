@@ -16,8 +16,15 @@ const licenseScripts = "--license 'MIT' --fallback-dot-license";
 // pnpm-lock.yaml and the maven wrapper properties are generated; header
 // comments and formatting break them. `.jinja` templates are mass-licensed
 // via REUSE.toml's **/*.jinja annotation, so annotate must not stamp them.
+// Hooks run while lint-staged does, and annotating one rewrites the script
+// under its own executing shell; they carry their headers from the template.
 const withoutManaged = (files) =>
-  files.filter((file) => !/(^|\/)(pnpm-lock\.yaml|maven-wrapper\.properties)$/.test(file) && !/\.jinja$/.test(file));
+  files.filter(
+    (file) =>
+      !/(^|\/)(pnpm-lock\.yaml|maven-wrapper\.properties)$/.test(file) &&
+      !/(^|\/)\.config\/git\/hooks\//.test(file) &&
+      !/\.jinja$/.test(file),
+  );
 
 const withFiles = (command, files) => `${command} ${files.map((file) => `"${file.replace(/"/g, '\\"')}"`).join(" ")}`;
 

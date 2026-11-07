@@ -24,7 +24,7 @@
   },
   "scripts": {
     "check": "pnpm lint:prettier{% if template_type == 'typescript' %} && pnpm lint:eslint && pnpm typecheck && pnpm test{% endif %}",
-    "contribute": "uvx reuse@6.2.0 download {{ license }} CC0-1.0 MIT CC-BY-NC-SA-4.0 && sh .config/git/hooks/heal.sh",
+    "contribute": "sh .config/git/hooks/heal.sh",
     "lint:prettier": "prettier --ignore-unknown --cache --check '**'",
     "lint:reuse": "pnpm reuse download --all && pnpm reuse lint",
     "precontribute": "pnpm setup:corepack",

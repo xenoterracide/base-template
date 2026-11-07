@@ -1,5 +1,9 @@
 #!/bin/sh
 
+# SPDX-FileCopyrightText: Copyright © {{ copyright_holder }}
+#
+# SPDX-License-Identifier: MIT
+
 # Heals the toolchain after tool version or lockfile changes. Hooks, direnv,
 # and contribute all call it; every step no-ops fast when nothing changed.
 # Always exits 0: a failed heal must not break checkout, direnv, or commit.

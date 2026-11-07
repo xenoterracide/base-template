@@ -5,6 +5,7 @@
 """Structure and compliance assertions over rendered variants."""
 
 import json
+import os
 import re
 import stat
 import subprocess
@@ -237,15 +238,21 @@ def test_maven_wrapper_executable(generated):
 def test_skeleton_suppressed(tmp_path):
     """Adopted consumers must never receive scaffold or resurrected files."""
     for answers in (JAVA_ANSWERS, ANSWERS["typescript"]):
-        dst = copy_template(tmp_path / answers["template_type"], {**answers, "include_skeleton": False})
+        dst = copy_template(
+            tmp_path / answers["template_type"], {**answers, "include_skeleton": False}
+        )
         assert not (dst / "module").exists(), "java skeleton leaked"
         assert not (dst / "packages").exists(), "ts skeleton leaked"
         assert not list(dst.rglob("Example.java"))
         assert not list(dst.rglob("ExampleTest.java"))
-    java = copy_template(tmp_path / "java-x", {**JAVA_ANSWERS, "include_skeleton": False})
+    java = copy_template(
+        tmp_path / "java-x", {**JAVA_ANSWERS, "include_skeleton": False}
+    )
     pom = (java / "pom.xml").read_text()
     assert "<modules>" not in pom, "parent pom references a module that does not exist"
-    ts = copy_template(tmp_path / "ts-x", {**ANSWERS["typescript"], "include_skeleton": False})
+    ts = copy_template(
+        tmp_path / "ts-x", {**ANSWERS["typescript"], "include_skeleton": False}
+    )
     vitest = (ts / "vitest.config.ts").read_text()
     assert "packages/" not in vitest, "vitest project rooted at a missing package"
 
@@ -260,15 +267,45 @@ def test_renders_carry_no_blank_line_scaffolding(generated):
 
 
 def test_renders_carry_no_baked_headers(generated):
-    """reuse annotate, not the template, writes SPDX headers."""
+    """reuse annotate, not the template, writes SPDX headers.
+
+    Hooks are the exception: template updates deliver them through Renovate
+    commits, which never run lint-staged, so their headers must travel with
+    the file.
+    """
     dst, _ = generated
     for path in dst.rglob("*"):
-        if not path.is_file() or path.name == "REUSE.toml":
+        if not path.is_file() or path.name == "REUSE.toml" or "hooks" in path.parts:
             continue
         text = path.read_text()
         assert "SPDX-FileCopyrightText" not in text, path.name
         assert "SPDX-License-Identifier" not in text, path.name
     assert "# SPDX-License-Identifier" not in (dst / "REUSE.toml").read_text()
+
+
+def test_hooks_carry_the_consumer_header(generated):
+    """Hooks are shell that people read; the license rides in the file."""
+    dst, _ = generated
+    # split the tags so reuse cannot read this source as SPDX expressions
+    copyright_line = "# SPDX-FileCopyright" + "Text: Copyright © Caleb Cushing"
+    license_line = "# SPDX-License" + "-Identifier: MIT"
+    hooks = sorted((dst / ".config/git/hooks").iterdir())
+    assert hooks, "no hooks rendered"
+    for path in hooks:
+        lines = path.read_text().splitlines()
+        assert lines[0] == "#!/bin/sh", path.name
+        assert copyright_line in lines, path.name
+        assert license_line in lines, path.name
+
+
+def test_hooks_carry_the_answered_holder(tmp_path):
+    """A consumer's hooks carry the consumer's copyright, not the author's."""
+    dst = copy_template(
+        tmp_path / "holder", {**ANSWERS["config"], "copyright_holder": "Sample Owner"}
+    )
+    text = (dst / ".config/git/hooks/pre-commit").read_text()
+    assert "Copyright © Sample Owner" in text
+    assert "Caleb Cushing" not in text
 
 
 def test_no_license_sidecars_rendered(generated):
@@ -312,14 +349,16 @@ def test_xml_files_open_with_the_xml_declaration(generated):
     assert xmls, "expected rendered xml files"
     for path in xmls:
         rel = path.relative_to(dst)
-        assert path.read_text().startswith(
-            '<?xml version="1.0" encoding="UTF-8" ?>'
-        ), f"{rel} lost its xml declaration"
+        assert path.read_text().startswith('<?xml version="1.0" encoding="UTF-8" ?>'), (
+            f"{rel} lost its xml declaration"
+        )
 
 
 def test_package_json_scope_is_answerable(tmp_path):
     """The root package name keeps its npm scope when the consumer has one."""
-    dst = copy_template(tmp_path / "scoped", {**ANSWERS["config"], "npm_scope": "@xenoterracide"})
+    dst = copy_template(
+        tmp_path / "scoped", {**ANSWERS["config"], "npm_scope": "@xenoterracide"}
+    )
     data = json.loads((dst / "package.json").read_text())
     assert data["name"] == "@xenoterracide/sample"
 
@@ -345,7 +384,9 @@ def test_lintstagedrc_licenses_by_file_class(generated):
 
 def test_lintstagedrc_uses_the_answered_holder(tmp_path):
     """A consumer's files must carry the consumer's copyright, not the author's."""
-    dst = copy_template(tmp_path / "holder", {**JAVA_ANSWERS, "copyright_holder": "Sample Owner"})
+    dst = copy_template(
+        tmp_path / "holder", {**JAVA_ANSWERS, "copyright_holder": "Sample Owner"}
+    )
     content = (dst / ".lintstagedrc.cjs").read_text()
     assert "Sample Owner" in content
     assert "Caleb Cushing" not in content
@@ -374,7 +415,14 @@ def test_precommit_content(generated):
 
 @pytest.mark.parametrize("variant", ["java", "typescript", "config"])
 def test_reuse_lint(tmp_path, variant):
-    """A bare render turns REUSE-compliant once lint-staged annotates it."""
+    """A bare render turns REUSE-compliant at the first commit.
+
+    The hook annotates the sources via lint-staged — never the hooks
+    themselves, whose rewrite under the executing shell corrupts them —
+    then downloads exactly the texts the tree now references and stages
+    LICENSES, so the license CI job, which lints without downloading,
+    passes on the first push.
+    """
     dst = copy_template(tmp_path, ANSWERS[variant])
     subprocess.run(["git", "init", "--quiet"], cwd=dst, check=True)
     subprocess.run(
@@ -392,12 +440,15 @@ def test_reuse_lint(tmp_path, variant):
         timeout=600,
     )
     subprocess.run(["git", "add", "-A"], cwd=dst, check=True)
+    # CI= simulates a developer commit: the hook's guard skips it under a
+    # real CI=true, where GitHub runs the checks instead of the hooks.
     subprocess.run(
-        ["pnpm", "exec", "lint-staged"],
+        ["sh", ".config/git/hooks/pre-commit"],
         cwd=dst,
         check=True,
         capture_output=True,
         timeout=600,
+        env={**os.environ, "CI": ""},
     )
     subprocess.run(["git", "add", "-A"], cwd=dst, check=True)
     subprocess.run(
@@ -415,13 +466,15 @@ def test_reuse_lint(tmp_path, variant):
         check=True,
     )
     result = subprocess.run(
-        ["pnpm", "lint:reuse"],
+        ["uv", "run", "--frozen", "--group", "dev", "reuse", "lint"],
         cwd=dst,
         capture_output=True,
         text=True,
         timeout=300,
     )
-    assert result.returncode == 0, f"reuse lint failed:\n{result.stdout}\n{result.stderr}"
+    assert result.returncode == 0, (
+        f"reuse lint failed:\n{result.stdout}\n{result.stderr}"
+    )
 
 
 def test_copier_runs_no_tasks():
@@ -429,26 +482,16 @@ def test_copier_runs_no_tasks():
     assert "\n_tasks:" not in (TEMPLATE / "copier.yml").read_text()
 
 
-def test_contribute_downloads_the_license_texts(generated):
-    """A fresh consumer's contribute populates LICENSES, replacing the task.
+def test_contribute_runs_heal_only(generated):
+    """LICENSES seeding belongs to the pre-commit hook, after annotate.
 
-    The list is explicit: the render's answer picks the code license, and a
-    scan outside git would also walk `node_modules` and seed unused texts.
+    A contribute-time download cannot know the set: the code license lands
+    only when lint-staged annotates source files, and a text nothing
+    references fails `reuse lint` as unused.
     """
     dst, _ = generated
     scripts = json.loads((dst / "package.json").read_text())["scripts"]
-    assert scripts["contribute"] == (
-        "uvx reuse@6.2.0 download GPL-3.0-or-later CC0-1.0 MIT CC-BY-NC-SA-4.0 "
-        "&& sh .config/git/hooks/heal.sh"
-    )
-
-
-@pytest.mark.parametrize("license_id", ["GPL-3.0-or-later", "Apache-2.0", "MIT", "CC0-1.0"])
-def test_contribute_downloads_the_chosen_license(tmp_path, license_id):
-    """The explicit list follows the answer, so no render seeds a wrong text."""
-    dst = copy_template(tmp_path, {**ANSWERS["config"], "license": license_id})
-    scripts = json.loads((dst / "package.json").read_text())["scripts"]
-    assert f"download {license_id} CC0-1.0 MIT CC-BY-NC-SA-4.0" in scripts["contribute"]
+    assert scripts["contribute"] == "sh .config/git/hooks/heal.sh"
 
 
 def test_renovate_copier_updates_automerge_when_checks_pass(generated):
@@ -459,6 +502,6 @@ def test_renovate_copier_updates_automerge_when_checks_pass(generated):
     """
     dst, _ = generated
     content = (dst / ".github/renovate.json5").read_text()
-    assert re.search(
-        r'matchManagers: \["copier"\],\s*automerge: true', content
-    ), "copier manager does not automerge clean updates"
+    assert re.search(r'matchManagers: \["copier"\],\s*automerge: true', content), (
+        "copier manager does not automerge clean updates"
+    )
