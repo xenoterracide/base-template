@@ -335,14 +335,15 @@ def test_hooks_carry_the_consumer_header(generated):
         )
 
 
-def test_hooks_carry_the_answered_holder(tmp_path):
-    """A consumer's hooks carry the consumer's copyright, not the author's."""
+def test_hooks_carry_the_author_not_the_answered_holder(tmp_path):
+    """The lineage ranges are facts about the author's history; the hooks
+    carry the author's name, whatever a stray answer says."""
     dst = copy_template(
         tmp_path / "holder", {**ANSWERS["config"], "copyright_holder": "Sample Owner"}
     )
     text = (dst / ".config/git/hooks/pre-commit").read_text()
-    assert "Sample Owner" in text
-    assert "Caleb Cushing" not in text
+    assert "Caleb Cushing" in text
+    assert "Sample Owner" not in text
 
 
 def test_no_license_sidecars_rendered(generated):
@@ -419,14 +420,14 @@ def test_lintstagedrc_licenses_by_file_class(generated):
     )
 
 
-def test_lintstagedrc_uses_the_answered_holder(tmp_path):
-    """A consumer's files must carry the consumer's copyright, not the author's."""
+def test_lintstagedrc_stamps_the_author(tmp_path):
+    """The annotate stamp carries the author, matching the authoring copy."""
     dst = copy_template(
         tmp_path / "holder", {**JAVA_ANSWERS, "copyright_holder": "Sample Owner"}
     )
     content = (dst / ".lintstagedrc.cjs").read_text()
-    assert "Sample Owner" in content
-    assert "Caleb Cushing" not in content
+    assert "Caleb Cushing" in content
+    assert "Sample Owner" not in content
 
 
 def test_consumer_contribute_bootstraps_without_lockfile(generated):
