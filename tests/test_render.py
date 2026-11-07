@@ -443,10 +443,14 @@ def test_contribute_downloads_the_license_texts(generated):
     )
 
 
-def test_renovate_copier_updates_merge_by_hand(generated):
-    """Copier PRs can carry .rej files, so they must not automerge."""
+def test_renovate_copier_updates_automerge_when_checks_pass(generated):
+    """A conflicted copier update leaves .rej files, which fail reuse lint.
+
+    Green checks therefore mean the update landed cleanly, so automerge is
+    safe: the reject path cannot reach a merge.
+    """
     dst, _ = generated
     content = (dst / ".github/renovate.json5").read_text()
     assert re.search(
-        r'matchManagers: \["copier"\],\s*automerge: false', content
-    ), "copier manager is not pinned to manual merges"
+        r'matchManagers: \["copier"\],\s*automerge: true', content
+    ), "copier manager does not automerge clean updates"
