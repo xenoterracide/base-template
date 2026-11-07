@@ -422,3 +422,43 @@ def test_reuse_lint(tmp_path, variant):
         timeout=300,
     )
     assert result.returncode == 0, f"reuse lint failed:\n{result.stdout}\n{result.stderr}"
+
+
+def test_copier_runs_no_tasks():
+    """The hosted Renovate app never runs trusted tasks; _tasks block it."""
+    assert "\n_tasks:" not in (TEMPLATE / "copier.yml").read_text()
+
+
+def test_contribute_downloads_the_license_texts(generated):
+    """A fresh consumer's contribute populates LICENSES, replacing the task.
+
+    The list is explicit: the render's answer picks the code license, and a
+    scan outside git would also walk `node_modules` and seed unused texts.
+    """
+    dst, _ = generated
+    scripts = json.loads((dst / "package.json").read_text())["scripts"]
+    assert scripts["contribute"] == (
+        "uvx reuse@6.2.0 download GPL-3.0-or-later CC0-1.0 MIT CC-BY-NC-SA-4.0 "
+        "&& sh .config/git/hooks/heal.sh"
+    )
+
+
+@pytest.mark.parametrize("license_id", ["GPL-3.0-or-later", "Apache-2.0", "MIT", "CC0-1.0"])
+def test_contribute_downloads_the_chosen_license(tmp_path, license_id):
+    """The explicit list follows the answer, so no render seeds a wrong text."""
+    dst = copy_template(tmp_path, {**ANSWERS["config"], "license": license_id})
+    scripts = json.loads((dst / "package.json").read_text())["scripts"]
+    assert f"download {license_id} CC0-1.0 MIT CC-BY-NC-SA-4.0" in scripts["contribute"]
+
+
+def test_renovate_copier_updates_automerge_when_checks_pass(generated):
+    """A conflicted copier update leaves .rej files, which fail reuse lint.
+
+    Green checks therefore mean the update landed cleanly, so automerge is
+    safe: the reject path cannot reach a merge.
+    """
+    dst, _ = generated
+    content = (dst / ".github/renovate.json5").read_text()
+    assert re.search(
+        r'matchManagers: \["copier"\],\s*automerge: true', content
+    ), "copier manager does not automerge clean updates"

@@ -33,9 +33,11 @@ _skip_if_exists:
   - mvnw.cmd
   - .mvn/wrapper/maven-wrapper.properties
 
-_tasks:
-  - npx --yes prettier@3.6.2 --ignore-unknown --write .
-  - uvx reuse@6.2.0 download --all
+# No _tasks: the hosted Renovate app never runs trusted tasks, and a
+# template that carries any cannot be updated by its copier manager.
+# Renders stay formatted from source; `contribute` downloads the license
+# texts the render needs. The list is explicit: the answer picks the code
+# license, and a scan outside git would also walk `node_modules`.
 
 _message_after_copy: |
   Your new {{ project_title }} project is ready.

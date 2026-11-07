@@ -51,6 +51,9 @@ def copy_template(dst: Path, answers: dict) -> Path:
         src_path=str(TEMPLATE),
         dst_path=str(generated),
         data=answers,
+        # Without an explicit ref copier renders the latest git tag, which
+        # hides branch changes locally while CI (no tags) renders the tree.
+        vcs_ref="HEAD",
         defaults=True,
         overwrite=True,
         unsafe=True,

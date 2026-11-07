@@ -29,6 +29,14 @@
   ],
   packageRules: [
     {
+      // A conflicted copier update leaves `.rej` files, which fail
+      // `lint:reuse`; green checks mean the update landed cleanly, so it
+      // can automerge. No enable flag is needed: `copier.yml` carries no
+      // `_tasks`, so the hosted app can update without `--trust`.
+      matchManagers: ["copier"],
+      automerge: true,
+    },
+    {
       matchManagers: ["asdf", "maven", "npm", "pyenv", "pep621", "github-actions"],
       branchTopic: "{{{depNameSanitized}}}-{{{newVersion}}}",
       automerge: true,
