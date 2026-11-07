@@ -267,15 +267,45 @@ def test_renders_carry_no_blank_line_scaffolding(generated):
 
 
 def test_renders_carry_no_baked_headers(generated):
-    """reuse annotate, not the template, writes SPDX headers."""
+    """reuse annotate, not the template, writes SPDX headers.
+
+    Hooks are the exception: template updates deliver them through Renovate
+    commits, which never run lint-staged, so their headers must travel with
+    the file.
+    """
     dst, _ = generated
     for path in dst.rglob("*"):
-        if not path.is_file() or path.name == "REUSE.toml":
+        if not path.is_file() or path.name == "REUSE.toml" or "hooks" in path.parts:
             continue
         text = path.read_text()
         assert "SPDX-FileCopyrightText" not in text, path.name
         assert "SPDX-License-Identifier" not in text, path.name
     assert "# SPDX-License-Identifier" not in (dst / "REUSE.toml").read_text()
+
+
+def test_hooks_carry_the_consumer_header(generated):
+    """Hooks are shell that people read; the license rides in the file."""
+    dst, _ = generated
+    # split the tags so reuse cannot read this source as SPDX expressions
+    copyright_line = "# SPDX-FileCopyright" + "Text: Copyright © Caleb Cushing"
+    license_line = "# SPDX-License" + "-Identifier: MIT"
+    hooks = sorted((dst / ".config/git/hooks").iterdir())
+    assert hooks, "no hooks rendered"
+    for path in hooks:
+        lines = path.read_text().splitlines()
+        assert lines[0] == "#!/bin/sh", path.name
+        assert copyright_line in lines, path.name
+        assert license_line in lines, path.name
+
+
+def test_hooks_carry_the_answered_holder(tmp_path):
+    """A consumer's hooks carry the consumer's copyright, not the author's."""
+    dst = copy_template(
+        tmp_path / "holder", {**ANSWERS["config"], "copyright_holder": "Sample Owner"}
+    )
+    text = (dst / ".config/git/hooks/pre-commit").read_text()
+    assert "Copyright © Sample Owner" in text
+    assert "Caleb Cushing" not in text
 
 
 def test_no_license_sidecars_rendered(generated):

@@ -54,11 +54,3 @@ SPDX-License-Identifier = "MIT"
 path = "**/tsconfig*.json"
 SPDX-FileCopyrightText = "NONE"
 SPDX-License-Identifier = "CC0-1.0"
-
-# Hooks carry no headers: lint-staged skips them because a hook runs while
-# lint-staged may rewrite it, and a rewrite under the executing shell
-# corrupts the script. This annotation licenses them instead.
-[[annotations]]
-path = ".config/git/hooks/**"
-SPDX-FileCopyrightText = "NONE"
-SPDX-License-Identifier = "MIT"
