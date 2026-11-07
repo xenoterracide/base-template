@@ -130,7 +130,9 @@ def test_no_lockfiles_in_output(generated):
 def test_package_json_is_valid_json(generated):
     dst, _ = generated
     data = json.loads((dst / "package.json").read_text())
-    assert data["packageManager"] == "pnpm@12.16.1"
+    # the exact version is Renovate's to bump (customManagers matches the
+    # seed in package.json.jinja); the render must only carry a valid pin
+    assert re.fullmatch(r"pnpm@\d+\.\d+\.\d+", data["packageManager"])
 
 
 def _strip_jinja(text: str) -> str:

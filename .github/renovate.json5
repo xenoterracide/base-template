@@ -33,6 +33,16 @@
   ],
   customManagers: [
     {
+      // the jinja seed is what renders into every consumer's packageManager;
+      // the npm manager never parses .jinja files, so without this the seed
+      // only moves when a human edits it and fresh renders start behind
+      customType: "regex",
+      fileMatch: ["^package\\.json\\.jinja$"],
+      matchStrings: ['"packageManager": "pnpm@(?<currentValue>\\d+\\.\\d+\\.\\d+)"'],
+      datasource: "npm",
+      depName: "pnpm",
+    },
+    {
       // Copyright end-years ride the release tag: the calver major is the
       // year, so tagging v27.x turns every -2026 into -2027. The
       // two-digit capture keeps the comparison aligned with the year
@@ -66,7 +76,7 @@
   ],
   packageRules: [
     {
-      matchManagers: ["asdf", "maven", "npm", "pyenv", "pep621", "github-actions"],
+      matchManagers: ["asdf", "maven", "npm", "pyenv", "pep621", "github-actions", "regex"],
       branchTopic: "{{{depNameSanitized}}}-{{{newVersion}}}",
       automerge: true,
     },
