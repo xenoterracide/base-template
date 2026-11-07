@@ -35,7 +35,9 @@ _skip_if_exists:
 
 # No _tasks: the hosted Renovate app never runs trusted tasks, and a
 # template that carries any cannot be updated by its copier manager.
-# Renders stay formatted from source; `contribute` downloads LICENSES/.
+# Renders stay formatted from source; `contribute` downloads the license
+# texts the render needs. The list is explicit: the answer picks the code
+# license, and a scan outside git would also walk `node_modules`.
 
 _message_after_copy: |
   Your new {{ project_title }} project is ready.

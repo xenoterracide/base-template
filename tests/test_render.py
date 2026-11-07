@@ -432,15 +432,23 @@ def test_copier_runs_no_tasks():
 def test_contribute_downloads_the_license_texts(generated):
     """A fresh consumer's contribute populates LICENSES, replacing the task.
 
-    Only inside a git work tree: without one reuse scans `node_modules` and
-    seeds licenses the project never uses, which then fails `reuse lint`.
+    The list is explicit: the render's answer picks the code license, and a
+    scan outside git would also walk `node_modules` and seed unused texts.
     """
     dst, _ = generated
     scripts = json.loads((dst / "package.json").read_text())["scripts"]
     assert scripts["contribute"] == (
-        "if git rev-parse --is-inside-work-tree >/dev/null 2>&1; "
-        "then uvx reuse@6.2.0 download --all; fi && sh .config/git/hooks/heal.sh"
+        "uvx reuse@6.2.0 download GPL-3.0-or-later CC0-1.0 MIT CC-BY-NC-SA-4.0 "
+        "&& sh .config/git/hooks/heal.sh"
     )
+
+
+@pytest.mark.parametrize("license_id", ["GPL-3.0-or-later", "Apache-2.0", "MIT", "CC0-1.0"])
+def test_contribute_downloads_the_chosen_license(tmp_path, license_id):
+    """The explicit list follows the answer, so no render seeds a wrong text."""
+    dst = copy_template(tmp_path, {**ANSWERS["config"], "license": license_id})
+    scripts = json.loads((dst / "package.json").read_text())["scripts"]
+    assert f"download {license_id} CC0-1.0 MIT CC-BY-NC-SA-4.0" in scripts["contribute"]
 
 
 def test_renovate_copier_updates_automerge_when_checks_pass(generated):
