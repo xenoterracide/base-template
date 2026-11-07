@@ -10,8 +10,8 @@ _exclude:
   - .git
   - .DS_Store
   - .svn
-  - '~*'
-  - '*.py[co]'
+  - "~*"
+  - "*.py[co]"
   - __pycache__
   - .github/workflows
   - docs/
@@ -35,9 +35,9 @@ _skip_if_exists:
 
 # No _tasks: the hosted Renovate app never runs trusted tasks, and a
 # template that carries any cannot be updated by its copier manager.
-# Renders stay formatted from source; `contribute` downloads the license
-# texts the render needs. The list is explicit: the answer picks the code
-# license, and a scan outside git would also walk `node_modules`.
+# Renders stay formatted from source; the pre-commit hook downloads the
+# license texts after lint-staged annotates, so a commit carries exactly
+# the set its tree references.
 
 _message_after_copy: |
   Your new {{ project_title }} project is ready.
