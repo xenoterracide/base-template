@@ -23,7 +23,6 @@ _exclude:
   - .venv
   - copier.yml
   - .python-version
-  - package.json.license
 
 # Seed once, then the consumer owns them: their Renovate updates .tool-versions
 # and the Maven wrapper from then on. Copier leaves existing files alone and

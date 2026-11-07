@@ -51,3 +51,13 @@ SPDX-License-Identifier = "CC0-1.0"
 path = "**/*.jinja"
 SPDX-FileCopyrightText = "NONE"
 SPDX-License-Identifier = "CC0-1.0"
+
+[[annotations]]
+path = "**/package.json"
+SPDX-FileCopyrightText = "Copyright © 2026 Caleb Cushing"
+SPDX-License-Identifier = "MIT"
+
+[[annotations]]
+path = "**/tsconfig*.json"
+SPDX-FileCopyrightText = "NONE"
+SPDX-License-Identifier = "CC0-1.0"
