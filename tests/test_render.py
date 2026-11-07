@@ -53,6 +53,10 @@ def test_copier_answers(generated):
     text = (dst / ".copier-answers.yml").read_text()
     assert "_src_path:" in text
     assert "_commit:" in text
+    # the answers file carries its header from the template, so copier
+    # updates never strip the consumer's coverage; the tag is split so
+    # reuse cannot read this source as an SPDX expression
+    assert "SPDX-License" + "-Identifier: MIT" in text
 
 
 def test_no_jinja_leak(generated):
@@ -266,36 +270,67 @@ def test_renders_carry_no_blank_line_scaffolding(generated):
         assert "\n\n\n" not in path.read_text(), f"blank scaffolding: {path.name}"
 
 
-def test_renders_carry_no_baked_headers(generated):
-    """reuse annotate, not the template, writes SPDX headers.
+def test_renders_carry_baked_lineage_headers(generated):
+    """The template bakes SPDX headers with lineage years; annotate extends.
 
-    Hooks are the exception: template updates deliver them through Renovate
-    commits, which never run lint-staged, so their headers must travel with
-    the file.
+    The ranges record when each file's expression first appeared in the
+    holder's own history, so a render asserts the holder's copyright from
+    the start. JSON files cannot carry comments: package.json and tsconfig
+    stay annotation-covered, with the range in REUSE.toml's annotation.
     """
     dst, _ = generated
-    for path in dst.rglob("*"):
-        if not path.is_file() or path.name == "REUSE.toml" or "hooks" in path.parts:
-            continue
-        text = path.read_text()
-        assert "SPDX-FileCopyrightText" not in text, path.name
-        assert "SPDX-License-Identifier" not in text, path.name
-    assert "# SPDX-License-Identifier" not in (dst / "REUSE.toml").read_text()
+    lineage = {
+        ".gitignore": "2008",
+        ".editorconfig": "2013",
+        ".gitattributes": "2013",
+        ".prettierignore": "2021",
+        ".prettierrc.cjs": "2020",
+        ".lintstagedrc.cjs": "2023",
+        ".envrc": "2024",
+        "git-conventional-commits.yaml": "2024",
+        "pyproject.toml": "2025",
+        "REUSE.toml": "2024",
+        ".github/renovate.json5": "2024",
+        ".copier-answers.yml": "2026",
+    }
+    for rel, start in lineage.items():
+        text = (dst / rel).read_text()
+        assert re.search(rf"Copyright © {start}(?:-\d{{4}})? Caleb Cushing", text), rel
+        assert "SPDX-License-Identifier" in text, rel
+
+    # json files carry no inline header; the annotation carries the range
+    package_json = json.loads((dst / "package.json").read_text())
+    assert package_json["name"] in ("sample", "@example/sample")
+    assert "SPDX-FileCopyrightText" not in (dst / "package.json").read_text()
+    assert "Copyright © 2013-2026 Caleb Cushing" in (dst / "REUSE.toml").read_text()
+
+    # docs are documentation-licensed with their own lineage
+    assert re.search(r"Copyright © 2015-\d{4}", (dst / "README.md").read_text())
 
 
 def test_hooks_carry_the_consumer_header(generated):
     """Hooks are shell that people read; the license rides in the file."""
     dst, _ = generated
     # split the tags so reuse cannot read this source as SPDX expressions
-    copyright_line = "# SPDX-FileCopyright" + "Text: Copyright © Caleb Cushing"
+    copyright_line = "# SPDX-FileCopyright" + "Text: Copyright © "
     license_line = "# SPDX-License" + "-Identifier: MIT"
+    lineage = {
+        "commit-msg": "2024",
+        "heal.sh": "2026",
+        "post-checkout": "2026",
+        "post-merge": "2026",
+        "pre-commit": "2021",
+    }
     hooks = sorted((dst / ".config/git/hooks").iterdir())
     assert hooks, "no hooks rendered"
     for path in hooks:
         lines = path.read_text().splitlines()
         assert lines[0] == "#!/bin/sh", path.name
-        assert copyright_line in lines, path.name
         assert license_line in lines, path.name
+        start = lineage[path.name]
+        assert any(line.startswith(copyright_line + start) for line in lines), (
+            f"{path.name}: no {start} lineage header"
+        )
 
 
 def test_hooks_carry_the_answered_holder(tmp_path):
@@ -304,7 +339,7 @@ def test_hooks_carry_the_answered_holder(tmp_path):
         tmp_path / "holder", {**ANSWERS["config"], "copyright_holder": "Sample Owner"}
     )
     text = (dst / ".config/git/hooks/pre-commit").read_text()
-    assert "Copyright © Sample Owner" in text
+    assert "Sample Owner" in text
     assert "Caleb Cushing" not in text
 
 
