@@ -5,6 +5,7 @@
 """Structure and compliance assertions over rendered variants."""
 
 import json
+import os
 import re
 import stat
 import subprocess
@@ -409,12 +410,15 @@ def test_reuse_lint(tmp_path, variant):
         timeout=600,
     )
     subprocess.run(["git", "add", "-A"], cwd=dst, check=True)
+    # CI= simulates a developer commit: the hook's guard skips it under a
+    # real CI=true, where GitHub runs the checks instead of the hooks.
     subprocess.run(
         ["sh", ".config/git/hooks/pre-commit"],
         cwd=dst,
         check=True,
         capture_output=True,
         timeout=600,
+        env={**os.environ, "CI": ""},
     )
     subprocess.run(["git", "add", "-A"], cwd=dst, check=True)
     subprocess.run(
