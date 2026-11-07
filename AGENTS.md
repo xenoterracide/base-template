@@ -43,9 +43,13 @@ uv run --group dev pytest tests/ -q # render all variants, assert structure
 
 - Read `.editorconfig` before editing. Every text file ends with a newline,
   including `.jinja` sources, which prettier cannot check.
-- The template renders no SPDX headers. `.jinja` sources are headerless and
-  mass-licensed via `REUSE.toml`'s `**/*.jinja` annotation; `reuse annotate`
-  stamps consumer files at their first commit.
+- The template bakes SPDX headers with lineage year ranges: each file's
+  copyright starts when its expression first appeared in the holder's
+  history, established by archaeology across the family repos. In
+  consumers, `reuse annotate` extends the ranges on commit, and Renovate
+  bumps the end year from this repo's calver tags. JSON files cannot carry
+  comments, so they stay annotation-covered with the range in
+  `REUSE.toml`.
 - Variant-only files gate through conditional path parts:
   `{% if template_type == 'java' %}…{% endif %}`.
 - Hooks heal the toolchain. `.envrc`, `contribute`, and the post hooks call

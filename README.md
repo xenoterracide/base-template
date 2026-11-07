@@ -1,5 +1,5 @@
 <!--
-SPDX-FileCopyrightText: Copyright © 2026 Caleb Cushing
+SPDX-FileCopyrightText: Copyright © 2015-2026 Caleb Cushing
 
 SPDX-License-Identifier: CC-BY-NC-SA-4.0
 -->

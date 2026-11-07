@@ -84,10 +84,6 @@ license:
     CC0-1.0: CC0-1.0
   default: GPL-3.0-or-later
 
-copyright_holder:
-  type: str
-  default: Caleb Cushing
-
 include_skeleton:
   type: bool
   default: true
