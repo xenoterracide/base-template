@@ -87,9 +87,22 @@ def test_old_hooks_absent(generated):
 
 
 def test_old_prettierrc_cjs_absent(generated):
-    """The yml config replaced the yarn-era cjs; both must never render."""
+    """The yml config replaced the yarn-era cjs; the cjs must never render."""
     dst, _ = generated
     assert not (dst / ".prettierrc.cjs").exists()
+
+
+def test_prettierrc_plugins_are_dev_dependencies(generated):
+    """Lint passes --ignore-unknown, so a plugin missing from devDependencies
+    would silently skip its file type; every named plugin must ship."""
+    dst, _ = generated
+    plugins = re.findall(
+        r'^\s+- "?([\w@/.-]+)"?$', (dst / ".prettierrc.yml").read_text(), re.M
+    )
+    dev_deps = json.loads((dst / "package.json").read_text())["devDependencies"]
+    assert plugins, "no plugin list in .prettierrc.yml"
+    for plugin in plugins:
+        assert plugin in dev_deps, f"prettier plugin not installed: {plugin}"
 
 
 def test_envrc_is_heal_form(generated):
