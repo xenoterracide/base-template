@@ -18,11 +18,11 @@ Create a project:
 Bootstrap it:
 
     cd my-project
-    pnpm contribute
+    npm run contribute
 
 Refresh from the template:
 
-    copier update --trust
+    uv run copier update --trust
 
 Conflicts land as `.rej` files. Resolve them by hand.
 
