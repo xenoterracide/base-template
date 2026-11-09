@@ -20,7 +20,7 @@ Read these files instead of trusting a copy of their contents here.
 | pnpm version                   | `packageManager` in `package.json` |
 | Node dev dependencies          | `package.json`, `pnpm-lock.yaml`   |
 | Python dependencies            | `pyproject.toml`, `uv.lock`        |
-| Formatting rules               | `.editorconfig`, `.prettierrc.cjs` |
+| Formatting rules               | `.editorconfig`, `.prettierrc.yml` |
 | Conventional commit types      | `git-conventional-commits.yaml`    |
 | Pre-commit rules               | `.lintstagedrc.cjs`                |
 | License headers                | `REUSE.toml`, `.lintstagedrc.cjs`  |

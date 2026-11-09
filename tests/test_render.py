@@ -20,7 +20,7 @@ SHARED_FILES = [
     ".gitattributes",
     ".gitignore",
     ".prettierignore",
-    ".prettierrc.cjs",
+    ".prettierrc.yml",
     "package.json",
     "pyproject.toml",
     "REUSE.toml",
@@ -84,6 +84,12 @@ def test_old_hooks_absent(generated):
     assert not (dst / "git").exists()
     for name in ("sync-tooling", "check-yarn-env"):
         assert not (dst / ".config/git/hooks" / name).exists()
+
+
+def test_old_prettierrc_cjs_absent(generated):
+    """The yml config replaced the yarn-era cjs; both must never render."""
+    dst, _ = generated
+    assert not (dst / ".prettierrc.cjs").exists()
 
 
 def test_envrc_is_heal_form(generated):
@@ -290,7 +296,7 @@ def test_renders_carry_baked_lineage_headers(generated):
         ".editorconfig": "2013",
         ".gitattributes": "2013",
         ".prettierignore": "2021",
-        ".prettierrc.cjs": "2020",
+        ".prettierrc.yml": "2020",
         ".lintstagedrc.cjs": "2023",
         ".envrc": "2024",
         "git-conventional-commits.yaml": "2024",
