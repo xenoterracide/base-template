@@ -10,6 +10,7 @@ import re
 import stat
 import subprocess
 import tomllib
+import xml.etree.ElementTree as ET
 
 import pytest
 
@@ -20,7 +21,7 @@ SHARED_FILES = [
     ".gitattributes",
     ".gitignore",
     ".prettierignore",
-    ".prettierrc.cjs",
+    ".prettierrc.yml",
     "package.json",
     "pyproject.toml",
     "REUSE.toml",
@@ -84,6 +85,25 @@ def test_old_hooks_absent(generated):
     assert not (dst / "git").exists()
     for name in ("sync-tooling", "check-yarn-env"):
         assert not (dst / ".config/git/hooks" / name).exists()
+
+
+def test_old_prettierrc_cjs_absent(generated):
+    """The yml config replaced the yarn-era cjs; the cjs must never render."""
+    dst, _ = generated
+    assert not (dst / ".prettierrc.cjs").exists()
+
+
+def test_prettierrc_plugins_are_dev_dependencies(generated):
+    """Lint passes --ignore-unknown, so a plugin missing from devDependencies
+    would silently skip its file type; every named plugin must ship."""
+    dst, _ = generated
+    plugins = re.findall(
+        r'^\s+- "?([\w@/.-]+)"?$', (dst / ".prettierrc.yml").read_text(), re.M
+    )
+    dev_deps = json.loads((dst / "package.json").read_text())["devDependencies"]
+    assert plugins, "no plugin list in .prettierrc.yml"
+    for plugin in plugins:
+        assert plugin in dev_deps, f"prettier plugin not installed: {plugin}"
 
 
 def test_envrc_is_heal_form(generated):
@@ -177,6 +197,15 @@ def test_pyproject_toml_is_valid(generated):
     assert data["project"]["name"] == "sample"
 
 
+def test_copier_is_provisioned_for_updates(generated):
+    """The documented template refresh needs copier; the dev group ships it."""
+    dst, _ = generated
+    dev = tomllib.loads((dst / "pyproject.toml").read_text())["dependency-groups"][
+        "dev"
+    ]
+    assert any(dep.startswith("copier") for dep in dev)
+
+
 def test_java_layout(generated):
     dst, answers = generated
     if answers["template_type"] != "java":
@@ -198,6 +227,52 @@ def test_java_layout(generated):
         assert (dst / rel).exists(), f"missing java file: {rel}"
     assert not (dst / "packages").exists()
     assert not (dst / "pnpm-workspace.yaml").exists()
+
+
+def test_checkstyle_carries_the_family_maxima(generated):
+    """The family's established values; a render flattened them once
+    (semver adoption, 2026-11)."""
+    dst, answers = generated
+    if answers["template_type"] != "java":
+        pytest.skip()
+
+    def props(tree, name):
+        return [
+            {p.get("name"): p.get("value") for p in m.iter("property")}
+            for m in tree.iter("module")
+            if m.get("name") == name
+        ]
+
+    main = ET.parse(dst / ".config/checkstyle/main.xml").getroot()
+    test = ET.parse(dst / ".config/checkstyle/test.xml").getroot()
+    # filters do not cross TreeWalker boundaries; every walker carries one
+    for walker in (m for m in main.iter("module") if m.get("name") == "TreeWalker"):
+        assert any(
+            c.get("name") == "SuppressionCommentFilter" for c in walker.iter("module")
+        ), "TreeWalker without SuppressionCommentFilter"
+    assert props(main, "LambdaBodyLength") == [{"max": "20"}]
+    assert props(main, "ReturnCount") == [{"max": "3"}]
+    assert props(main, "JavadocTagContinuationIndentation") == [
+        {"offset": "2", "violateExecutionOnNonTightHtml": "true"}
+    ]
+    assert props(main, "ExecutableStatementCount") == [
+        {"max": "20"},
+        {"max": "10", "tokens": "LAMBDA"},
+    ]
+    assert props(test, "ExecutableStatementCount") == [{"max": "100"}]
+    assert props(test, "LambdaBodyLength") == [{"max": "20"}]
+
+
+def test_spotbugs_excludes_are_scoped(generated):
+    """A Match with only a Bug pattern suppresses it in every class;
+    exclusions must name their scope."""
+    dst, answers = generated
+    if answers["template_type"] != "java":
+        pytest.skip()
+    ns = "{https://github.com/spotbugs/filter/3.0.0}"
+    root = ET.parse(dst / ".config/spotbugs/exclude.xml").getroot()
+    for match in root.iter(f"{ns}Match"):
+        assert [c.tag for c in match] != [f"{ns}Bug"], "global bug suppression"
 
 
 def test_ts_layout(generated):
@@ -290,7 +365,7 @@ def test_renders_carry_baked_lineage_headers(generated):
         ".editorconfig": "2013",
         ".gitattributes": "2013",
         ".prettierignore": "2021",
-        ".prettierrc.cjs": "2020",
+        ".prettierrc.yml": "2020",
         ".lintstagedrc.cjs": "2023",
         ".envrc": "2024",
         "git-conventional-commits.yaml": "2024",
@@ -438,8 +513,28 @@ def test_consumer_contribute_bootstraps_without_lockfile(generated):
     """Fresh consumers have no lockfile; precontribute must not freeze."""
     dst, _ = generated
     scripts = json.loads((dst / "package.json").read_text())["scripts"]
-    assert scripts["precontribute"] == "pnpm setup:corepack"
+    assert scripts["precontribute"] == "npm run setup:corepack"
     assert "setup:pnpm" not in scripts
+
+
+def test_heal_bootstraps_corepack_shims(generated):
+    """corepack enable exits ENOENT without ~/.local/bin, and its shims
+    land outside the default PATH; heal must create and export both."""
+    dst, _ = generated
+    scripts = json.loads((dst / "package.json").read_text())["scripts"]
+    assert "mkdir -p" in scripts["setup:corepack"]
+    heal = (dst / ".config/git/hooks/heal.sh").read_text()
+    assert heal.index("mkdir -p") < heal.index("corepack enable --install-directory")
+    assert 'PATH="$HOME/.local/bin:$PATH"' in heal
+
+
+def test_gitattributes_catchall_leads(generated):
+    """gitattributes lets later patterns win per attribute; the catch-all
+    leading keeps the specialized eol rules effective."""
+    dst, _ = generated
+    lines = (dst / ".gitattributes").read_text().splitlines()
+    patterns = [line for line in lines if line and not line.startswith("#")]
+    assert patterns[0].startswith("* "), "catch-all does not lead"
 
 
 def test_precommit_content(generated):

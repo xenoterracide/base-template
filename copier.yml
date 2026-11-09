@@ -43,7 +43,7 @@ _skip_if_exists:
 
 _message_after_copy: |
   Your new {{ project_title }} project is ready.
-  Run `pnpm contribute` to install tooling and set up git hooks.
+  Run `npm run contribute` to install tooling and set up git hooks.
   For typescript projects, copy staged/.github/workflows/* into .github/workflows/.
 
 _envops:

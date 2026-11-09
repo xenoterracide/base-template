@@ -18,9 +18,8 @@
     "lint:prettier": "prettier --ignore-unknown --cache --check '**'",
     "lint:reuse": "pnpm reuse download --all && pnpm reuse lint",
     "lint": "pnpm lint:prettier && pnpm lint:reuse",
-    "precontribute": "pnpm setup:corepack && pnpm setup:pnpm",
+    "precontribute": "npm run setup:corepack",
     "reuse": "uv run --frozen --group dev reuse",
-    "setup:corepack": "npm install --global corepack && corepack enable --install-directory ~/.local/bin",
-    "setup:pnpm": "pnpm install --frozen-lockfile"
+    "setup:corepack": "npm install --global corepack && mkdir -p ~/.local/bin && corepack enable --install-directory ~/.local/bin"
   }
 }

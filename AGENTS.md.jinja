@@ -8,7 +8,7 @@ SPDX-License-Identifier: CC-BY-NC-SA-4.0
 
 ## Build and Test
 
-- `pnpm contribute` — bootstrap tooling (run once after clone)
+- `npm run contribute` — bootstrap tooling (run once after clone)
 - `pnpm check` — run all checks
 - `pnpm lint:prettier` — prettier check
 - `pnpm lint:reuse` — REUSE compliance check{% if template_type == 'java' %}
@@ -20,7 +20,7 @@ SPDX-License-Identifier: CC-BY-NC-SA-4.0
 
 - Template: `copier.yml` in [xenoterracide/base-template](https://github.com/xenoterracide/base-template)
 - Answers: `.copier-answers.yml` in this repo
-- Updates: `copier update --trust` refreshes from template
+- Updates: `uv run --group dev copier update --trust` refreshes from template
 - Hooks heal the toolchain: `.envrc`, `contribute`, and the post hooks call
   `.config/git/hooks/heal.sh`. A failed heal never breaks a checkout.
 

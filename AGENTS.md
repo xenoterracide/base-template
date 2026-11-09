@@ -20,7 +20,7 @@ Read these files instead of trusting a copy of their contents here.
 | pnpm version                   | `packageManager` in `package.json` |
 | Node dev dependencies          | `package.json`, `pnpm-lock.yaml`   |
 | Python dependencies            | `pyproject.toml`, `uv.lock`        |
-| Formatting rules               | `.editorconfig`, `.prettierrc.cjs` |
+| Formatting rules               | `.editorconfig`, `.prettierrc.yml` |
 | Conventional commit types      | `git-conventional-commits.yaml`    |
 | Pre-commit rules               | `.lintstagedrc.cjs`                |
 | License headers                | `REUSE.toml`, `.lintstagedrc.cjs`  |
@@ -33,7 +33,7 @@ Read these files instead of trusting a copy of their contents here.
 ## Build and Test
 
 ```bash
-pnpm contribute # bootstrap once after clone: tools, deps, hooks
+npm run contribute # bootstrap once after clone: tools, deps, hooks
 pnpm lint # prettier + REUSE
 uv run --group dev pytest tests/ -q # render all variants, assert structure
 ./tests/verify.sh config # full check of a generated project (java|typescript|config)

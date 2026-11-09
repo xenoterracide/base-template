@@ -10,7 +10,7 @@ SPDX-License-Identifier: CC-BY-NC-SA-4.0
 
     git clone https://github.com/xenoterracide/base-template
     cd base-template
-    pnpm contribute
+    npm run contribute
 
 ## Lint
 

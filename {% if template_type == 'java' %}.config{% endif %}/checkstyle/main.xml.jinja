@@ -22,6 +22,11 @@ SPDX-License-Identifier: CC0-1.0
     <module name="NoLineWrap">
       <property name="tokens" value="PACKAGE_DEF, IMPORT, STATIC_IMPORT" />
     </module>
+    <module name="SuppressionCommentFilter">
+      <property name="offCommentFormat" value="CHECKSTYLE.OFF\: ([\w\|]+)" />
+      <property name="onCommentFormat" value="CHECKSTYLE.ON\: ([\w\|]+)" />
+      <property name="checkFormat" value="$1" />
+    </module>
     <module name="LeftCurly" />
     <module name="RightCurly" />
     <module name="WhitespaceAfter" />
@@ -139,6 +144,7 @@ SPDX-License-Identifier: CC0-1.0
     <module name="JavadocParamOrder" />
     <module name="JavadocSeeTagOrder" />
     <module name="JavadocTagContinuationIndentation">
+      <property name="offset" value="2" />
       <property name="violateExecutionOnNonTightHtml" value="true" />
     </module>
     <module name="JavadocThrowsOrder" />
@@ -170,7 +176,9 @@ SPDX-License-Identifier: CC0-1.0
     <module name="StaticVariableName" />
     <module name="TypeName" />
     <module name="ParameterAssignment" />
-    <module name="ReturnCount" />
+    <module name="ReturnCount">
+      <property name="max" value="3" />
+    </module>
     <module name="StringLiteralEquality" />
     <module name="CatchParameterName" />
     <module name="ClassTypeParameterName">
@@ -207,7 +215,13 @@ SPDX-License-Identifier: CC0-1.0
     <module name="ExecutableStatementCount">
       <property name="max" value="20" />
     </module>
-    <module name="LambdaBodyLength" />
+    <module name="ExecutableStatementCount">
+      <property name="max" value="10" />
+      <property name="tokens" value="LAMBDA" />
+    </module>
+    <module name="LambdaBodyLength">
+      <property name="max" value="20" />
+    </module>
     <module name="MethodCount">
       <property name="maxTotal" value="20" />
     </module>

@@ -53,7 +53,7 @@ gets.
 | package.json (annotation)                                  | 2013  | pastey-frontend                                                    |
 | README.md                                                  | 2015  | wercker-step-maven                                                 |
 | checkstyle configs                                         | 2015  | platform (checkstyle.xml)                                          |
-| .prettierrc.cjs                                            | 2020  | aurelia-propertysource (.prettierrc.json)                          |
+| .prettierrc.yml                                            | 2020  | aurelia-propertysource (.prettierrc.json)                          |
 | hooks pre-commit                                           | 2021  | iw-pm-backend (.husky, pretty-quick era)                           |
 | .config/spotbugs/exclude.xml                               | 2021  | iw-pm-backend                                                      |
 | .prettierignore                                            | 2021  | iw-pm-backend                                                      |
