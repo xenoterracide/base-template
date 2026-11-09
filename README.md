@@ -22,7 +22,7 @@ Bootstrap it:
 
 Refresh from the template:
 
-    uv run copier update --trust
+    uv run --group dev copier update --trust
 
 Conflicts land as `.rej` files. Resolve them by hand.
 
