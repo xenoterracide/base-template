@@ -29,7 +29,7 @@ headers make the render itself carry the truth.
 
 195 repositories scanned: 35 public Bitbucket clones, 150 GitHub clones
 including the archived graveyard, 10 local checkouts with full history.
-Every template file and its historical name variants (`​.husky/pre-commit`,
+Every template file and its historical name variants (`.husky/pre-commit`,
 `.prettierrc.json`, `.lintstagedrc.yml`, `checkstyle.xml`, …) were dated by
 their earliest `--diff-filter=A` commit, filtered to the holder's own
 authorship identities so upstream-fork contamination fell away, and the
