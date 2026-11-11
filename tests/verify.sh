@@ -54,6 +54,8 @@ if [ "$VARIANT" = java ]; then
   echo "Running maven verify..."
   ./mvnw -q verify
 elif [ "$VARIANT" = typescript ]; then
+  echo "Running eslint..."
+  pnpm lint:eslint
   echo "Running typecheck..."
   pnpm typecheck
   echo "Running tests..."
