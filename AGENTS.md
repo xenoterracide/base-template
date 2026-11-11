@@ -55,9 +55,13 @@ uv run --group dev pytest tests/ -q # render all variants, assert structure
 - Hooks heal the toolchain. `.envrc`, `contribute`, and the post hooks call
   `.config/git/hooks/heal.sh`. A failed heal never breaks a checkout.
 - Renovate pins move weekly. Expect `develop` to move.
-- Release tags are calver, `vYY.MM.micro`: a dated checkpoint, not a
+- Release tags are calver, `vYY.M.MICRO`: a dated checkpoint, not a
   compatibility contract. Tags carry the `v`. Manifests carry the bare
-  version. Bump micro for a second release in the same month.
+  version. `M` is the bare calendar month — calver has no zero padding,
+  so March 2027 is `v27.3.0`; November hides the difference and the
+  existing `v26.11.x` tags stand. `MICRO` is monotonic within the month:
+  every release takes the next value. The shape is Pep440-compatible,
+  so Renovate's default versioning compares it.
 
 ## Maintenance
 
