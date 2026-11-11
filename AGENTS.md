@@ -55,6 +55,8 @@ uv run --group dev pytest tests/ -q # render all variants, assert structure
 - Hooks heal the toolchain. `.envrc`, `contribute`, and the post hooks call
   `.config/git/hooks/heal.sh`. A failed heal never breaks a checkout.
 - Renovate pins move weekly. Expect `develop` to move.
+- Renovate holds updates 3 days after their release, a supply-chain
+  cooldown; updates with no release timestamp skip it.
 - Release tags are calver, `vYY.M.MICRO`: a dated checkpoint, not a
   compatibility contract. Tags carry the `v`. Manifests carry the bare
   version. `M` is the bare calendar month — calver has no zero padding,
