@@ -13,6 +13,7 @@ SPDX-License-Identifier: CC-BY-NC-SA-4.0
 - `pnpm lint:prettier` — prettier check
 - `pnpm lint:reuse` — REUSE compliance check{% if template_type == 'java' %}
 - `./mvnw -q verify` — Maven build + checkstyle + spotbugs + jacoco + tests{% elif template_type == 'typescript' %}
+- `pnpm lint:eslint` — ESLint check
 - `pnpm typecheck` — TypeScript type check
 - `pnpm test` — vitest with coverage{% endif %}
 

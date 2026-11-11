@@ -304,14 +304,16 @@ ESLINT_BASE_RULE_TWINS = {
 
 
 def test_eslint_disables_only_twin_base_rules(generated):
-    """A rule may be off only as the base half of a base/typescript-eslint
-    twin pair; any other off disables strictTypeChecked for source files."""
+    """No rule is off anywhere in the config except the base half of a
+    base/typescript-eslint twin pair; any other off disables strict rules."""
     dst, answers = generated
     if answers["template_type"] != "typescript":
         pytest.skip()
     text = (dst / "eslint.config.cts").read_text()
-    off_rules = re.findall(r'"([^"\s]+)":\s*"off"', text)
-    error_rules = set(re.findall(r'"(@[^"\s]+)":\s*"error"', text))
+    off_rules = re.findall(r'"([^"\s]+)":\s*(?:"off"|0\b)', text)
+    error_rules = set(
+        re.findall(r'"(@[^"\s]+)":\s*(?:"error"|2\b|\[2|\[\s*"error")', text)
+    )
     unexpected = [rule for rule in off_rules if rule not in ESLINT_BASE_RULE_TWINS]
     assert not unexpected, f"rules off outside the twin idiom: {unexpected}"
     for base, twin in ESLINT_BASE_RULE_TWINS.items():
