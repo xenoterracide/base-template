@@ -294,6 +294,31 @@ def test_ts_layout(generated):
     assert not (dst / "mvnw").exists()
 
 
+ESLINT_BASE_RULE_TWINS = {
+    "max-params": "@typescript-eslint/max-params",
+    "default-param-last": "@typescript-eslint/default-param-last",
+    "no-use-before-define": "@typescript-eslint/no-use-before-define",
+    "init-declarations": "@typescript-eslint/init-declarations",
+    "prefer-destructuring": "@typescript-eslint/prefer-destructuring",
+}
+
+
+def test_eslint_disables_only_twin_base_rules(generated):
+    """A rule may be off only as the base half of a base/typescript-eslint
+    twin pair; any other off disables strictTypeChecked for source files."""
+    dst, answers = generated
+    if answers["template_type"] != "typescript":
+        pytest.skip()
+    text = (dst / "eslint.config.cts").read_text()
+    off_rules = re.findall(r'"([^"\s]+)":\s*"off"', text)
+    error_rules = set(re.findall(r'"(@[^"\s]+)":\s*"error"', text))
+    unexpected = [rule for rule in off_rules if rule not in ESLINT_BASE_RULE_TWINS]
+    assert not unexpected, f"rules off outside the twin idiom: {unexpected}"
+    for base, twin in ESLINT_BASE_RULE_TWINS.items():
+        if base in off_rules:
+            assert twin in error_rules, f"twin not on: {twin}"
+
+
 def test_config_layout(generated):
     """The config variant renders shared files and nothing build-specific."""
     dst, answers = generated
