@@ -47,10 +47,10 @@
       // the npm manager never parses .jinja files, so without this the seed
       // only moves when a human edits it and fresh renders start behind
       customType: "regex",
-      fileMatch: ["^package\\.json\\.jinja$"],
+      managerFilePatterns: ["/^package\\.json\\.jinja$/"],
       matchStrings: ['"packageManager": "pnpm@(?<currentValue>\\d+\\.\\d+\\.\\d+)"'],
-      datasource: "npm",
-      depName: "pnpm",
+      datasourceTemplate: "npm",
+      depNameTemplate: "pnpm",
     },
     {
       // Copyright end-years ride the release tag: the calver major is the
@@ -59,7 +59,7 @@
       // extracted from the tag.
       customType: "regex",
       managerFilePatterns: [
-        "(\\.(cjs|cts|ts|java|xml|json5|jsonc|toml|ya?ml|md)|\\.editorconfig|\\.envrc|\\.gitignore|\\.gitattributes|\\.prettierignore|\\.config/git/hooks/[^/]+)(\\.jinja)?$",
+        "/(\\.(cjs|cts|ts|java|xml|json5|jsonc|toml|ya?ml|md)|\\.editorconfig|\\.envrc|\\.gitignore|\\.gitattributes|\\.prettierignore|\\.config/git/hooks/[^/]+)(\\.jinja)?$/",
       ],
       matchStrings: ["Copyright © (?<from>20\\d{2})-20(?<currentValue>\\d{2}) "],
       depNameTemplate: "copyright-year",
@@ -73,7 +73,7 @@
       // merges the start year with the comparable two-digit end
       customType: "regex",
       managerFilePatterns: [
-        "(\\.(cjs|cts|ts|java|xml|json5|jsonc|toml|ya?ml|md)|\\.editorconfig|\\.envrc|\\.gitignore|\\.gitattributes|\\.prettierignore|\\.config/git/hooks/[^/]+)(\\.jinja)?$",
+        "/(\\.(cjs|cts|ts|java|xml|json5|jsonc|toml|ya?ml|md)|\\.editorconfig|\\.envrc|\\.gitignore|\\.gitattributes|\\.prettierignore|\\.config/git/hooks/[^/]+)(\\.jinja)?$/",
       ],
       matchStrings: ["Copyright © (?<from>20\\d{2}) ", "Copyright © 20(?<currentValue>\\d{2}) "],
       matchStringsStrategy: "combination",
@@ -86,7 +86,7 @@
   ],
   packageRules: [
     {
-      matchManagers: ["asdf", "maven", "maven-wrapper", "npm", "pyenv", "pep621", "github-actions", "regex"],
+      matchManagers: ["asdf", "maven", "maven-wrapper", "npm", "pyenv", "pep621", "github-actions", "custom.regex"],
       branchTopic: "{{{depNameSanitized}}}-{{{newVersion}}}",
       automerge: true,
     },

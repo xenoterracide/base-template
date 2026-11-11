@@ -731,3 +731,58 @@ def test_renovate_cooldown_matches_the_authoring_copy(generated):
             r"minimumReleaseAge: null",
             content,
         ), f"un-ageable update types inherit the cooldown in the {label} copy"
+
+
+def test_renovate_configs_pass_the_renovate_validator(generated):
+    """Renovate halts every PR in a repo whose config it rejects, so the
+    authoring copy and every render must pass its own validator. The dlx
+    floats latest on purpose: a deprecation fails the suite before the
+    hosted app migrates it away.
+    """
+    dst, _ = generated
+    copies = {
+        "rendered": dst / ".github/renovate.json5",
+        "authoring": TEMPLATE / ".github/renovate.json5",
+    }
+    for label, config in copies.items():
+        result = subprocess.run(
+            [
+                "pnpm",
+                "--package=renovate",
+                "dlx",
+                "renovate-config-validator",
+                "--strict",
+                str(config),
+            ],
+            capture_output=True,
+            text=True,
+            timeout=600,
+        )
+        assert result.returncode == 0, (
+            f"{label} config failed validation:\n{result.stdout}\n{result.stderr}"
+        )
+
+
+def test_renovate_manager_file_patterns_are_regex_wrapped(generated):
+    """managerFilePatterns takes glob and regex; only the /.../ wrapper
+    marks a pattern as regex. An unwrapped regex reads as a glob that
+    matches nothing, which killed the copyright-year manager in every
+    strand without any error.
+    """
+    dst, _ = generated
+    copies = {
+        "rendered": (dst / ".github/renovate.json5").read_text(),
+        "authoring": (TEMPLATE / ".github/renovate.json5").read_text(),
+    }
+    for label, content in copies.items():
+        # bound on the closing bracket-comma: a bare ] appears inside the
+        # [^/] character class of the hook pattern itself
+        blocks = re.findall(r"managerFilePatterns:\s*\[(.*?)\],", content, re.S)
+        assert blocks, f"no managerFilePatterns in the {label} copy"
+        for block in blocks:
+            entries = re.findall(r'"((?:[^"\\]|\\.)*)"', block)
+            assert entries, f"empty managerFilePatterns in the {label} copy"
+            for entry in entries:
+                assert entry.startswith("/") and entry.endswith("/"), (
+                    f"unwrapped pattern in the {label} copy: {entry}"
+                )
