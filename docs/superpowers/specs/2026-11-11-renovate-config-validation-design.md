@@ -53,13 +53,24 @@ renovate-config-validator --strict` on the authoring copy and each
 
 ## Alternatives rejected
 
-- A dedicated validator job in `.github/workflows/`: duplicates the
-  rendering setup the suite already owns, and workflow edits need a
-  workflow-scoped token a contributor bot lacks.
+- A dedicated validator job that renders variants itself: duplicates the
+  rendering setup the suite already owns. The shipped `validate-renovate`
+  job takes the scoped form instead — the authoring copy only, a fast
+  named check that pinpoints the config that halts the repo; render-side
+  validation stays in the pytest job.
+- Renovate as a devDependency: the authoring package.json names the
+  shared tool set, and the subset test would push its ~200 MB into every
+  consumer install; the weekly major-bump churn and the pinned version's
+  blindness to new deprecations follow from it. dlx shares one copy per
+  machine through the pnpm store.
 - A pre-commit hook: renovate is a ~100 MB download, too heavy per
   commit.
 - Pinning the validator version: pinned, it stops catching new
   deprecations; unpinned, it drifts weekly, as the hosted app itself
   does.
+- Validating the `.jinja` source directly: jinja is not json5, and
+  stripping tags re-implements rendering, which lies the moment the
+  config grows conditionals. The renders are the only faithful form,
+  and the suite validates every one.
 
 [#308]: https://github.com/xenoterracide/base-template/issues/308
