@@ -776,7 +776,9 @@ def test_renovate_manager_file_patterns_are_regex_wrapped(generated):
     }
     for label, content in copies.items():
         # bound on the closing bracket-comma: a bare ] appears inside the
-        # [^/] character class of the hook pattern itself
+        # [^/] character class of the hook pattern itself; the trailing
+        # comma and double quotes the parse relies on are prettier's
+        # formatting of these files
         blocks = re.findall(r"managerFilePatterns:\s*\[(.*?)\],", content, re.S)
         assert blocks, f"no managerFilePatterns in the {label} copy"
         for block in blocks:

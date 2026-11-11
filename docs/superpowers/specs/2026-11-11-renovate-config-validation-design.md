@@ -18,7 +18,7 @@ against the authoring copy and every rendered variant.
 
 ## Defects
 
-Three shipped on 2026-11-07, before the halt ([#308]):
+Four shipped on 2026-11-07, before the halt ([#308]):
 
 - The pnpm-seed manager used `datasource` and `depName`. Custom managers
   take only the `*Template` forms, so Renovate rejected the authoring
@@ -39,7 +39,8 @@ Three shipped on 2026-11-07, before the halt ([#308]):
 
 - `datasourceTemplate` and `depNameTemplate` replace the plain fields;
   `managerFilePatterns` with a `/^package\.json\.jinja$/` wrapper
-  replaces `fileMatch`, and the automerge rule names `custom.regex`.
+  replaces `fileMatch`, and the automerge rules name `custom.regex` in
+  both strands.
 - The two copyright-year patterns gain `/.../` wrappers in both strands.
 - The validator test runs `pnpm --package=renovate dlx
 renovate-config-validator --strict` on the authoring copy and each
