@@ -42,11 +42,22 @@ Four shipped on 2026-11-07, before the halt ([#308]):
   replaces `fileMatch`, and the automerge rules name `custom.regex` in
   both strands.
 - The two copyright-year patterns gain `/.../` wrappers in both strands.
-- The validator test runs `pnpm --package=renovate dlx
-renovate-config-validator --strict` on the authoring copy and each
-  render; the existing pytest CI job carries it, so no workflow edit is
-  needed. The dlx floats latest on purpose: deprecations fail the suite
-  before the hosted app migrates them away.
+- The validator test runs `pnpm exec renovate-config-validator --strict`
+  on the authoring copy and each render, inside the pytest CI job. The
+  renovate devDependency pins the validator to the lockfile; Renovate
+  bumps it under the repo's release cooldown, so the build stays
+  deterministic and the validator trails the hosted app by at most the
+  bump cadence.
+- The `validate-renovate` CI job names the authoring check in the
+  checks list; the pytest job keeps the render-side validation.
+- `pnpm-workspace.yaml` writes pnpm's release-age gate down —
+  `minimumReleaseAge: 1440`, `minimumReleaseAgeStrict: true` — so a
+  day-0 pin fails loudly instead of pnpm silently installing it and
+  appending a `minimumReleaseAgeExclude` bypass to a committable file.
+  The shared `.jinja` twin renders the hardening to every consumer; the
+  authoring twin adds `allowBuilds` rulings for renovate's tree — `re2`
+  builds, as the validator's regex engine; three inert postinstalls are
+  denied.
 - The wrapper test asserts the `/.../` wrapper on every
   `managerFilePatterns` entry in both strands — the class of silent
   death the schema validator cannot see.
@@ -58,16 +69,20 @@ renovate-config-validator --strict` on the authoring copy and each
   job takes the scoped form instead — the authoring copy only, a fast
   named check that pinpoints the config that halts the repo; render-side
   validation stays in the pytest job.
-- Renovate as a devDependency: the authoring package.json names the
-  shared tool set, and the subset test would push its ~200 MB into every
-  consumer install; the weekly major-bump churn and the pinned version's
-  blindness to new deprecations follow from it. dlx shares one copy per
-  machine through the pnpm store.
+- dlx, the first cut of validator delivery: floating latest makes every
+  run non-deterministic and grabs day-0 releases outside the cooldown.
+  The holder ruled determinism outweighs the ~200 MB install, so
+  renovate rides the devDependencies with an authoring-only exception
+  in the shared-tool-set test; its weekly major-bump PRs are the price
+  Renovate owns.
 - A pre-commit hook: renovate is a ~100 MB download, too heavy per
   commit.
-- Pinning the validator version: pinned, it stops catching new
-  deprecations; unpinned, it drifts weekly, as the hosted app itself
-  does.
+- An authoring-only `pnpm-workspace.yaml` excluded from renders:
+  impossible — copier's `_exclude` matches rendered destination paths,
+  and the typescript variant's workspace file renders to the same name.
+  The dual-file twin pattern carries it instead: the `.jinja` renders
+  the hardening everywhere, the plain authoring copy shades in the
+  build rulings, and a drift test pins the shared lines.
 - Validating the `.jinja` source directly: jinja is not json5, and
   stripping tags re-implements rendering, which lies the moment the
   config grows conditionals. The renders are the only faithful form,
