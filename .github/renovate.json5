@@ -28,9 +28,13 @@
   // supply-chain cooldown: a release must be 3 days old before Renovate
   // proposes it — hijacked packages are pulled within hours, and the
   // security:minimumReleaseAge* presets hold the same 3 days. Datasources
-  // without release timestamps cannot age and raise immediately
+  // without release timestamps cannot age and raise immediately, each
+  // bypass flagged on the dashboard
   minimumReleaseAge: "3 days",
   minimumReleaseAgeBehaviour: "timestamp-optional",
+  // strict keeps held updates branchless until they age; without it the
+  // young version lands in a branch with a pending yellow check
+  internalChecksFilter: "strict",
   hostRules: [
     {
       hostType: "maven",
