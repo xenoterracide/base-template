@@ -1,0 +1,18 @@
+# SPDX-FileCopyrightText: Copyright © 2026 Caleb Cushing
+#
+# SPDX-License-Identifier: CC0-1.0
+
+# pnpm's release-age gate, written down so it cannot be softened
+# silently: a day-0 pin fails loudly here instead of pnpm appending a
+# minimumReleaseAgeExclude bypass to this file
+minimumReleaseAge: 1440
+minimumReleaseAgeStrict: true
+allowBuilds:
+  # native regex module; renovate's validation engine
+  re2: true
+  # postinstall prints a funding banner only
+  core-js-pure: false
+  # optional native tracing, unused by renovate
+  dtrace-provider: false
+  # postinstall codegen renovate does not need
+  protobufjs: false

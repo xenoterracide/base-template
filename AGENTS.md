@@ -19,6 +19,7 @@ Read these files instead of trusting a copy of their contents here.
 | Tool versions                  | `.tool-versions`                   |
 | pnpm version                   | `packageManager` in `package.json` |
 | Node dev dependencies          | `package.json`, `pnpm-lock.yaml`   |
+| pnpm settings, build rulings   | `pnpm-workspace.yaml`              |
 | Python dependencies            | `pyproject.toml`, `uv.lock`        |
 | Formatting rules               | `.editorconfig`, `.prettierrc.yml` |
 | Conventional commit types      | `git-conventional-commits.yaml`    |

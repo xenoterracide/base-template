@@ -29,6 +29,7 @@ SHARED_FILES = [
     ".tool-versions",
     ".lintstagedrc.cjs",
     "git-conventional-commits.yaml",
+    "pnpm-workspace.yaml",
     "README.md",
     "AGENTS.md",
     "CONTRIBUTING.md",
@@ -168,7 +169,12 @@ def test_package_json_defines_the_shared_tool_set():
     """The authoring package.json names the shared tools; ranges are floors."""
     authoring = json.loads((TEMPLATE / "package.json").read_text())
     rendered = json.loads(_strip_jinja((TEMPLATE / "package.json.jinja").read_text()))
-    assert set(authoring["devDependencies"]) <= set(rendered["devDependencies"])
+    # authoring-only tools never reach a render: renovate validates this
+    # repo's template authoring, a job consumers never do
+    authoring_only = {"renovate"}
+    assert set(authoring["devDependencies"]) - authoring_only <= set(
+        rendered["devDependencies"]
+    )
 
 
 def test_tracked_files_end_with_a_newline():
@@ -226,7 +232,8 @@ def test_java_layout(generated):
     ]:
         assert (dst / rel).exists(), f"missing java file: {rel}"
     assert not (dst / "packages").exists()
-    assert not (dst / "pnpm-workspace.yaml").exists()
+    # every render carries the pnpm hardening; java is not a workspace
+    assert "packages:" not in (dst / "pnpm-workspace.yaml").read_text()
 
 
 def test_checkstyle_carries_the_family_maxima(generated):
@@ -292,6 +299,9 @@ def test_ts_layout(generated):
         assert (dst / rel).exists(), f"missing ts file: {rel}"
     assert not (dst / "pom.xml").exists()
     assert not (dst / "mvnw").exists()
+    # the workspace packages list is ts-only and load-bearing: pnpm -r
+    # and --filter no-op without it
+    assert "packages:" in (dst / "pnpm-workspace.yaml").read_text()
 
 
 ESLINT_BASE_RULE_TWINS = {
@@ -326,8 +336,10 @@ def test_config_layout(generated):
     dst, answers = generated
     if answers["template_type"] != "config":
         pytest.skip()
-    for rel in ("pom.xml", "mvnw", ".mvn", "module", "packages", "pnpm-workspace.yaml"):
+    for rel in ("pom.xml", "mvnw", ".mvn", "module", "packages"):
         assert not (dst / rel).exists(), f"config variant leaked: {rel}"
+    # every render carries the pnpm hardening; config is not a workspace
+    assert "packages:" not in (dst / "pnpm-workspace.yaml").read_text()
     assert not (dst / "staged/.github/workflows/test.yml").exists()
     assert (dst / ".config/git/hooks/heal.sh").exists()
 
@@ -399,6 +411,7 @@ def test_renders_carry_baked_lineage_headers(generated):
         "pyproject.toml": "2025",
         "REUSE.toml": "2024",
         ".github/renovate.json5": "2024",
+        "pnpm-workspace.yaml": "2026",
         ".copier-answers.yml": "2026",
     }
     for rel, start in lineage.items():
@@ -758,3 +771,84 @@ def test_renovate_cooldown_matches_the_authoring_copy(generated):
             r"minimumReleaseAge: null",
             content,
         ), f"un-ageable update types inherit the cooldown in the {label} copy"
+
+
+def test_pnpm_release_age_hardening_matches_the_authoring_copy(generated):
+    """The rendered pnpm-workspace.yaml carries the release-age gate the
+    authoring copy rides. Drift would strand consumers on pnpm's soft
+    default, which installs day-0 pins and writes the bypass into a
+    committable file.
+    """
+    dst, _ = generated
+    # authoring-only build rulings never reach a render
+    assert "allowBuilds" not in (dst / "pnpm-workspace.yaml").read_text()
+    for label, content in (
+        ("rendered", (dst / "pnpm-workspace.yaml").read_text()),
+        ("authoring", (TEMPLATE / "pnpm-workspace.yaml").read_text()),
+    ):
+        assert "minimumReleaseAge: 1440" in content, f"no age gate in the {label} copy"
+        assert "minimumReleaseAgeStrict: true" in content, (
+            f"soft gate would silently bypass day-0 pins in the {label} copy"
+        )
+        # the key form: the comment explaining the gate names the word too
+        assert "minimumReleaseAgeExclude:" not in content, (
+            f"a recorded bypass disarms the gate in the {label} copy"
+        )
+
+
+def test_renovate_configs_pass_the_renovate_validator(generated):
+    """Renovate halts every PR in a repo whose config it rejects, so the
+    authoring copy and every render must pass its own validator. The
+    renovate devDependency pins the validator to the lockfile — a
+    floating dlx made every run non-deterministic — and Renovate bumps
+    it under the repo's release cooldown.
+    """
+    dst, _ = generated
+    copies = {
+        "rendered": dst / ".github/renovate.json5",
+        "authoring": TEMPLATE / ".github/renovate.json5",
+    }
+    for label, config in copies.items():
+        result = subprocess.run(
+            [
+                "pnpm",
+                "exec",
+                "renovate-config-validator",
+                "--strict",
+                str(config),
+            ],
+            capture_output=True,
+            text=True,
+            timeout=600,
+            cwd=TEMPLATE,
+        )
+        assert result.returncode == 0, (
+            f"{label} config failed validation:\n{result.stdout}\n{result.stderr}"
+        )
+
+
+def test_renovate_manager_file_patterns_are_regex_wrapped(generated):
+    """managerFilePatterns takes glob and regex; only the /.../ wrapper
+    marks a pattern as regex. An unwrapped regex reads as a glob that
+    matches nothing, which killed the copyright-year manager in every
+    strand without any error.
+    """
+    dst, _ = generated
+    copies = {
+        "rendered": (dst / ".github/renovate.json5").read_text(),
+        "authoring": (TEMPLATE / ".github/renovate.json5").read_text(),
+    }
+    for label, content in copies.items():
+        # bound on the closing bracket-comma: a bare ] appears inside the
+        # [^/] character class of the hook pattern itself; the trailing
+        # comma and double quotes the parse relies on are prettier's
+        # formatting of these files
+        blocks = re.findall(r"managerFilePatterns:\s*\[(.*?)\],", content, re.S)
+        assert blocks, f"no managerFilePatterns in the {label} copy"
+        for block in blocks:
+            entries = re.findall(r'"((?:[^"\\]|\\.)*)"', block)
+            assert entries, f"empty managerFilePatterns in the {label} copy"
+            for entry in entries:
+                assert entry.startswith("/") and entry.endswith("/"), (
+                    f"unwrapped pattern in the {label} copy: {entry}"
+                )

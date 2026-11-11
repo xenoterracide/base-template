@@ -9,7 +9,7 @@ permissions:
 jobs:
   pytest:
     runs-on: ubuntu-26.04
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7.0.1
       - uses: astral-sh/setup-uv@v10.3.3
@@ -17,9 +17,27 @@ jobs:
       - uses: actions/setup-node@v7.1.0
         with:
           node-version: 26.13.0
+          cache: pnpm
       - run: ./tests/install-shfmt.sh
+      - run: pnpm install --frozen-lockfile
       - run: uv sync --group dev
       - run: uv run --group dev pytest tests/ -q
+  validate-renovate:
+    # the authoring config halts every PR when Renovate rejects it; the
+    # rendered strand is validated by the renovate tests in the pytest job
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: pnpm/action-setup@v6.1.1
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: 26.13.0
+          cache: pnpm
+      # the lockfile pins the validator; Renovate bumps it under the
+      # repo's release cooldown
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec renovate-config-validator --strict .github/renovate.json5
   verify:
     strategy:
       fail-fast: false
