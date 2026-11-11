@@ -20,6 +20,20 @@ jobs:
       - run: ./tests/install-shfmt.sh
       - run: uv sync --group dev
       - run: uv run --group dev pytest tests/ -q
+  validate-renovate:
+    # the authoring config halts every PR when Renovate rejects it; the
+    # rendered strand is validated by the renovate tests in the pytest job
+    runs-on: ubuntu-26.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: pnpm/action-setup@v6.1.1
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: 26.13.0
+      # floats latest on purpose: a deprecation fails CI before the hosted
+      # app migrates it away
+      - run: pnpm --package=renovate dlx renovate-config-validator --strict .github/renovate.json5
   verify:
     strategy:
       fail-fast: false
