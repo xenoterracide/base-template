@@ -665,3 +665,69 @@ def test_renovate_automerges_maven_wrapper_updates(generated):
         r'branchTopic: "[^"]*",\s*automerge: true',
         content,
     ), "maven-wrapper updates do not automerge"
+
+
+def test_renovate_applies_a_three_day_release_cooldown(generated):
+    """Day-zero releases carry most supply-chain risk. Registry
+    takedowns of hijacked packages take hours, so a 3-day hold skips
+    them outright. Renovate's security:minimumReleaseAge* presets use
+    the same 3 days.
+
+    Updates with no release timestamp cannot age — python-version and
+    github-packages maven expose none — so timestamp-optional raises
+    them instead of holding them forever.
+    """
+    dst, _ = generated
+    content = (dst / ".github/renovate.json5").read_text()
+    assert 'minimumReleaseAge: "3 days"' in content, "no 3-day cooldown"
+    assert 'minimumReleaseAgeBehaviour: "timestamp-optional"' in content, (
+        "updates without a release timestamp would wait forever"
+    )
+    assert re.search(
+        r'matchUpdateTypes: \["lockFileMaintenance"\],\s*minimumReleaseAge: null',
+        content,
+    ), "lock file maintenance would never leave the dashboard"
+
+
+def test_renovate_exempts_update_types_it_cannot_age(generated):
+    """bump, lockfileUpdate, pin, replacement, and rollback carry no
+    release timestamp, so Renovate cannot age them. The security
+    presets disable the cooldown for them after the fact.
+    """
+    dst, _ = generated
+    content = (dst / ".github/renovate.json5").read_text()
+    assert re.search(
+        r'matchUpdateTypes: \["bump", "lockfileUpdate", "pin", "replacement", "rollback"\],\s*'
+        r"minimumReleaseAge: null",
+        content,
+    ), "update types Renovate cannot age inherit the cooldown"
+
+
+def test_renovate_cooldown_matches_the_authoring_copy(generated):
+    """The authoring config renders into nothing; only the template copy
+    reaches consumers, and no test pins them together. Drift between the
+    two strands consumers on old settings, so every cooldown line must
+    hold in both.
+    """
+    dst, _ = generated
+    rendered = (dst / ".github/renovate.json5").read_text()
+    authoring = (TEMPLATE / ".github" / "renovate.json5").read_text()
+    for label, content in (("rendered", rendered), ("authoring", authoring)):
+        assert 'minimumReleaseAge: "3 days"' in content, (
+            f"no 3-day cooldown in the {label} copy"
+        )
+        assert 'minimumReleaseAgeBehaviour: "timestamp-optional"' in content, (
+            f"updates without a release timestamp would wait forever in the {label} copy"
+        )
+        assert 'internalChecksFilter: "strict"' in content, (
+            f"young updates would land in pending branches in the {label} copy"
+        )
+        assert re.search(
+            r'matchUpdateTypes: \["lockFileMaintenance"\],\s*minimumReleaseAge: null',
+            content,
+        ), f"lock file maintenance would never leave the dashboard in the {label} copy"
+        assert re.search(
+            r'matchUpdateTypes: \["bump", "lockfileUpdate", "pin", "replacement", "rollback"\],\s*'
+            r"minimumReleaseAge: null",
+            content,
+        ), f"un-ageable update types inherit the cooldown in the {label} copy"
