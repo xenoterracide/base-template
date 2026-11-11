@@ -499,6 +499,20 @@ def test_lintstagedrc_licenses_by_file_class(generated):
     )
 
 
+def test_lintstagedrc_never_writes_sidecars(generated):
+    """Unrecognized extensions and JSON must not reach reuse annotate."""
+    dst, _ = generated
+    content = (dst / ".lintstagedrc.cjs").read_text()
+
+    # reuse does not recognise .cts; annotate --fallback-dot-license would
+    # write a sidecar the inline header already covers
+    assert '"*.cts": run(prettier)' in content
+
+    # JSON cannot carry headers; REUSE.toml licenses it, not a companion
+    assert '"package.json": run(prettier)' in content
+    assert '"!(package).json": run(prettier)' in content
+
+
 def test_lintstagedrc_stamps_the_author(tmp_path):
     """The annotate stamp carries the author, matching the authoring copy."""
     dst = copy_template(
