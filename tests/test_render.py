@@ -651,3 +651,17 @@ def test_renovate_copier_updates_automerge_when_checks_pass(generated):
     assert re.search(r'matchManagers: \["copier"\],\s*automerge: true', content), (
         "copier manager does not automerge clean updates"
     )
+
+
+def test_renovate_automerges_maven_wrapper_updates(generated):
+    """Renovate runs the wrapper as its own manager, so a rule naming only
+    "maven" leaves .mvn/wrapper bumps for a human. The automerge rule must
+    list "maven-wrapper" too.
+    """
+    dst, _ = generated
+    content = (dst / ".github/renovate.json5").read_text()
+    assert re.search(
+        r'matchManagers: \[[^\]]*"maven-wrapper"[^\]]*\],\s*'
+        r'branchTopic: "[^"]*",\s*automerge: true',
+        content,
+    ), "maven-wrapper updates do not automerge"
