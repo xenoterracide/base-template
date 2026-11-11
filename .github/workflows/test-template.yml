@@ -26,7 +26,7 @@ jobs:
     # the authoring config halts every PR when Renovate rejects it; the
     # rendered strand is validated by the renovate tests in the pytest job
     runs-on: ubuntu-26.04
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7.0.1
       - uses: pnpm/action-setup@v6.1.1

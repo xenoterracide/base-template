@@ -299,6 +299,9 @@ def test_ts_layout(generated):
         assert (dst / rel).exists(), f"missing ts file: {rel}"
     assert not (dst / "pom.xml").exists()
     assert not (dst / "mvnw").exists()
+    # the workspace packages list is ts-only and load-bearing: pnpm -r
+    # and --filter no-op without it
+    assert "packages:" in (dst / "pnpm-workspace.yaml").read_text()
 
 
 ESLINT_BASE_RULE_TWINS = {
@@ -777,6 +780,8 @@ def test_pnpm_release_age_hardening_matches_the_authoring_copy(generated):
     committable file.
     """
     dst, _ = generated
+    # authoring-only build rulings never reach a render
+    assert "allowBuilds" not in (dst / "pnpm-workspace.yaml").read_text()
     for label, content in (
         ("rendered", (dst / "pnpm-workspace.yaml").read_text()),
         ("authoring", (TEMPLATE / "pnpm-workspace.yaml").read_text()),
@@ -784,6 +789,10 @@ def test_pnpm_release_age_hardening_matches_the_authoring_copy(generated):
         assert "minimumReleaseAge: 1440" in content, f"no age gate in the {label} copy"
         assert "minimumReleaseAgeStrict: true" in content, (
             f"soft gate would silently bypass day-0 pins in the {label} copy"
+        )
+        # the key form: the comment explaining the gate names the word too
+        assert "minimumReleaseAgeExclude:" not in content, (
+            f"a recorded bypass disarms the gate in the {label} copy"
         )
 
 
