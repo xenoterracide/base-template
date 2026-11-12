@@ -18,7 +18,7 @@ SPDX-License-Identifier: CC-BY-NC-SA-4.0
 
 ## Global Constraints
 
-- Thresholds verbatim from the spec's mapping table: `complexity` `["error", 10]`; `max-statements` `["error", 20, { ignoreTopLevelFunctions: false }]`; `max-lines-per-function` `["error", { max: 25 }]`; `max-depth` `["error", 3]`; `max-classes-per-file` `"error"`; `max-lines` `"error"`; `sonarjs/cognitive-complexity` `"error"`; `sonarjs/expression-complexity` `["error", 3]`.
+- Thresholds verbatim from the spec's mapping table: `complexity` `["error", 10]`; `max-statements` `["error", 20, { ignoreTopLevelFunctions: false }]`; `max-lines-per-function` `["error", { max: 25 }]`; `max-depth` `["error", 3]`; `max-classes-per-file` `"error"`; `max-lines` `"error"`; `sonarjs/cognitive-complexity` `"error"`; `sonarjs/expression-complexity` `["error", { max: 3 }]` — the object form its schema requires; eslint 10 rejects the bare number.
 - No rule is turned off anywhere; `test_eslint_disables_only_twin_base_rules` must stay green.
 - The config file's exact name is `{% if template_type == 'typescript' %}eslint.config.cts{% endif %}.jinja`.
 - DevDependencies are caret floors (`^4.2.2`); Renovate owns the bumps, so no test may pin the plugin to an exact version.
@@ -175,7 +175,7 @@ def test_eslint_carries_the_sonarjs_parity_rules(generated):
         pytest.skip()
     text = (dst / "eslint.config.cts").read_text()
     assert '"sonarjs/cognitive-complexity": "error"' in text
-    assert re.search(r'"sonarjs/expression-complexity": \["error", 3\]', text)
+    assert re.search(r'"sonarjs/expression-complexity": \["error", \{ max: 3 \}\]', text)
     assert "sonarjs.configs" not in text
     dev_deps = json.loads((dst / "package.json").read_text())["devDependencies"]
     assert "eslint-plugin-sonarjs" in dev_deps
@@ -221,8 +221,10 @@ In the rules block, after `"max-statements": ["error", 20, { ignoreTopLevelFunct
 
 ```ts
       "sonarjs/cognitive-complexity": "error",
-      "sonarjs/expression-complexity": ["error", 3],
+      "sonarjs/expression-complexity": ["error", { max: 3 }],
 ```
+
+Executed deviation: eslint 10's config validator rejected the plan's original `["error", 3]` spelling — the rule's schema takes `{ max: n }` — surfaced by Task 4's typescript e2e; the branch carries the object form, matching this snippet.
 
 - [ ] **Step 5: Run the test to verify it passes**
 
