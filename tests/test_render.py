@@ -733,6 +733,20 @@ def test_renovate_copier_updates_automerge_when_checks_pass(generated):
     )
 
 
+def test_renovate_exempts_copier_from_the_release_age_cooldown(generated):
+    """The template is first-party code, tagged behind the authoring
+    suite; the registry-hijack window the cooldown buys third-party
+    packages cannot happen to the holder's own tags, and the hold
+    parked every consumer for three days after each release."""
+    dst, _ = generated
+    content = (dst / ".github/renovate.json5").read_text()
+    assert re.search(
+        r'matchManagers: \["copier"\],[^}]*automerge: true,[^}]*minimumReleaseAge: null',
+        content,
+        re.S,
+    ), "copier updates still age under the supply-chain cooldown"
+
+
 def test_renovate_automerges_maven_wrapper_updates(generated):
     """Renovate runs the wrapper as its own manager, so a rule naming only
     "maven" leaves .mvn/wrapper bumps for a human. The automerge rule must
