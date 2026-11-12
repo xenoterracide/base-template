@@ -353,6 +353,24 @@ def test_eslint_carries_the_family_metrics(generated):
         assert text.index(rule) > ts_block, f"{rule} lives outside the typescript block"
 
 
+def test_eslint_carries_the_sonarjs_parity_rules(generated):
+    """NPath and BooleanExpressionComplexity exist only in sonarjs; the
+    config enables the two parity rules by exception, never the plugin's
+    preset, and the plugin stays a caret floor for renovate to bump."""
+    dst, answers = generated
+    if answers["template_type"] != "typescript":
+        pytest.skip()
+    text = (dst / "eslint.config.cts").read_text()
+    assert '"sonarjs/cognitive-complexity": "error"' in text
+    assert re.search(
+        r'"sonarjs/expression-complexity": \["error", \{ max: 3 \}\]', text
+    )
+    assert "sonarjs.configs" not in text
+    dev_deps = json.loads((dst / "package.json").read_text())["devDependencies"]
+    assert "eslint-plugin-sonarjs" in dev_deps
+    assert re.fullmatch(r"\^\d+\.\d+\.\d+", dev_deps["eslint-plugin-sonarjs"])
+
+
 def test_config_layout(generated):
     """The config variant renders shared files and nothing build-specific."""
     dst, answers = generated
