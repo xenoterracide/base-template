@@ -13,8 +13,9 @@ Authoring date: 2026-11-11.
 Both Renovate strands — the authoring `.github/renovate.json5` and the
 `renovate.json5.jinja` source that renders into consumers — must pass
 `renovate-config-validator --strict`, and every `managerFilePatterns`
-entry must be a `/.../`-wrapped regex. The pytest suite enforces both
-against the authoring copy and every rendered variant.
+entry must be a `/.../`-wrapped regex. The `validate-renovate` job
+validates the authoring copy; the pytest suite validates every rendered
+variant and checks the pattern wrapper in both strands.
 
 ## Defects
 
@@ -43,8 +44,9 @@ Four shipped on 2026-11-07, before the halt ([#308]):
   both strands.
 - The two copyright-year patterns gain `/.../` wrappers in both strands.
 - The validator test runs `pnpm exec renovate-config-validator --strict`
-  on the authoring copy and each render, inside the pytest CI job. The
-  renovate devDependency pins the validator to the lockfile; Renovate
+  on each render, inside the pytest CI job; the `validate-renovate` job
+  runs the same command on the authoring copy. The renovate
+  devDependency pins the validator to the lockfile; Renovate
   bumps it under the repo's release cooldown, so the build stays
   deterministic and the validator trails the hosted app by at most the
   bump cadence.
