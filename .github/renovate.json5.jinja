@@ -5,7 +5,11 @@
 {% raw %}{
   $schema: "https://docs.renovatebot.com/renovate-schema.json",
   extends: ["config:recommended"],
-  dependencyDashboard: true,
+  // Renovate deprecated the boolean form. --strict rejects a config that
+  // still needs migration, so only the object form passes.
+  dependencyDashboard: {
+    enabled: true,
+  },
   lockFileMaintenance: {
     enabled: true,
     automerge: true,

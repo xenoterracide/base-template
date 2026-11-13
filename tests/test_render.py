@@ -851,34 +851,31 @@ def test_pnpm_release_age_hardening_matches_the_authoring_copy(generated):
 
 
 def test_renovate_configs_pass_the_renovate_validator(generated):
-    """Renovate halts every PR in a repo whose config it rejects, so the
-    authoring copy and every render must pass its own validator. The
-    renovate devDependency pins the validator to the lockfile — a
-    floating dlx made every run non-deterministic — and Renovate bumps
-    it under the repo's release cooldown.
+    """Renovate halts every PR in a repo whose config it rejects. The
+    validate-renovate job checks the authoring copy, so this covers the
+    renders only: they come from the jinja seed, so a broken render can
+    hide behind a valid-looking source. The renovate devDependency pins
+    the validator to the lockfile — a floating dlx made every run
+    non-deterministic — and Renovate bumps it under the repo's release
+    cooldown.
     """
     dst, _ = generated
-    copies = {
-        "rendered": dst / ".github/renovate.json5",
-        "authoring": TEMPLATE / ".github/renovate.json5",
-    }
-    for label, config in copies.items():
-        result = subprocess.run(
-            [
-                "pnpm",
-                "exec",
-                "renovate-config-validator",
-                "--strict",
-                str(config),
-            ],
-            capture_output=True,
-            text=True,
-            timeout=600,
-            cwd=TEMPLATE,
-        )
-        assert result.returncode == 0, (
-            f"{label} config failed validation:\n{result.stdout}\n{result.stderr}"
-        )
+    result = subprocess.run(
+        [
+            "pnpm",
+            "exec",
+            "renovate-config-validator",
+            "--strict",
+            str(dst / ".github/renovate.json5"),
+        ],
+        capture_output=True,
+        text=True,
+        timeout=600,
+        cwd=TEMPLATE,
+    )
+    assert result.returncode == 0, (
+        f"rendered config failed validation:\n{result.stdout}\n{result.stderr}"
+    )
 
 
 def test_renovate_manager_file_patterns_are_regex_wrapped(generated):
