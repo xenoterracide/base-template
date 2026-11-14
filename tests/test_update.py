@@ -11,7 +11,6 @@ import subprocess
 import copier
 import pytest
 import yaml
-
 from conftest import JAVA_ANSWERS, TEMPLATE
 
 MVNW_JINJA = "{% if template_type == 'java' %}mvnw{% endif %}.jinja"
@@ -112,9 +111,7 @@ def test_update_leaves_consumer_versions_alone(template_repo, tmp_path):
 def test_fresh_copy_seeds_current_authoring_pins(template_repo, tmp_path):
     """Renovate bumps the authoring .tool-versions; fresh copies follow."""
     authoring = template_repo / ".tool-versions"
-    authoring.write_text(
-        re.sub(r"nodejs \S+", "nodejs 99.0.0", authoring.read_text())
-    )
+    authoring.write_text(re.sub(r"nodejs \S+", "nodejs 99.0.0", authoring.read_text()))
     proj = render(template_repo, tmp_path / "proj")
     assert "nodejs 99.0.0" in (proj / ".tool-versions").read_text()
 
@@ -133,7 +130,12 @@ def test_render_excludes_editor_junk(template_repo, tmp_path):
 def test_update_recreates_deleted_seeds(template_repo, tmp_path):
     """Deleted seeds come back; only skip-listed files do."""
     proj = render(template_repo, tmp_path / "proj")
-    seeds = (".tool-versions", "mvnw", "mvnw.cmd", ".mvn/wrapper/maven-wrapper.properties")
+    seeds = (
+        ".tool-versions",
+        "mvnw",
+        "mvnw.cmd",
+        ".mvn/wrapper/maven-wrapper.properties",
+    )
     for rel in seeds:
         (proj / rel).unlink()
     git("add", "-A", cwd=proj)

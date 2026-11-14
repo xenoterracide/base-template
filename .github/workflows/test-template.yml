@@ -21,6 +21,7 @@ jobs:
       - run: ./tests/install-shfmt.sh
       - run: pnpm install --frozen-lockfile
       - run: uv sync --group dev
+      - run: pnpm lint:ruff
       - run: uv run --group dev pytest tests/ -q
   validate-renovate:
     # the authoring config halts every PR when Renovate rejects it; the

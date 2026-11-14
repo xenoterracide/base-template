@@ -35,7 +35,7 @@ Read these files instead of trusting a copy of their contents here.
 
 ```bash
 npm run contribute # bootstrap once after clone: tools, deps, hooks
-pnpm lint # the pre-push set: prettier + shellcheck
+pnpm lint # the pre-push set: prettier + shellcheck; the authoring python adds ruff
 uv run --group dev pytest tests/ -q # render all variants, assert structure
 ./tests/verify.sh config # full check of a generated project (java|typescript|config)
 ```
@@ -58,6 +58,15 @@ uv run --group dev pytest tests/ -q # render all variants, assert structure
 - Renovate pins move weekly. Expect `develop` to move.
 - Renovate holds updates 3 days after their release, a supply-chain
   cooldown; updates with no release timestamp skip it.
+- Renovate's hosted copier manager updates consumers when a release is
+  tagged; renders run no copier, and the manual refresh is
+  `uvx copier update --trust`.
+- Renders carry only the python they run: the dev group is `reuse`
+  only. `uv.lock` is consumer-owned and copier cannot deliver a
+  dependency into it, so a python dependency added to a render blocks
+  every consumer's push until each relocks by hand. The authoring
+  checkout alone writes python; it extends its own lint set with
+  `lint:ruff`.
 - Release tags are calver, `vYY.M.MICRO`: a dated checkpoint, not a
   compatibility contract. Tags carry the `v`. Manifests carry the bare
   version. `M` is the bare calendar month — calver has no zero padding,

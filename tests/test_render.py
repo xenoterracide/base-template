@@ -13,7 +13,6 @@ import tomllib
 import xml.etree.ElementTree as ET
 
 import pytest
-
 from conftest import ANSWERS, JAVA_ANSWERS, TEMPLATE, copy_template
 
 SHARED_FILES = [
@@ -99,9 +98,7 @@ def test_prettierrc_plugins_are_dev_dependencies(generated):
     """Lint passes --ignore-unknown, so a plugin missing from devDependencies
     would silently skip its file type; every named plugin must ship."""
     dst, _ = generated
-    plugins = re.findall(
-        r'^\s+- "?([\w@/.-]+)"?$', (dst / ".prettierrc.yml").read_text(), re.M
-    )
+    plugins = re.findall(r'^\s+- "?([\w@/.-]+)"?$', (dst / ".prettierrc.yml").read_text(), re.MULTILINE)
     dev_deps = json.loads((dst / "package.json").read_text())["devDependencies"]
     assert plugins, "no plugin list in .prettierrc.yml"
     for plugin in plugins:
@@ -173,9 +170,7 @@ def test_package_json_defines_the_shared_tool_set():
     # authoring-only tools never reach a render: renovate validates this
     # repo's template authoring, a job consumers never do
     authoring_only = {"renovate"}
-    assert set(authoring["devDependencies"]) - authoring_only <= set(
-        rendered["devDependencies"]
-    )
+    assert set(authoring["devDependencies"]) - authoring_only <= set(rendered["devDependencies"])
 
 
 def test_tracked_files_end_with_a_newline():
@@ -186,9 +181,9 @@ def test_tracked_files_end_with_a_newline():
         "{% if template_type == 'java' %}mvnw{% endif %}.jinja",
         "{% if template_type == 'java' %}mvnw.cmd{% endif %}.jinja",
     }
-    tracked = subprocess.run(
-        ["git", "ls-files", "-z"], cwd=TEMPLATE, capture_output=True, check=True
-    ).stdout.split(b"\0")
+    tracked = subprocess.run(["git", "ls-files", "-z"], cwd=TEMPLATE, capture_output=True, check=True).stdout.split(
+        b"\0"
+    )
     for raw in tracked:
         if not raw:
             continue
@@ -204,13 +199,35 @@ def test_pyproject_toml_is_valid(generated):
     assert data["project"]["name"] == "sample"
 
 
-def test_copier_is_provisioned_for_updates(generated):
-    """The documented template refresh needs copier; the dev group ships it."""
+def test_render_dev_group_is_only_reuse(generated):
+    """Renders run reuse and nothing else python: the pre-commit annotate
+    rows and the license job. Renovate's hosted app runs copier on its
+    own infrastructure - the git history of every consumer shows it -
+    so the manual refresh documents uvx copier, and a dev group beyond
+    reuse pushes every consumer into a lock migration copier cannot
+    deliver."""
     dst, _ = generated
-    dev = tomllib.loads((dst / "pyproject.toml").read_text())["dependency-groups"][
-        "dev"
-    ]
-    assert any(dep.startswith("copier") for dep in dev)
+    dev = tomllib.loads((dst / "pyproject.toml").read_text())["dependency-groups"]["dev"]
+    assert dev == ["reuse>=6.2.0"]
+
+
+def test_ruff_is_provisioned_and_configured(generated):
+    """The authoring python lints on every push; renders never require
+    ruff - their locks are consumer-owned and copier cannot deliver a
+    dependency into them. line-length 120 matches prettier, and include
+    scopes ruff to python - 0.17 also formats markdown and lints
+    pyproject.toml, both prettier's files."""
+    dst, _ = generated
+    data = tomllib.loads((TEMPLATE / "pyproject.toml").read_text())
+    dev = data["dependency-groups"]["dev"]
+    assert any(dep.startswith("ruff") for dep in dev)
+    assert data["tool"]["ruff"]["line-length"] == 120
+    assert data["tool"]["ruff"]["include"] == ["*.py", "**/*.py"]
+    assert ".ruff_cache" in (TEMPLATE / ".gitignore").read_text()
+    rendered = tomllib.loads((dst / "pyproject.toml").read_text())
+    render_dev = rendered["dependency-groups"]["dev"]
+    assert not any(dep.startswith("ruff") for dep in render_dev)
+    assert "ruff" not in rendered.get("tool", {})
 
 
 def test_java_layout(generated):
@@ -255,9 +272,9 @@ def test_checkstyle_carries_the_family_maxima(generated):
     test = ET.parse(dst / ".config/checkstyle/test.xml").getroot()
     # filters do not cross TreeWalker boundaries; every walker carries one
     for walker in (m for m in main.iter("module") if m.get("name") == "TreeWalker"):
-        assert any(
-            c.get("name") == "SuppressionCommentFilter" for c in walker.iter("module")
-        ), "TreeWalker without SuppressionCommentFilter"
+        assert any(c.get("name") == "SuppressionCommentFilter" for c in walker.iter("module")), (
+            "TreeWalker without SuppressionCommentFilter"
+        )
     assert props(main, "LambdaBodyLength") == [{"max": "20"}]
     assert props(main, "ReturnCount") == [{"max": "3"}]
     assert props(main, "JavadocTagContinuationIndentation") == [
@@ -322,9 +339,7 @@ def test_eslint_disables_only_twin_base_rules(generated):
         pytest.skip()
     text = (dst / "eslint.config.cts").read_text()
     off_rules = re.findall(r'"([^"\s]+)":\s*(?:"off"|0\b)', text)
-    error_rules = set(
-        re.findall(r'"(@[^"\s]+)":\s*(?:"error"|2\b|\[2|\[\s*"error")', text)
-    )
+    error_rules = set(re.findall(r'"(@[^"\s]+)":\s*(?:"error"|2\b|\[2|\[\s*"error")', text))
     unexpected = [rule for rule in off_rules if rule not in ESLINT_BASE_RULE_TWINS]
     assert not unexpected, f"rules off outside the twin idiom: {unexpected}"
     for base, twin in ESLINT_BASE_RULE_TWINS.items():
@@ -363,9 +378,7 @@ def test_eslint_carries_the_sonarjs_parity_rules(generated):
         pytest.skip()
     text = (dst / "eslint.config.cts").read_text()
     assert '"sonarjs/cognitive-complexity": "error"' in text
-    assert re.search(
-        r'"sonarjs/expression-complexity": \["error", \{ max: 3 \}\]', text
-    )
+    assert re.search(r'"sonarjs/expression-complexity": \["error", \{ max: 3 \}\]', text)
     assert "sonarjs.configs" not in text
     dev_deps = json.loads((dst / "package.json").read_text())["devDependencies"]
     assert "eslint-plugin-sonarjs" in dev_deps
@@ -403,21 +416,15 @@ def test_maven_wrapper_executable(generated):
 def test_skeleton_suppressed(tmp_path):
     """Adopted consumers must never receive scaffold or resurrected files."""
     for answers in (JAVA_ANSWERS, ANSWERS["typescript"]):
-        dst = copy_template(
-            tmp_path / answers["template_type"], {**answers, "include_skeleton": False}
-        )
+        dst = copy_template(tmp_path / answers["template_type"], {**answers, "include_skeleton": False})
         assert not (dst / "module").exists(), "java skeleton leaked"
         assert not (dst / "packages").exists(), "ts skeleton leaked"
         assert not list(dst.rglob("Example.java"))
         assert not list(dst.rglob("ExampleTest.java"))
-    java = copy_template(
-        tmp_path / "java-x", {**JAVA_ANSWERS, "include_skeleton": False}
-    )
+    java = copy_template(tmp_path / "java-x", {**JAVA_ANSWERS, "include_skeleton": False})
     pom = (java / "pom.xml").read_text()
     assert "<modules>" not in pom, "parent pom references a module that does not exist"
-    ts = copy_template(
-        tmp_path / "ts-x", {**ANSWERS["typescript"], "include_skeleton": False}
-    )
+    ts = copy_template(tmp_path / "ts-x", {**ANSWERS["typescript"], "include_skeleton": False})
     vitest = (ts / "vitest.config.ts").read_text()
     assert "packages/" not in vitest, "vitest project rooted at a missing package"
 
@@ -491,9 +498,7 @@ def test_hooks_carry_the_consumer_header(generated):
         assert lines[0] == "#!/bin/sh", path.name
         assert license_line in lines, path.name
         start = lineage[path.name]
-        assert any(line.startswith(copyright_line + start) for line in lines), (
-            f"{path.name}: no {start} lineage header"
-        )
+        assert any(line.startswith(copyright_line + start) for line in lines), f"{path.name}: no {start} lineage header"
 
 
 DUMB_HOOK = """#!/bin/sh
@@ -505,7 +510,7 @@ DUMB_HOOK = """#!/bin/sh
 
 set -e
 pnpm lint
-""".encode("utf-8")
+""".encode()
 
 
 def test_pre_push_is_the_dumb_hook(generated):
@@ -531,9 +536,7 @@ def test_pre_push_is_the_dumb_hook(generated):
 def test_hooks_carry_the_author_not_the_answered_holder(tmp_path):
     """The lineage ranges are facts about the author's history; the hooks
     carry the author's name, whatever a stray answer says."""
-    dst = copy_template(
-        tmp_path / "holder", {**ANSWERS["config"], "copyright_holder": "Sample Owner"}
-    )
+    dst = copy_template(tmp_path / "holder", {**ANSWERS["config"], "copyright_holder": "Sample Owner"})
     text = (dst / ".config/git/hooks/pre-commit").read_text()
     assert "Caleb Cushing" in text
     assert "Sample Owner" not in text
@@ -580,16 +583,12 @@ def test_xml_files_open_with_the_xml_declaration(generated):
     assert xmls, "expected rendered xml files"
     for path in xmls:
         rel = path.relative_to(dst)
-        assert path.read_text().startswith('<?xml version="1.0" encoding="UTF-8" ?>'), (
-            f"{rel} lost its xml declaration"
-        )
+        assert path.read_text().startswith('<?xml version="1.0" encoding="UTF-8" ?>'), f"{rel} lost its xml declaration"
 
 
 def test_package_json_scope_is_answerable(tmp_path):
     """The root package name keeps its npm scope when the consumer has one."""
-    dst = copy_template(
-        tmp_path / "scoped", {**ANSWERS["config"], "npm_scope": "@xenoterracide"}
-    )
+    dst = copy_template(tmp_path / "scoped", {**ANSWERS["config"], "npm_scope": "@xenoterracide"})
     data = json.loads((dst / "package.json").read_text())
     assert data["name"] == "@xenoterracide/sample"
 
@@ -599,18 +598,9 @@ def test_lintstagedrc_licenses_by_file_class(generated):
     dst, _ = generated
     content = (dst / ".lintstagedrc.cjs").read_text()
     assert "const licenseCode = \"--license 'GPL-3.0-or-later'\";" in content
-    assert (
-        "const licenseConfiguration = \"--license 'CC0-1.0' --fallback-dot-license\";"
-        in content
-    )
-    assert (
-        '"*.ts": run([`${reuse} ${copyright} ${symbol} ${licenseCode}`, prettier])'
-        in content
-    )
-    assert (
-        '"*.java": run([`${reuse} ${copyright} ${symbol} ${licenseCode}`, prettier])'
-        in content
-    )
+    assert "const licenseConfiguration = \"--license 'CC0-1.0' --fallback-dot-license\";" in content
+    assert '"*.ts": run([`${reuse} ${copyright} ${symbol} ${licenseCode}`, prettier])' in content
+    assert '"*.java": run([`${reuse} ${copyright} ${symbol} ${licenseCode}`, prettier])' in content
 
 
 def test_lintstagedrc_never_writes_sidecars(generated):
@@ -629,9 +619,7 @@ def test_lintstagedrc_never_writes_sidecars(generated):
 
 def test_lintstagedrc_stamps_the_author(tmp_path):
     """The annotate stamp carries the author, matching the authoring copy."""
-    dst = copy_template(
-        tmp_path / "holder", {**JAVA_ANSWERS, "copyright_holder": "Sample Owner"}
-    )
+    dst = copy_template(tmp_path / "holder", {**JAVA_ANSWERS, "copyright_holder": "Sample Owner"})
     content = (dst / ".lintstagedrc.cjs").read_text()
     assert "Caleb Cushing" in content
     assert "Sample Owner" not in content
@@ -731,10 +719,9 @@ def test_reuse_lint(tmp_path, variant):
         capture_output=True,
         text=True,
         timeout=300,
+        check=False,
     )
-    assert result.returncode == 0, (
-        f"reuse lint failed:\n{result.stdout}\n{result.stderr}"
-    )
+    assert result.returncode == 0, f"reuse lint failed:\n{result.stdout}\n{result.stderr}"
 
 
 def test_copier_runs_no_tasks():
@@ -777,7 +764,7 @@ def test_renovate_exempts_copier_from_the_release_age_cooldown(generated):
     assert re.search(
         r'matchManagers: \["copier"\],[^}]*automerge: true,[^}]*minimumReleaseAge: null',
         content,
-        re.S,
+        re.DOTALL,
     ), "copier updates still age under the supply-chain cooldown"
 
 
@@ -841,9 +828,7 @@ def test_renovate_cooldown_matches_the_authoring_copy(generated):
     rendered = (dst / ".github/renovate.json5").read_text()
     authoring = (TEMPLATE / ".github" / "renovate.json5").read_text()
     for label, content in (("rendered", rendered), ("authoring", authoring)):
-        assert 'minimumReleaseAge: "3 days"' in content, (
-            f"no 3-day cooldown in the {label} copy"
-        )
+        assert 'minimumReleaseAge: "3 days"' in content, f"no 3-day cooldown in the {label} copy"
         assert 'minimumReleaseAgeBehaviour: "timestamp-optional"' in content, (
             f"updates without a release timestamp would wait forever in the {label} copy"
         )
@@ -879,9 +864,7 @@ def test_pnpm_release_age_hardening_matches_the_authoring_copy(generated):
             f"soft gate would silently bypass day-0 pins in the {label} copy"
         )
         # the key form: the comment explaining the gate names the word too
-        assert "minimumReleaseAgeExclude:" not in content, (
-            f"a recorded bypass disarms the gate in the {label} copy"
-        )
+        assert "minimumReleaseAgeExclude:" not in content, f"a recorded bypass disarms the gate in the {label} copy"
 
 
 def test_renovate_configs_pass_the_renovate_validator(generated):
@@ -906,10 +889,9 @@ def test_renovate_configs_pass_the_renovate_validator(generated):
         text=True,
         timeout=600,
         cwd=TEMPLATE,
+        check=False,
     )
-    assert result.returncode == 0, (
-        f"rendered config failed validation:\n{result.stdout}\n{result.stderr}"
-    )
+    assert result.returncode == 0, f"rendered config failed validation:\n{result.stdout}\n{result.stderr}"
 
 
 def test_lint_is_the_pre_push_set(generated):
@@ -917,18 +899,19 @@ def test_lint_is_the_pre_push_set(generated):
     and shellcheck everywhere, eslint on typescript, checkstyle +
     spotbugs on java. reuse and tsc stay CI-owned, so neither belongs in
     the hook's set. check inherits lint, adding typecheck and test on
-    typescript."""
+    typescript. Renders carry no python tooling - their locks are
+    consumer-owned, and copier cannot deliver a dependency into them."""
     dst, answers = generated
     scripts = json.loads((dst / "package.json").read_text())["scripts"]
     lint = scripts["lint"]
     assert "pnpm lint:prettier" in lint
     assert "pnpm lint:shellcheck" in lint
+    assert "lint:ruff" not in scripts
     # documented intent, implied by the exact strings below
     assert "lint:reuse" not in lint
     assert "typecheck" not in lint
     assert scripts["lint:shellcheck"] == (
-        "git ls-files -z -- '*.sh' '.envrc' ':(glob)**/git/hooks/*' |"
-        " xargs -0 shellcheck"
+        "git ls-files -z -- '*.sh' '.envrc' ':(glob)**/git/hooks/*' | xargs -0 shellcheck"
     )
     if answers["template_type"] == "typescript":
         assert lint == "pnpm lint:eslint && pnpm lint:prettier && pnpm lint:shellcheck"
@@ -959,22 +942,29 @@ def test_lint_is_the_pre_push_set(generated):
 
 
 def test_authoring_lint_matches_the_config_variant(generated):
-    """The authoring checkout is config-shaped; drift between its lint
-    and the config render strands the authoring repo on an old set."""
+    """The authoring checkout is the config render plus its python
+    tests: its lint is the config set with a ruff segment, and its
+    dev-group python extras never reach a render. Drift in the shared
+    parts strands the authoring repo; python tooling in a render would
+    break every consumer's lock, which copier cannot deliver."""
     dst, answers = generated
     if answers["template_type"] != "config":
         pytest.skip()
     authoring = json.loads((TEMPLATE / "package.json").read_text())["scripts"]
     rendered = json.loads((dst / "package.json").read_text())["scripts"]
-    assert authoring["lint"] == rendered["lint"]
+    assert rendered["lint"] == authoring["lint"].replace("pnpm lint:ruff && ", "")
     assert authoring["lint:shellcheck"] == rendered["lint:shellcheck"]
+    assert authoring["lint:ruff"] == (
+        "uv run --frozen --group dev ruff check . && uv run --frozen --group dev ruff format --check ."
+    )
+    assert "lint:ruff" not in rendered
 
 
 def test_tool_versions_pins_shellcheck(generated):
     """lint:shellcheck runs on every push; an unpinned binary turns a
     fresh machine's first push into a missing-tool failure."""
     dst, _ = generated
-    assert re.search(r"^shellcheck \d", (dst / ".tool-versions").read_text(), re.M)
+    assert re.search(r"^shellcheck \d", (dst / ".tool-versions").read_text(), re.MULTILINE)
 
 
 def test_renovate_manager_file_patterns_are_regex_wrapped(generated):
@@ -993,12 +983,10 @@ def test_renovate_manager_file_patterns_are_regex_wrapped(generated):
         # [^/] character class of the hook pattern itself; the trailing
         # comma and double quotes the parse relies on are prettier's
         # formatting of these files
-        blocks = re.findall(r"managerFilePatterns:\s*\[(.*?)\],", content, re.S)
+        blocks = re.findall(r"managerFilePatterns:\s*\[(.*?)\],", content, re.DOTALL)
         assert blocks, f"no managerFilePatterns in the {label} copy"
         for block in blocks:
             entries = re.findall(r'"((?:[^"\\]|\\.)*)"', block)
             assert entries, f"empty managerFilePatterns in the {label} copy"
             for entry in entries:
-                assert entry.startswith("/") and entry.endswith("/"), (
-                    f"unwrapped pattern in the {label} copy: {entry}"
-                )
+                assert entry.startswith("/") and entry.endswith("/"), f"unwrapped pattern in the {label} copy: {entry}"
