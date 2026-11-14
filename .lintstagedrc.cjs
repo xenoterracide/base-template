@@ -72,4 +72,10 @@ module.exports = {
   "*.ts": run([`${reuse} ${copyright} ${symbol} ${licenseCode}`, prettier]),
   // Java code
   "*.java": run([`${reuse} ${copyright} ${symbol} ${licenseCode}`, prettier]),
+  // Python code; renders ship no python, so the row never fires there
+  "*.py": run([
+    `${reuse} ${copyright} ${symbol} ${licenseScripts}`,
+    `uv run --frozen --group dev ruff check --fix`,
+    `uv run --frozen --group dev ruff format`,
+  ]),
 };
