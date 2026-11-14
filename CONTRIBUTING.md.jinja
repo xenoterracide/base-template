@@ -16,6 +16,9 @@ SPDX-License-Identifier: CC-BY-NC-SA-4.0
 
     pnpm check
 
+`git push` runs `pnpm lint` first (pre-push hook); `git push --no-verify`
+bypasses it.
+
 ## Updating from the template
 
     uv run --group dev copier update --trust
