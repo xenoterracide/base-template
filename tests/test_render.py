@@ -496,15 +496,36 @@ def test_hooks_carry_the_consumer_header(generated):
         )
 
 
+DUMB_HOOK = """#!/bin/sh
+
+# SPDX-FileCopyrightText: Copyright © 2026 Caleb Cushing
+#
+# SPDX-License-Identifier: MIT
+[ -n "$CI" ] && exit 0
+
+set -e
+pnpm lint
+""".encode("utf-8")
+
+
 def test_pre_push_is_the_dumb_hook(generated):
-    """Policy, not mechanism: every variant renders the same hook, and
-    it runs exactly the lint script. A hook without its exec bit is
-    silently skipped by git, so the bit is part of the contract."""
+    """Policy, not mechanism: the authoring hook, its .jinja source, and
+    every render are one file, and the file runs exactly the lint
+    script. read_text would mask newline drift, so the contract is
+    compared as bytes. A hook without its exec bit is silently skipped
+    by git, so the bit is asserted on every copy."""
     dst, _ = generated
-    hook = dst / ".config/git/hooks/pre-push"
-    assert hook.read_text() == (TEMPLATE / ".config/git/hooks/pre-push").read_text()
-    assert "pnpm lint" in hook.read_text()
-    assert hook.stat().st_mode & stat.S_IXUSR
+    rendered = (dst / ".config/git/hooks/pre-push").read_bytes()
+    authoring = (TEMPLATE / ".config/git/hooks/pre-push").read_bytes()
+    source = (TEMPLATE / ".config/git/hooks/pre-push.jinja").read_bytes()
+    assert rendered == authoring == source
+    assert rendered == DUMB_HOOK
+    for path in (
+        dst / ".config/git/hooks/pre-push",
+        TEMPLATE / ".config/git/hooks/pre-push",
+        TEMPLATE / ".config/git/hooks/pre-push.jinja",
+    ):
+        assert path.stat().st_mode & stat.S_IXUSR, f"{path.name} lost its exec bit"
 
 
 def test_hooks_carry_the_author_not_the_answered_holder(tmp_path):
@@ -892,33 +913,41 @@ def test_renovate_configs_pass_the_renovate_validator(generated):
 
 
 def test_lint_is_the_pre_push_set(generated):
-    """lint is what pre-push runs: prettier and shellcheck everywhere,
-    eslint on typescript, checkstyle + spotbugs on java. reuse and tsc
-    stay CI-owned, so neither belongs in the hook's set."""
+    """lint is what pre-push runs, pinned verbatim per variant: prettier
+    and shellcheck everywhere, eslint on typescript, checkstyle +
+    spotbugs on java. reuse and tsc stay CI-owned, so neither belongs in
+    the hook's set. check inherits lint, adding typecheck and test on
+    typescript."""
     dst, answers = generated
     scripts = json.loads((dst / "package.json").read_text())["scripts"]
     lint = scripts["lint"]
     assert "pnpm lint:prettier" in lint
     assert "pnpm lint:shellcheck" in lint
+    # documented intent, implied by the exact strings below
     assert "lint:reuse" not in lint
     assert "typecheck" not in lint
+    assert scripts["lint:shellcheck"] == (
+        "shellcheck $(git ls-files '*.sh' '.envrc' ':(glob)**/git/hooks/*')"
+    )
     if answers["template_type"] == "typescript":
-        assert "pnpm lint:eslint" in lint
-        assert "lint:maven" not in lint
+        assert lint == "pnpm lint:eslint && pnpm lint:prettier && pnpm lint:shellcheck"
         assert scripts["check"] == "pnpm lint && pnpm typecheck && pnpm test"
+        assert "lint:maven" not in scripts
     elif answers["template_type"] == "java":
-        assert "pnpm lint:maven" in lint
-        assert "lint:eslint" not in lint
-        maven = scripts["lint:maven"]
-        assert maven.startswith("./mvnw -B -q --no-transfer-progress test-compile ")
-        assert "checkstyle:check@checkstyle-main" in maven
-        assert "checkstyle:check@checkstyle-test" in maven
-        assert "spotbugs:check@spotbugs-check" in maven
+        assert lint == "pnpm lint:prettier && pnpm lint:shellcheck && pnpm lint:maven"
         assert scripts["check"] == "pnpm lint"
+        assert scripts["lint:maven"] == (
+            "./mvnw -B -q --no-transfer-progress test-compile"
+            " checkstyle:check@checkstyle-main"
+            " checkstyle:check@checkstyle-test"
+            " spotbugs:check@spotbugs-check"
+        )
+        assert "lint:eslint" not in scripts
     else:
-        assert "lint:eslint" not in lint
-        assert "lint:maven" not in lint
+        assert lint == "pnpm lint:prettier && pnpm lint:shellcheck"
         assert scripts["check"] == "pnpm lint"
+        assert "lint:eslint" not in scripts
+        assert "lint:maven" not in scripts
     # reuse stays a script; the CI license job owns running it
     assert "pnpm reuse download --all" in scripts["lint:reuse"]
 
