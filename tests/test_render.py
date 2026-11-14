@@ -199,24 +199,35 @@ def test_pyproject_toml_is_valid(generated):
     assert data["project"]["name"] == "sample"
 
 
-def test_copier_is_provisioned_for_updates(generated):
-    """The documented template refresh needs copier; the dev group ships it."""
+def test_render_dev_group_is_only_reuse(generated):
+    """Renders run reuse and nothing else python: the pre-commit annotate
+    rows and the license job. Renovate's hosted app runs copier on its
+    own infrastructure - the git history of every consumer shows it -
+    so the manual refresh documents uvx copier, and a dev group beyond
+    reuse pushes every consumer into a lock migration copier cannot
+    deliver."""
     dst, _ = generated
     dev = tomllib.loads((dst / "pyproject.toml").read_text())["dependency-groups"]["dev"]
-    assert any(dep.startswith("copier") for dep in dev)
+    assert dev == ["reuse>=6.2.0"]
 
 
 def test_ruff_is_provisioned_and_configured(generated):
-    """lint:ruff runs on every push through the dev group; the width
-    matches prettier's 120 where ruff defaults to black's 88. include
+    """The authoring python lints on every push; renders never require
+    ruff - their locks are consumer-owned and copier cannot deliver a
+    dependency into them. line-length 120 matches prettier, and include
     scopes ruff to python - 0.17 also formats markdown and lints
     pyproject.toml, both prettier's files."""
     dst, _ = generated
-    data = tomllib.loads((dst / "pyproject.toml").read_text())
+    data = tomllib.loads((TEMPLATE / "pyproject.toml").read_text())
     dev = data["dependency-groups"]["dev"]
     assert any(dep.startswith("ruff") for dep in dev)
     assert data["tool"]["ruff"]["line-length"] == 120
     assert data["tool"]["ruff"]["include"] == ["*.py", "**/*.py"]
+    assert ".ruff_cache" in (TEMPLATE / ".gitignore").read_text()
+    rendered = tomllib.loads((dst / "pyproject.toml").read_text())
+    render_dev = rendered["dependency-groups"]["dev"]
+    assert not any(dep.startswith("ruff") for dep in render_dev)
+    assert "ruff" not in rendered.get("tool", {})
 
 
 def test_java_layout(generated):
@@ -884,31 +895,26 @@ def test_renovate_configs_pass_the_renovate_validator(generated):
 
 
 def test_lint_is_the_pre_push_set(generated):
-    """lint is what pre-push runs, pinned verbatim per variant: prettier,
-    ruff, and shellcheck everywhere, eslint on typescript, checkstyle +
+    """lint is what pre-push runs, pinned verbatim per variant: prettier
+    and shellcheck everywhere, eslint on typescript, checkstyle +
     spotbugs on java. reuse and tsc stay CI-owned, so neither belongs in
     the hook's set. check inherits lint, adding typecheck and test on
-    typescript."""
+    typescript. Renders carry no python tooling - their locks are
+    consumer-owned, and copier cannot deliver a dependency into them."""
     dst, answers = generated
     scripts = json.loads((dst / "package.json").read_text())["scripts"]
     lint = scripts["lint"]
     assert "pnpm lint:prettier" in lint
-    assert "pnpm lint:ruff" in lint
     assert "pnpm lint:shellcheck" in lint
+    assert "lint:ruff" not in scripts
     # documented intent, implied by the exact strings below
     assert "lint:reuse" not in lint
     assert "typecheck" not in lint
     assert scripts["lint:shellcheck"] == (
         "git ls-files -z -- '*.sh' '.envrc' ':(glob)**/git/hooks/*' | xargs -0 shellcheck"
     )
-    # renders ship no python; ruff exits 0 on an empty tree, so the
-    # set stays uniform across variants
-    assert scripts["lint:ruff"] == (
-        "uv run --frozen --group dev ruff check . && uv run --frozen --group dev ruff format --check ."
-    )
-    assert ".ruff_cache" in (dst / ".gitignore").read_text()
     if answers["template_type"] == "typescript":
-        assert lint == "pnpm lint:eslint && pnpm lint:prettier && pnpm lint:ruff && pnpm lint:shellcheck"
+        assert lint == "pnpm lint:eslint && pnpm lint:prettier && pnpm lint:shellcheck"
         # no cache: entries never invalidate when imports change, and
         # type-aware rules can flag the importer - an unchanged file
         # skipping lint would miss the finding
@@ -917,7 +923,7 @@ def test_lint_is_the_pre_push_set(generated):
         assert scripts["check"] == "pnpm lint && pnpm typecheck && pnpm test"
         assert "lint:maven" not in scripts
     elif answers["template_type"] == "java":
-        assert lint == "pnpm lint:prettier && pnpm lint:ruff && pnpm lint:shellcheck && pnpm lint:maven"
+        assert lint == "pnpm lint:prettier && pnpm lint:shellcheck && pnpm lint:maven"
         assert scripts["check"] == "pnpm lint"
         assert scripts["lint:maven"] == (
             "./mvnw -B -q --no-transfer-progress test-compile"
@@ -927,7 +933,7 @@ def test_lint_is_the_pre_push_set(generated):
         )
         assert "lint:eslint" not in scripts
     else:
-        assert lint == "pnpm lint:prettier && pnpm lint:ruff && pnpm lint:shellcheck"
+        assert lint == "pnpm lint:prettier && pnpm lint:shellcheck"
         assert scripts["check"] == "pnpm lint"
         assert "lint:eslint" not in scripts
         assert "lint:maven" not in scripts
@@ -936,16 +942,22 @@ def test_lint_is_the_pre_push_set(generated):
 
 
 def test_authoring_lint_matches_the_config_variant(generated):
-    """The authoring checkout is config-shaped; drift between its lint
-    and the config render strands the authoring repo on an old set."""
+    """The authoring checkout is the config render plus its python
+    tests: its lint is the config set with a ruff segment, and its
+    dev-group python extras never reach a render. Drift in the shared
+    parts strands the authoring repo; python tooling in a render would
+    break every consumer's lock, which copier cannot deliver."""
     dst, answers = generated
     if answers["template_type"] != "config":
         pytest.skip()
     authoring = json.loads((TEMPLATE / "package.json").read_text())["scripts"]
     rendered = json.loads((dst / "package.json").read_text())["scripts"]
-    assert authoring["lint"] == rendered["lint"]
+    assert rendered["lint"] == authoring["lint"].replace("pnpm lint:ruff && ", "")
     assert authoring["lint:shellcheck"] == rendered["lint:shellcheck"]
-    assert authoring["lint:ruff"] == rendered["lint:ruff"]
+    assert authoring["lint:ruff"] == (
+        "uv run --frozen --group dev ruff check . && uv run --frozen --group dev ruff format --check ."
+    )
+    assert "lint:ruff" not in rendered
 
 
 def test_tool_versions_pins_shellcheck(generated):

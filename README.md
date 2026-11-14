@@ -13,16 +13,17 @@ consumers with shared tooling: prettier, REUSE, git hooks, CI, renovate.
 
 Create a project:
 
-    copier copy --trust https://github.com/xenoterracide/base-template my-project
+    uvx copier copy --trust https://github.com/xenoterracide/base-template my-project
 
 Bootstrap it:
 
     cd my-project
     npm run contribute
 
-Refresh from the template:
+Renovate opens an update PR whenever base-template tags a release. To
+refresh by hand instead:
 
-    uv run --group dev copier update --trust
+    uvx copier update --trust
 
 Conflicts land as `.rej` files. Resolve them by hand.
 
