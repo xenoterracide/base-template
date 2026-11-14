@@ -13,6 +13,9 @@ __pycache__/
 # eslint
 .eslintcache
 
+# ruff
+.ruff_cache/
+
 # env
 .env*
 !.envrc
