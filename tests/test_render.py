@@ -13,7 +13,6 @@ import tomllib
 import xml.etree.ElementTree as ET
 
 import pytest
-
 from conftest import ANSWERS, JAVA_ANSWERS, TEMPLATE, copy_template
 
 SHARED_FILES = [
@@ -100,7 +99,7 @@ def test_prettierrc_plugins_are_dev_dependencies(generated):
     would silently skip its file type; every named plugin must ship."""
     dst, _ = generated
     plugins = re.findall(
-        r'^\s+- "?([\w@/.-]+)"?$', (dst / ".prettierrc.yml").read_text(), re.M
+        r'^\s+- "?([\w@/.-]+)"?$', (dst / ".prettierrc.yml").read_text(), re.MULTILINE
     )
     dev_deps = json.loads((dst / "package.json").read_text())["devDependencies"]
     assert plugins, "no plugin list in .prettierrc.yml"
@@ -505,7 +504,7 @@ DUMB_HOOK = """#!/bin/sh
 
 set -e
 pnpm lint
-""".encode("utf-8")
+""".encode()
 
 
 def test_pre_push_is_the_dumb_hook(generated):
@@ -731,6 +730,7 @@ def test_reuse_lint(tmp_path, variant):
         capture_output=True,
         text=True,
         timeout=300,
+        check=False,
     )
     assert result.returncode == 0, (
         f"reuse lint failed:\n{result.stdout}\n{result.stderr}"
@@ -777,7 +777,7 @@ def test_renovate_exempts_copier_from_the_release_age_cooldown(generated):
     assert re.search(
         r'matchManagers: \["copier"\],[^}]*automerge: true,[^}]*minimumReleaseAge: null',
         content,
-        re.S,
+        re.DOTALL,
     ), "copier updates still age under the supply-chain cooldown"
 
 
@@ -906,6 +906,7 @@ def test_renovate_configs_pass_the_renovate_validator(generated):
         text=True,
         timeout=600,
         cwd=TEMPLATE,
+        check=False,
     )
     assert result.returncode == 0, (
         f"rendered config failed validation:\n{result.stdout}\n{result.stderr}"
@@ -974,7 +975,9 @@ def test_tool_versions_pins_shellcheck(generated):
     """lint:shellcheck runs on every push; an unpinned binary turns a
     fresh machine's first push into a missing-tool failure."""
     dst, _ = generated
-    assert re.search(r"^shellcheck \d", (dst / ".tool-versions").read_text(), re.M)
+    assert re.search(
+        r"^shellcheck \d", (dst / ".tool-versions").read_text(), re.MULTILINE
+    )
 
 
 def test_renovate_manager_file_patterns_are_regex_wrapped(generated):
@@ -993,7 +996,7 @@ def test_renovate_manager_file_patterns_are_regex_wrapped(generated):
         # [^/] character class of the hook pattern itself; the trailing
         # comma and double quotes the parse relies on are prettier's
         # formatting of these files
-        blocks = re.findall(r"managerFilePatterns:\s*\[(.*?)\],", content, re.S)
+        blocks = re.findall(r"managerFilePatterns:\s*\[(.*?)\],", content, re.DOTALL)
         assert blocks, f"no managerFilePatterns in the {label} copy"
         for block in blocks:
             entries = re.findall(r'"((?:[^"\\]|\\.)*)"', block)
