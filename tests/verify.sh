@@ -19,6 +19,8 @@ esac
 
 # lint-staged's shell row needs shfmt; CI runners do not provision it.
 "$(dirname "$0")/install-shfmt.sh"
+# the pre-push exercise's lint:shellcheck needs shellcheck likewise
+"$(dirname "$0")/install-shellcheck.sh"
 
 WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT
@@ -64,5 +66,9 @@ else
   echo "Running check..."
   pnpm check
 fi
+
+echo "Running the pre-push hook..."
+# CI='' simulates a developer push: the hook's guard skips a real CI=true
+CI='' sh .config/git/hooks/pre-push
 
 echo "All $VARIANT checks passed."

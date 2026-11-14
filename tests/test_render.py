@@ -35,6 +35,7 @@ SHARED_FILES = [
     "CONTRIBUTING.md",
     ".config/git/hooks/heal.sh",
     ".config/git/hooks/pre-commit",
+    ".config/git/hooks/pre-push",
     ".config/git/hooks/commit-msg",
     ".config/git/hooks/post-checkout",
     ".config/git/hooks/post-merge",
@@ -481,6 +482,7 @@ def test_hooks_carry_the_consumer_header(generated):
         "post-checkout": "2026",
         "post-merge": "2026",
         "pre-commit": "2021",
+        "pre-push": "2026",
     }
     hooks = sorted((dst / ".config/git/hooks").iterdir())
     assert hooks, "no hooks rendered"
@@ -492,6 +494,38 @@ def test_hooks_carry_the_consumer_header(generated):
         assert any(line.startswith(copyright_line + start) for line in lines), (
             f"{path.name}: no {start} lineage header"
         )
+
+
+DUMB_HOOK = """#!/bin/sh
+
+# SPDX-FileCopyrightText: Copyright © 2026 Caleb Cushing
+#
+# SPDX-License-Identifier: MIT
+[ -n "$CI" ] && exit 0
+
+set -e
+pnpm lint
+""".encode("utf-8")
+
+
+def test_pre_push_is_the_dumb_hook(generated):
+    """Policy, not mechanism: the authoring hook, its .jinja source, and
+    every render are one file, and the file runs exactly the lint
+    script. read_text would mask newline drift, so the contract is
+    compared as bytes. A hook without its exec bit is silently skipped
+    by git, so the bit is asserted on every copy."""
+    dst, _ = generated
+    rendered = (dst / ".config/git/hooks/pre-push").read_bytes()
+    authoring = (TEMPLATE / ".config/git/hooks/pre-push").read_bytes()
+    source = (TEMPLATE / ".config/git/hooks/pre-push.jinja").read_bytes()
+    assert rendered == authoring == source
+    assert rendered == DUMB_HOOK
+    for path in (
+        dst / ".config/git/hooks/pre-push",
+        TEMPLATE / ".config/git/hooks/pre-push",
+        TEMPLATE / ".config/git/hooks/pre-push.jinja",
+    ):
+        assert path.stat().st_mode & stat.S_IXUSR, f"{path.name} lost its exec bit"
 
 
 def test_hooks_carry_the_author_not_the_answered_holder(tmp_path):
@@ -876,6 +910,71 @@ def test_renovate_configs_pass_the_renovate_validator(generated):
     assert result.returncode == 0, (
         f"rendered config failed validation:\n{result.stdout}\n{result.stderr}"
     )
+
+
+def test_lint_is_the_pre_push_set(generated):
+    """lint is what pre-push runs, pinned verbatim per variant: prettier
+    and shellcheck everywhere, eslint on typescript, checkstyle +
+    spotbugs on java. reuse and tsc stay CI-owned, so neither belongs in
+    the hook's set. check inherits lint, adding typecheck and test on
+    typescript."""
+    dst, answers = generated
+    scripts = json.loads((dst / "package.json").read_text())["scripts"]
+    lint = scripts["lint"]
+    assert "pnpm lint:prettier" in lint
+    assert "pnpm lint:shellcheck" in lint
+    # documented intent, implied by the exact strings below
+    assert "lint:reuse" not in lint
+    assert "typecheck" not in lint
+    assert scripts["lint:shellcheck"] == (
+        "git ls-files -z -- '*.sh' '.envrc' ':(glob)**/git/hooks/*' |"
+        " xargs -0 shellcheck"
+    )
+    if answers["template_type"] == "typescript":
+        assert lint == "pnpm lint:eslint && pnpm lint:prettier && pnpm lint:shellcheck"
+        # no cache: entries never invalidate when imports change, and
+        # type-aware rules can flag the importer - an unchanged file
+        # skipping lint would miss the finding
+        assert scripts["lint:eslint"] == "eslint ."
+        assert ".eslintcache" in (dst / ".gitignore").read_text()
+        assert scripts["check"] == "pnpm lint && pnpm typecheck && pnpm test"
+        assert "lint:maven" not in scripts
+    elif answers["template_type"] == "java":
+        assert lint == "pnpm lint:prettier && pnpm lint:shellcheck && pnpm lint:maven"
+        assert scripts["check"] == "pnpm lint"
+        assert scripts["lint:maven"] == (
+            "./mvnw -B -q --no-transfer-progress test-compile"
+            " checkstyle:check@checkstyle-main"
+            " checkstyle:check@checkstyle-test"
+            " spotbugs:check@spotbugs-check"
+        )
+        assert "lint:eslint" not in scripts
+    else:
+        assert lint == "pnpm lint:prettier && pnpm lint:shellcheck"
+        assert scripts["check"] == "pnpm lint"
+        assert "lint:eslint" not in scripts
+        assert "lint:maven" not in scripts
+    # reuse stays a script; the CI license job owns running it
+    assert "pnpm reuse download --all" in scripts["lint:reuse"]
+
+
+def test_authoring_lint_matches_the_config_variant(generated):
+    """The authoring checkout is config-shaped; drift between its lint
+    and the config render strands the authoring repo on an old set."""
+    dst, answers = generated
+    if answers["template_type"] != "config":
+        pytest.skip()
+    authoring = json.loads((TEMPLATE / "package.json").read_text())["scripts"]
+    rendered = json.loads((dst / "package.json").read_text())["scripts"]
+    assert authoring["lint"] == rendered["lint"]
+    assert authoring["lint:shellcheck"] == rendered["lint:shellcheck"]
+
+
+def test_tool_versions_pins_shellcheck(generated):
+    """lint:shellcheck runs on every push; an unpinned binary turns a
+    fresh machine's first push into a missing-tool failure."""
+    dst, _ = generated
+    assert re.search(r"^shellcheck \d", (dst / ".tool-versions").read_text(), re.M)
 
 
 def test_renovate_manager_file_patterns_are_regex_wrapped(generated):
