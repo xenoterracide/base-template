@@ -208,12 +208,15 @@ def test_copier_is_provisioned_for_updates(generated):
 
 def test_ruff_is_provisioned_and_configured(generated):
     """lint:ruff runs on every push through the dev group; the width
-    matches prettier's 120 where ruff defaults to black's 88."""
+    matches prettier's 120 where ruff defaults to black's 88. include
+    scopes ruff to python - 0.17 also formats markdown and lints
+    pyproject.toml, both prettier's files."""
     dst, _ = generated
     data = tomllib.loads((dst / "pyproject.toml").read_text())
     dev = data["dependency-groups"]["dev"]
     assert any(dep.startswith("ruff") for dep in dev)
     assert data["tool"]["ruff"]["line-length"] == 120
+    assert data["tool"]["ruff"]["include"] == ["*.py", "**/*.py"]
 
 
 def test_java_layout(generated):

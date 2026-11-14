@@ -25,7 +25,9 @@ Extends the pre-push model (`2026-11-14-pre-push-design.md`):
 - The dev group gains `ruff` in both pyproject strands, so
   `uv run --frozen --group dev` resolves it wherever lint:ruff runs.
 - `[tool.ruff]` `line-length = 120`: prettier parity. Ruff defaults to
-  black's 88.
+  black's 88. `include` scopes ruff to python — 0.17 also formats
+  markdown and lints pyproject.toml, both prettier's files; two
+  formatters over one file type drift apart.
 - Ruff's cache stays on, unlike eslint's ruling. Ruff's analysis is
   single-file AST — no cross-file type graph — so a cached file cannot
   miss a cross-file finding. `.ruff_cache` is gitignored in the shared

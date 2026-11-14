@@ -16,3 +16,6 @@ dev = ["copier", "pyyaml", "pytest", "reuse>=6.2.0", "ruff"]
 [tool.ruff]
 # prettier parity; ruff defaults to black's 88
 line-length = 120
+# ruff owns python only: 0.17 also formats markdown and lints
+# pyproject.toml, both prettier's files - two formatters drift apart
+include = ["*.py", "**/*.py"]
