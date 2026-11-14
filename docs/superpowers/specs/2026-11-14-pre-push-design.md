@@ -100,12 +100,12 @@ New scripts:
   a bare `checkstyle:check` reads the default sun config. `test-compile`
   runs first because spotbugs reads classes, not sources.
 
-`lint:eslint` gains `--cache` (typescript): the cache is a skip-list of
-unchanged files, so a warm full-repo run skips linting them and the
-pre-push check drops from ~8s to ~2s on a type-aware config (measured
-on agent-skills). Staged files always miss — a file is staged because
-it changed — so a pre-commit eslint row would buy nothing from the
-cache. `.eslintcache` is gitignored in the typescript render.
+`lint:eslint` stays uncached (typescript): eslint's cache is a
+per-file skip-list whose entries never invalidate when a file's
+imports change, and type-aware rules flag exactly that — an unchanged
+importer that skips lint misses the finding. `.eslintcache` stays
+gitignored in the typescript render, so a manual cached run cannot
+dirty the tree.
 
 `lint:reuse` stays a script but leaves `lint`. Java consumers' CI runs
 the maven workflow only, so `lint:maven` never doubles a CI job;
@@ -122,10 +122,12 @@ TypeScript consumers run `check`, which absorbs the new lint wholesale.
   near-zero catch.
 - Shellcheck into lint: the running-commands model names it a pre-push
   checker; it is pinned, healed, and sub-second.
-- eslint caches on the pre-push path only (measured 8s to 2s warm). An
-  eslint `--fix` row in pre-commit was declined: staged files always
-  miss the cache, so every typescript commit pays ~4s of program load
-  to auto-fix rare fixables.
+- No eslint cache: per-file entries never invalidate on dependency
+  changes, so type-aware rules can miss cross-file bugs in unchanged
+  importers — the measured ~8s to ~2s warm gain is not worth that.
+  An eslint `--fix` row in pre-commit was also declined: staged files
+  always miss, so every typescript commit pays ~4s of program load to
+  auto-fix rare fixables.
 
 ## Left to the builder
 
