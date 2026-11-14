@@ -99,6 +99,13 @@ New scripts:
   a bare `checkstyle:check` reads the default sun config. `test-compile`
   runs first because spotbugs reads classes, not sources.
 
+`lint:eslint` gains `--cache` (typescript): the cache is a skip-list of
+unchanged files, so a warm full-repo run skips linting them and the
+pre-push check drops from ~8s to ~2s on a type-aware config (measured
+on agent-skills). Staged files always miss — a file is staged because
+it changed — so a pre-commit eslint row would buy nothing from the
+cache. `.eslintcache` is gitignored in the typescript render.
+
 `lint:reuse` stays a script but leaves `lint`. Java consumers' CI runs
 the maven workflow only, so `lint:maven` never doubles a CI job;
 TypeScript consumers run `check`, which absorbs the new lint wholesale.
@@ -114,6 +121,10 @@ TypeScript consumers run `check`, which absorbs the new lint wholesale.
   near-zero catch.
 - Shellcheck into lint: the running-commands model names it a pre-push
   checker; it is pinned, healed, and sub-second.
+- eslint caches on the pre-push path only (measured 8s to 2s warm). An
+  eslint `--fix` row in pre-commit was declined: staged files always
+  miss the cache, so every typescript commit pays ~4s of program load
+  to auto-fix rare fixables.
 
 ## Left to the builder
 

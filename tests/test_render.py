@@ -931,6 +931,10 @@ def test_lint_is_the_pre_push_set(generated):
     )
     if answers["template_type"] == "typescript":
         assert lint == "pnpm lint:eslint && pnpm lint:prettier && pnpm lint:shellcheck"
+        # the cache is a skip-list: warm full-repo runs skip linting
+        # unchanged files, so the pre-push check stays cheap
+        assert scripts["lint:eslint"] == "eslint . --cache"
+        assert ".eslintcache" in (dst / ".gitignore").read_text()
         assert scripts["check"] == "pnpm lint && pnpm typecheck && pnpm test"
         assert "lint:maven" not in scripts
     elif answers["template_type"] == "java":

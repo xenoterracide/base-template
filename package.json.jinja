@@ -32,7 +32,7 @@
     "precontribute": "npm run setup:corepack",
     "reuse": "uv run --frozen --group dev reuse",
     "setup:corepack": "npm install --global corepack && mkdir -p ~/.local/bin && corepack enable --install-directory ~/.local/bin"{% if template_type == 'typescript' %},
-    "lint:eslint": "eslint .",
+    "lint:eslint": "eslint . --cache",
     "lint": "pnpm lint:eslint && pnpm lint:prettier && pnpm lint:shellcheck",
     "typecheck": "tsc --noEmit -p tsconfig.eslint.json",
     "test": "vitest run --coverage"{% elif template_type == 'java' %},
