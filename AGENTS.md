@@ -35,7 +35,7 @@ Read these files instead of trusting a copy of their contents here.
 
 ```bash
 npm run contribute # bootstrap once after clone: tools, deps, hooks
-pnpm lint # prettier + REUSE
+pnpm lint # the pre-push set: prettier + shellcheck
 uv run --group dev pytest tests/ -q # render all variants, assert structure
 ./tests/verify.sh config # full check of a generated project (java|typescript|config)
 ```

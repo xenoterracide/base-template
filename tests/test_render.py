@@ -878,6 +878,57 @@ def test_renovate_configs_pass_the_renovate_validator(generated):
     )
 
 
+def test_lint_is_the_pre_push_set(generated):
+    """lint is what pre-push runs: prettier and shellcheck everywhere,
+    eslint on typescript, checkstyle + spotbugs on java. reuse and tsc
+    stay CI-owned, so neither belongs in the hook's set."""
+    dst, answers = generated
+    scripts = json.loads((dst / "package.json").read_text())["scripts"]
+    lint = scripts["lint"]
+    assert "pnpm lint:prettier" in lint
+    assert "pnpm lint:shellcheck" in lint
+    assert "lint:reuse" not in lint
+    assert "typecheck" not in lint
+    if answers["template_type"] == "typescript":
+        assert "pnpm lint:eslint" in lint
+        assert "lint:maven" not in lint
+        assert scripts["check"] == "pnpm lint && pnpm typecheck && pnpm test"
+    elif answers["template_type"] == "java":
+        assert "pnpm lint:maven" in lint
+        assert "lint:eslint" not in lint
+        maven = scripts["lint:maven"]
+        assert maven.startswith("./mvnw -B -q --no-transfer-progress test-compile ")
+        assert "checkstyle:check@checkstyle-main" in maven
+        assert "checkstyle:check@checkstyle-test" in maven
+        assert "spotbugs:check@spotbugs-check" in maven
+        assert scripts["check"] == "pnpm lint"
+    else:
+        assert "lint:eslint" not in lint
+        assert "lint:maven" not in lint
+        assert scripts["check"] == "pnpm lint"
+    # reuse stays a script; the CI license job owns running it
+    assert "pnpm reuse download --all" in scripts["lint:reuse"]
+
+
+def test_authoring_lint_matches_the_config_variant(generated):
+    """The authoring checkout is config-shaped; drift between its lint
+    and the config render strands the authoring repo on an old set."""
+    dst, answers = generated
+    if answers["template_type"] != "config":
+        pytest.skip()
+    authoring = json.loads((TEMPLATE / "package.json").read_text())["scripts"]
+    rendered = json.loads((dst / "package.json").read_text())["scripts"]
+    assert authoring["lint"] == rendered["lint"]
+    assert authoring["lint:shellcheck"] == rendered["lint:shellcheck"]
+
+
+def test_tool_versions_pins_shellcheck(generated):
+    """lint:shellcheck runs on every push; an unpinned binary turns a
+    fresh machine's first push into a missing-tool failure."""
+    dst, _ = generated
+    assert re.search(r"^shellcheck \d", (dst / ".tool-versions").read_text(), re.M)
+
+
 def test_renovate_manager_file_patterns_are_regex_wrapped(generated):
     """managerFilePatterns takes glob and regex; only the /.../ wrapper
     marks a pattern as regex. An unwrapped regex reads as a glob that

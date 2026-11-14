@@ -9,11 +9,11 @@ SPDX-License-Identifier: CC-BY-NC-SA-4.0
 ## Build and Test
 
 - `npm run contribute` — bootstrap tooling (run once after clone)
+- `pnpm lint` — the pre-push set: prettier + shellcheck, plus eslint
+  (TypeScript) or checkstyle + spotbugs via Maven (java)
 - `pnpm check` — run all checks
-- `pnpm lint:prettier` — prettier check
-- `pnpm lint:reuse` — REUSE compliance check{% if template_type == 'java' %}
+- `pnpm lint:reuse` — REUSE compliance check (CI's license job owns it){% if template_type == 'java' %}
 - `./mvnw -q verify` — Maven build + checkstyle + spotbugs + jacoco + tests{% elif template_type == 'typescript' %}
-- `pnpm lint:eslint` — ESLint check
 - `pnpm typecheck` — TypeScript type check
 - `pnpm test` — vitest with coverage{% endif %}
 
