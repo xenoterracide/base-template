@@ -35,6 +35,7 @@ SHARED_FILES = [
     "CONTRIBUTING.md",
     ".config/git/hooks/heal.sh",
     ".config/git/hooks/pre-commit",
+    ".config/git/hooks/pre-push",
     ".config/git/hooks/commit-msg",
     ".config/git/hooks/post-checkout",
     ".config/git/hooks/post-merge",
@@ -481,6 +482,7 @@ def test_hooks_carry_the_consumer_header(generated):
         "post-checkout": "2026",
         "post-merge": "2026",
         "pre-commit": "2021",
+        "pre-push": "2026",
     }
     hooks = sorted((dst / ".config/git/hooks").iterdir())
     assert hooks, "no hooks rendered"
@@ -492,6 +494,17 @@ def test_hooks_carry_the_consumer_header(generated):
         assert any(line.startswith(copyright_line + start) for line in lines), (
             f"{path.name}: no {start} lineage header"
         )
+
+
+def test_pre_push_is_the_dumb_hook(generated):
+    """Policy, not mechanism: every variant renders the same hook, and
+    it runs exactly the lint script. A hook without its exec bit is
+    silently skipped by git, so the bit is part of the contract."""
+    dst, _ = generated
+    hook = dst / ".config/git/hooks/pre-push"
+    assert hook.read_text() == (TEMPLATE / ".config/git/hooks/pre-push").read_text()
+    assert "pnpm lint" in hook.read_text()
+    assert hook.stat().st_mode & stat.S_IXUSR
 
 
 def test_hooks_carry_the_author_not_the_answered_holder(tmp_path):
