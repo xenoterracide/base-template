@@ -90,9 +90,10 @@ pnpm lint
 New scripts:
 
 - `lint:shellcheck`, all variants:
-  `shellcheck $(git ls-files '*.sh' '.envrc' ':(glob)**/git/hooks/*')` —
-  the CI shellcheck job's pathspec. Sub-second, and the binary is
-  pinned and healed.
+  `git ls-files -z -- '*.sh' '.envrc' ':(glob)**/git/hooks/*' | xargs -0 shellcheck` —
+  NUL-delimited so tracked paths with spaces reach shellcheck whole
+  (the CI shellcheck job's pathspec, hardened). Sub-second, and the
+  binary is pinned and healed.
 - `lint:maven`, java:
   `./mvnw -B -q --no-transfer-progress test-compile checkstyle:check@checkstyle-main checkstyle:check@checkstyle-test spotbugs:check@spotbugs-check`.
   The `@execution-id` forms pick up the per-execution `configLocation`s;

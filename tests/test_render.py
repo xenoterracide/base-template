@@ -927,7 +927,8 @@ def test_lint_is_the_pre_push_set(generated):
     assert "lint:reuse" not in lint
     assert "typecheck" not in lint
     assert scripts["lint:shellcheck"] == (
-        "shellcheck $(git ls-files '*.sh' '.envrc' ':(glob)**/git/hooks/*')"
+        "git ls-files -z -- '*.sh' '.envrc' ':(glob)**/git/hooks/*' |"
+        " xargs -0 shellcheck"
     )
     if answers["template_type"] == "typescript":
         assert lint == "pnpm lint:eslint && pnpm lint:prettier && pnpm lint:shellcheck"
