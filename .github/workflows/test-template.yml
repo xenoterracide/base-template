@@ -16,7 +16,7 @@ jobs:
       - uses: pnpm/action-setup@v6.1.1
       - uses: actions/setup-node@v7.1.0
         with:
-          node-version: 26.13.0
+          node-version: 26.13.1
           cache: pnpm
       - run: ./tests/install-shfmt.sh
       - run: pnpm install --frozen-lockfile
@@ -33,7 +33,7 @@ jobs:
       - uses: pnpm/action-setup@v6.1.1
       - uses: actions/setup-node@v7.1.0
         with:
-          node-version: 26.13.0
+          node-version: 26.13.1
           cache: pnpm
       # the lockfile pins the validator; Renovate bumps it under the
       # repo's release cooldown
