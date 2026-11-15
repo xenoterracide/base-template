@@ -894,6 +894,28 @@ def test_renovate_configs_pass_the_renovate_validator(generated):
     assert result.returncode == 0, f"rendered config failed validation:\n{result.stdout}\n{result.stderr}"
 
 
+def test_renovate_dashboard_rides_the_recommended_preset(generated):
+    """The pinned validator leads the hosted app's Renovate version, so
+    an explicit dependencyDashboard breaks one side of the skew: the
+    object form halts the older hosted app (#329), the boolean form
+    fails --strict on 44.235.4+. config:recommended has enabled the
+    dashboard since Renovate 26, so absence is the only setting valid
+    across the whole window — a break the schema validator cannot see,
+    because it checks against the pinned version, not the hosted app's.
+    """
+    dst, _ = generated
+    copies = {
+        "rendered": (dst / ".github/renovate.json5").read_text(),
+        "authoring": (TEMPLATE / ".github" / "renovate.json5").read_text(),
+    }
+    for label, content in copies.items():
+        # the key form at line start: the comment explaining the absence
+        # names the word too, and its // prefix keeps it inert here
+        assert not re.search(r"^\s*dependencyDashboard\s*:", content, re.MULTILINE), (
+            f"explicit dependencyDashboard breaks the version skew in the {label} copy"
+        )
+
+
 def test_lint_is_the_pre_push_set(generated):
     """lint is what pre-push runs, pinned verbatim per variant: prettier
     and shellcheck everywhere, eslint on typescript, checkstyle +
