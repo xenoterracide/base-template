@@ -20,8 +20,8 @@ under their own executing shell.
 
 ## Goals
 
-1. Every push runs `lint`: prettier everywhere, eslint on TypeScript,
-   checkstyle + spotbugs on java, shellcheck on shell files.
+1. Every push runs `lint`: prettier, shellcheck, and reuse everywhere,
+   eslint on TypeScript, checkstyle + spotbugs on java.
 2. One hook, identical in every variant. No jinja conditionals.
 3. Pre-commit stays fixers-only — its current state.
 
@@ -29,8 +29,6 @@ under their own executing shell.
 
 - No typecheck in pre-push. CI's `check` owns it; `typecheck` stays a
   script.
-- No reuse lint in pre-push. Pre-commit annotates and downloads; the
-  CI license job lints.
 - No CI changes. The scripts stay, so the github repo's `pnpm.yml`
   (`pnpm run check`) keeps working untouched.
 
@@ -79,13 +77,14 @@ pnpm lint
 
 ## The scripts
 
-`lint` becomes the pre-push set; `check` inherits it.
+`lint` becomes the pre-push set; `check` inherits it, except on
+TypeScript, which omits reuse (CI has no uv).
 
-| Variant    | `lint`                                            | `check`                                    |
-| ---------- | ------------------------------------------------- | ------------------------------------------ |
-| typescript | `lint:eslint && lint:prettier && lint:shellcheck` | `pnpm lint && pnpm typecheck && pnpm test` |
-| java       | `lint:prettier && lint:shellcheck && lint:maven`  | `pnpm lint`                                |
-| config     | `lint:prettier && lint:shellcheck`                | `pnpm lint`                                |
+| Variant    | `lint`                                                          | `check`                                                                                      |
+| ---------- | --------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| typescript | `lint:eslint && lint:prettier && lint:shellcheck && lint:reuse` | `lint:eslint && lint:prettier && lint:shellcheck && typecheck && test` (no reuse: see below) |
+| java       | `lint:prettier && lint:shellcheck && lint:maven && lint:reuse`  | `pnpm lint`                                                                                  |
+| config     | `lint:prettier && lint:shellcheck && lint:reuse`                | `pnpm lint`                                                                                  |
 
 New scripts:
 
@@ -107,9 +106,14 @@ importer that skips lint misses the finding. `.eslintcache` stays
 gitignored in the typescript render, so a manual cached run cannot
 dirty the tree.
 
-`lint:reuse` stays a script but leaves `lint`. Java consumers' CI runs
-the maven workflow only, so `lint:maven` never doubles a CI job;
-TypeScript consumers run `check`, which absorbs the new lint wholesale.
+`lint:reuse` joins `lint` as a pure check: the download stays in
+pre-commit, which seeds and stages `LICENSES`. A clean annotate does
+not prove the tree complies: a missed file, an unused license text, or
+a broken `.rej` resolve all pass annotate and fail lint. Java
+consumers' CI runs the maven workflow only, so `lint:maven` never
+doubles a CI job. TypeScript consumers run `check` in the `pnpm.yml`
+workflow, which installs no uv, so `check` runs the lint set without
+reuse, and the license job owns reuse in CI.
 
 ## Decisions
 
@@ -117,9 +121,9 @@ TypeScript consumers run `check`, which absorbs the new lint wholesale.
   runtime detection to write or test, per-project extension point.
 - tsc stays CI's, per the running-commands model: pre-push keeps the
   fast checks; the round trip buys type safety.
-- Reuse out of lint: pre-commit just annotated and downloaded, and the
-  license job lints — a pre-push re-check adds uv and network cost for
-  near-zero catch.
+- Reuse into lint: pre-commit annotates and downloads, but a missed
+  file, an unused license text, or a broken `.rej` resolve still fails
+  the license job. A local check catches those before the push.
 - Shellcheck into lint: the running-commands model names it a pre-push
   checker; it is pinned, healed, and sub-second.
 - No eslint cache: per-file entries never invalidate on dependency
@@ -136,7 +140,7 @@ TypeScript consumers run `check`, which absorbs the new lint wholesale.
 - Tests: `SHARED_FILES` and the hook lineage map gain `pre-push`;
   assert the hook renders byte-identical in every variant and contains
   `pnpm lint`; assert each variant's `lint` composition, including
-  that `lint:reuse` is absent from it.
+  that `lint:reuse` is present in it.
 - `verify.sh`: run `CI='' sh .config/git/hooks/pre-push` in the render,
   so the hook is proven green on a fresh project.
 - AGENTS.md.jinja Build-and-Test lines for the new scripts; the

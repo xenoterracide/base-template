@@ -21,8 +21,8 @@ stays dumb, and `package.json` stays the extension point.
 - lint:ruff is authoring-only. The authoring checkout is a config
   render plus its python tests, so its lint is the config set with a
   ruff segment — `pnpm lint:prettier && pnpm lint:ruff && pnpm
-lint:shellcheck`. It extends its own template the way any project
-  adds a linter: by editing scripts.
+lint:shellcheck && pnpm lint:reuse`. It extends its own template the
+  way any project adds a linter: by editing scripts.
 - Renders never require ruff. A render ships no python, and its
   uv.lock is consumer-owned — copier cannot deliver a dependency into
   it and heal syncs frozen — so a rendered lint:ruff would push every

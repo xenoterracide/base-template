@@ -17,7 +17,8 @@ SPDX-License-Identifier: CC-BY-NC-SA-4.0
     pnpm lint
 
 `git push` runs `pnpm lint` first (pre-push hook); `git push --no-verify`
-bypasses it.
+bypasses it. `lint` includes `lint:reuse`, a pure check. The pre-commit
+hook downloads and stages `LICENSES`.
 
 ## Adding template files
 

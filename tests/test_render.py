@@ -917,12 +917,13 @@ def test_renovate_dashboard_rides_the_recommended_preset(generated):
 
 
 def test_lint_is_the_pre_push_set(generated):
-    """lint is what pre-push runs, pinned verbatim per variant: prettier
-    and shellcheck everywhere, eslint on typescript, checkstyle +
-    spotbugs on java. reuse and tsc stay CI-owned, so neither belongs in
-    the hook's set. check inherits lint, adding typecheck and test on
-    typescript. Renders carry no python tooling - their locks are
-    consumer-owned, and copier cannot deliver a dependency into them."""
+    """lint is what pre-push runs, pinned verbatim per variant: prettier,
+    shellcheck, and reuse everywhere, eslint on typescript, checkstyle +
+    spotbugs on java. tsc stays CI-owned. check inherits lint, except on
+    typescript, which runs the lint set without reuse - its pnpm CI
+    workflow installs no uv. Renders carry only the python they run;
+    their locks are consumer-owned, and copier cannot deliver a
+    dependency into them."""
     dst, answers = generated
     scripts = json.loads((dst / "package.json").read_text())["scripts"]
     lint = scripts["lint"]
@@ -930,22 +931,25 @@ def test_lint_is_the_pre_push_set(generated):
     assert "pnpm lint:shellcheck" in lint
     assert "lint:ruff" not in scripts
     # documented intent, implied by the exact strings below
-    assert "lint:reuse" not in lint
+    assert "pnpm lint:reuse" in lint
     assert "typecheck" not in lint
     assert scripts["lint:shellcheck"] == (
         "git ls-files -z -- '*.sh' '.envrc' ':(glob)**/git/hooks/*' | xargs -0 shellcheck"
     )
     if answers["template_type"] == "typescript":
-        assert lint == "pnpm lint:eslint && pnpm lint:prettier && pnpm lint:shellcheck"
+        assert lint == "pnpm lint:eslint && pnpm lint:prettier && pnpm lint:shellcheck && pnpm lint:reuse"
         # no cache: entries never invalidate when imports change, and
         # type-aware rules can flag the importer - an unchanged file
         # skipping lint would miss the finding
         assert scripts["lint:eslint"] == "eslint ."
         assert ".eslintcache" in (dst / ".gitignore").read_text()
-        assert scripts["check"] == "pnpm lint && pnpm typecheck && pnpm test"
+        # check tracks lint: a linter added to lint must reach the CI set,
+        # which omits reuse because the pnpm workflow installs no uv
+        assert scripts["check"] == (lint.replace(" && pnpm lint:reuse", "") + " && pnpm typecheck && pnpm test")
+        assert "lint:reuse" not in scripts["check"]
         assert "lint:maven" not in scripts
     elif answers["template_type"] == "java":
-        assert lint == "pnpm lint:prettier && pnpm lint:shellcheck && pnpm lint:maven"
+        assert lint == "pnpm lint:prettier && pnpm lint:shellcheck && pnpm lint:maven && pnpm lint:reuse"
         assert scripts["check"] == "pnpm lint"
         assert scripts["lint:maven"] == (
             "./mvnw -B -q --no-transfer-progress test-compile"
@@ -955,12 +959,13 @@ def test_lint_is_the_pre_push_set(generated):
         )
         assert "lint:eslint" not in scripts
     else:
-        assert lint == "pnpm lint:prettier && pnpm lint:shellcheck"
+        assert lint == "pnpm lint:prettier && pnpm lint:shellcheck && pnpm lint:reuse"
         assert scripts["check"] == "pnpm lint"
         assert "lint:eslint" not in scripts
         assert "lint:maven" not in scripts
-    # reuse stays a script; the CI license job owns running it
-    assert "pnpm reuse download --all" in scripts["lint:reuse"]
+    # reuse lint lives in its own script; lint composes it. The download
+    # belongs to pre-commit, which seeds and stages LICENSES.
+    assert scripts["lint:reuse"] == "pnpm reuse lint"
 
 
 def test_authoring_lint_matches_the_config_variant(generated):
@@ -976,6 +981,7 @@ def test_authoring_lint_matches_the_config_variant(generated):
     rendered = json.loads((dst / "package.json").read_text())["scripts"]
     assert rendered["lint"] == authoring["lint"].replace("pnpm lint:ruff && ", "")
     assert authoring["lint:shellcheck"] == rendered["lint:shellcheck"]
+    assert authoring["lint:reuse"] == rendered["lint:reuse"] == "pnpm reuse lint"
     assert authoring["lint:ruff"] == (
         "uv run --frozen --group dev ruff check . && uv run --frozen --group dev ruff format --check ."
     )
