@@ -919,8 +919,9 @@ def test_renovate_dashboard_rides_the_recommended_preset(generated):
 def test_lint_is_the_pre_push_set(generated):
     """lint is what pre-push runs, pinned verbatim per variant: prettier,
     shellcheck, and reuse everywhere, eslint on typescript, checkstyle +
-    spotbugs on java. tsc stays CI-owned. check inherits lint, adding
-    typecheck and test on typescript. Renders carry no python tooling -
+    spotbugs on java. tsc stays CI-owned. check inherits lint, except on
+    typescript, which runs the lint set without reuse - its pnpm CI
+    workflow installs no uv. Renders carry only the python they run;
     their locks are consumer-owned, and copier cannot deliver a
     dependency into them."""
     dst, answers = generated
@@ -942,7 +943,11 @@ def test_lint_is_the_pre_push_set(generated):
         # skipping lint would miss the finding
         assert scripts["lint:eslint"] == "eslint ."
         assert ".eslintcache" in (dst / ".gitignore").read_text()
-        assert scripts["check"] == "pnpm lint && pnpm typecheck && pnpm test"
+        assert scripts["check"] == (
+            "pnpm lint:eslint && pnpm lint:prettier && pnpm lint:shellcheck && pnpm typecheck && pnpm test"
+        )
+        # no reuse in check: the pnpm CI workflow installs no uv
+        assert "lint:reuse" not in scripts["check"]
         assert "lint:maven" not in scripts
     elif answers["template_type"] == "java":
         assert lint == "pnpm lint:prettier && pnpm lint:shellcheck && pnpm lint:maven && pnpm lint:reuse"
@@ -977,6 +982,7 @@ def test_authoring_lint_matches_the_config_variant(generated):
     rendered = json.loads((dst / "package.json").read_text())["scripts"]
     assert rendered["lint"] == authoring["lint"].replace("pnpm lint:ruff && ", "")
     assert authoring["lint:shellcheck"] == rendered["lint:shellcheck"]
+    assert authoring["lint:reuse"] == rendered["lint:reuse"] == "pnpm reuse lint"
     assert authoring["lint:ruff"] == (
         "uv run --frozen --group dev ruff check . && uv run --frozen --group dev ruff format --check ."
     )

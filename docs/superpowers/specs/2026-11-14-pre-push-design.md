@@ -79,11 +79,11 @@ pnpm lint
 
 `lint` becomes the pre-push set; `check` inherits it.
 
-| Variant    | `lint`                                                          | `check`                                    |
-| ---------- | --------------------------------------------------------------- | ------------------------------------------ |
-| typescript | `lint:eslint && lint:prettier && lint:shellcheck && lint:reuse` | `pnpm lint && pnpm typecheck && pnpm test` |
-| java       | `lint:prettier && lint:shellcheck && lint:maven && lint:reuse`  | `pnpm lint`                                |
-| config     | `lint:prettier && lint:shellcheck && lint:reuse`                | `pnpm lint`                                |
+| Variant    | `lint`                                                          | `check`                                                                                      |
+| ---------- | --------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| typescript | `lint:eslint && lint:prettier && lint:shellcheck && lint:reuse` | `lint:eslint && lint:prettier && lint:shellcheck && typecheck && test` (no reuse: see below) |
+| java       | `lint:prettier && lint:shellcheck && lint:maven && lint:reuse`  | `pnpm lint`                                                                                  |
+| config     | `lint:prettier && lint:shellcheck && lint:reuse`                | `pnpm lint`                                                                                  |
 
 New scripts:
 
@@ -110,8 +110,9 @@ pre-commit, which seeds and stages `LICENSES`. A clean annotate does
 not prove the tree complies: a missed file, an unused license text, or
 a broken `.rej` resolve all pass annotate and fail lint. Java
 consumers' CI runs the maven workflow only, so `lint:maven` never
-doubles a CI job; TypeScript consumers run `check`, which absorbs the
-new lint wholesale.
+doubles a CI job. TypeScript consumers run `check` in the `pnpm.yml`
+workflow, which installs no uv, so `check` runs the lint set without
+reuse, and the license job owns reuse in CI.
 
 ## Decisions
 

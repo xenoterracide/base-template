@@ -24,7 +24,7 @@
     "vitest": "^4.1.3"{% endif %}
   },
   "scripts": {
-    "check": "pnpm lint{% if template_type == 'typescript' %} && pnpm typecheck && pnpm test{% endif %}",
+    "check": "{% if template_type == 'typescript' %}pnpm lint:eslint && pnpm lint:prettier && pnpm lint:shellcheck && pnpm typecheck && pnpm test{% else %}pnpm lint{% endif %}",
     "contribute": "sh .config/git/hooks/heal.sh",
     "lint:prettier": "prettier --ignore-unknown --cache --check '**'",
     "lint:reuse": "pnpm reuse lint",

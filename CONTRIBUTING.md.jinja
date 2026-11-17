@@ -17,7 +17,8 @@ SPDX-License-Identifier: CC-BY-NC-SA-4.0
     pnpm check
 
 `git push` runs `pnpm lint` first (pre-push hook); `git push --no-verify`
-bypasses it.
+bypasses it. The first commit's pre-commit hook stamps headers and seeds
+`LICENSES`; reuse checks fail before it runs.
 
 ## Updating from the template
 
