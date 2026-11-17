@@ -943,10 +943,9 @@ def test_lint_is_the_pre_push_set(generated):
         # skipping lint would miss the finding
         assert scripts["lint:eslint"] == "eslint ."
         assert ".eslintcache" in (dst / ".gitignore").read_text()
-        assert scripts["check"] == (
-            "pnpm lint:eslint && pnpm lint:prettier && pnpm lint:shellcheck && pnpm typecheck && pnpm test"
-        )
-        # no reuse in check: the pnpm CI workflow installs no uv
+        # check tracks lint: a linter added to lint must reach the CI set,
+        # which omits reuse because the pnpm workflow installs no uv
+        assert scripts["check"] == (lint.replace(" && pnpm lint:reuse", "") + " && pnpm typecheck && pnpm test")
         assert "lint:reuse" not in scripts["check"]
         assert "lint:maven" not in scripts
     elif answers["template_type"] == "java":

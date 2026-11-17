@@ -77,7 +77,8 @@ pnpm lint
 
 ## The scripts
 
-`lint` becomes the pre-push set; `check` inherits it.
+`lint` becomes the pre-push set; `check` inherits it, except on
+TypeScript, which omits reuse (CI has no uv).
 
 | Variant    | `lint`                                                          | `check`                                                                                      |
 | ---------- | --------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
