@@ -24,7 +24,7 @@ before it runs.
 
 ## Updating from the template
 
-    uv run --group dev copier update --trust
+    uvx copier update --trust
 
 Conflicts appear as `.rej` files; resolve and commit.
 
