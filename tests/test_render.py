@@ -1005,6 +1005,8 @@ def test_lint_is_the_pre_push_set(generated):
             "./mvnw -B -q --no-transfer-progress test-compile"
             " checkstyle:check@checkstyle-main"
             " checkstyle:check@checkstyle-test"
+            " checkstyle:check@checkstyle-testFixtures"
+            " checkstyle:check@checkstyle-testIntegration"
             " spotbugs:check@spotbugs-check"
         )
         assert "lint:eslint" not in scripts
