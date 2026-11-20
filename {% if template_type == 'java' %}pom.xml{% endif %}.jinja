@@ -32,6 +32,7 @@ SPDX-License-Identifier: CC0-1.0
     <maven-compiler-plugin.version>3.16.0</maven-compiler-plugin.version>
     <maven-surefire-plugin.version>3.6.0</maven-surefire-plugin.version>
     <maven-failsafe-plugin.version>3.6.0</maven-failsafe-plugin.version>
+    <build-helper-maven-plugin.version>3.8.0</build-helper-maven-plugin.version>
     <maven-checkstyle-plugin.version>3.6.0</maven-checkstyle-plugin.version>
     <checkstyle.version>14.4.0</checkstyle.version>
     <spotbugs-maven-plugin.version>4.10.4.1</spotbugs-maven-plugin.version>
@@ -146,6 +147,11 @@ SPDX-License-Identifier: CC0-1.0
           </configuration>
         </plugin>
         <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>build-helper-maven-plugin</artifactId>
+          <version>${build-helper-maven-plugin.version}</version>
+        </plugin>
+        <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-checkstyle-plugin</artifactId>
           <version>${maven-checkstyle-plugin.version}</version>
@@ -211,6 +217,36 @@ SPDX-License-Identifier: CC0-1.0
       </plugins>
     </pluginManagement>
     <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>add-test-fixtures</id>
+            <phase>generate-test-sources</phase>
+            <goals>
+              <goal>add-test-source</goal>
+            </goals>
+            <configuration>
+              <sources>
+                <source>src/testFixtures/java</source>
+              </sources>
+            </configuration>
+          </execution>
+          <execution>
+            <id>add-integration-test-sources</id>
+            <phase>generate-test-sources</phase>
+            <goals>
+              <goal>add-test-source</goal>
+            </goals>
+            <configuration>
+              <sources>
+                <source>src/testIntegration/java</source>
+              </sources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
       <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
@@ -283,6 +319,32 @@ SPDX-License-Identifier: CC0-1.0
               <configLocation>${maven.multiModuleProjectDirectory}/.config/checkstyle/test.xml</configLocation>
               <sourceDirectories>
                 <sourceDirectory>${project.basedir}/src/test/java</sourceDirectory>
+              </sourceDirectories>
+            </configuration>
+          </execution>
+          <execution>
+            <id>checkstyle-testFixtures</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>check</goal>
+            </goals>
+            <configuration>
+              <configLocation>${maven.multiModuleProjectDirectory}/.config/checkstyle/testFixtures.xml</configLocation>
+              <sourceDirectories>
+                <sourceDirectory>${project.basedir}/src/testFixtures/java</sourceDirectory>
+              </sourceDirectories>
+            </configuration>
+          </execution>
+          <execution>
+            <id>checkstyle-testIntegration</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>check</goal>
+            </goals>
+            <configuration>
+              <configLocation>${maven.multiModuleProjectDirectory}/.config/checkstyle/testIntegration.xml</configLocation>
+              <sourceDirectories>
+                <sourceDirectory>${project.basedir}/src/testIntegration/java</sourceDirectory>
               </sourceDirectories>
             </configuration>
           </execution>
