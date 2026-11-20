@@ -241,6 +241,8 @@ def test_java_layout(generated):
         ".mvn/jvm.config",
         ".config/checkstyle/main.xml",
         ".config/checkstyle/test.xml",
+        ".config/checkstyle/testFixtures.xml",
+        ".config/checkstyle/testIntegration.xml",
         ".config/spotbugs/exclude.xml",
         "module/sample/pom.xml",
         "module/sample/src/main/java/module-info.java",
@@ -252,6 +254,54 @@ def test_java_layout(generated):
     assert not (dst / "packages").exists()
     # every render carries the pnpm hardening; java is not a workspace
     assert "packages:" not in (dst / "pnpm-workspace.yaml").read_text()
+
+
+def test_java_extra_source_roots_are_wired(generated):
+    """Every extra source root gets a config and a compile-time wiring."""
+    dst, answers = generated
+    if answers["template_type"] != "java":
+        pytest.skip()
+    ns = "{http://maven.apache.org/POM/4.0.0}"
+    root = ET.parse(dst / "pom.xml").getroot()
+
+    def plugins(path):
+        qualified = "/".join(f"{ns}{part}" for part in path.split("/"))
+        node = root.find(qualified)
+        return {p.findtext(f"{ns}artifactId"): p for p in node.findall(f"{ns}plugin")}
+
+    def executions(plugin):
+        return {e.findtext(f"{ns}id"): e for e in plugin.findall(f"{ns}executions/{ns}execution")}
+
+    build = plugins("build/plugins")
+    helpers = executions(build["build-helper-maven-plugin"])
+    expected_helpers = {
+        "add-test-fixtures": "src/testFixtures/java",
+        "add-integration-test-sources": "src/testIntegration/java",
+    }
+    assert set(helpers) == set(expected_helpers)
+    for name, source in expected_helpers.items():
+        execution = helpers[name]
+        assert execution.findtext(f"{ns}phase") == "generate-test-sources"
+        assert execution.findtext(f"{ns}goals/{ns}goal") == "add-test-source"
+        sources = execution.findall(f"{ns}configuration/{ns}sources/{ns}source")
+        assert [s.text for s in sources] == [source]
+
+    checkstyles = executions(build["maven-checkstyle-plugin"])
+    expected_checkstyles = {
+        "checkstyle-main": ("main.xml", "src/main/java"),
+        "checkstyle-test": ("test.xml", "src/test/java"),
+        "checkstyle-testFixtures": ("testFixtures.xml", "src/testFixtures/java"),
+        "checkstyle-testIntegration": ("testIntegration.xml", "src/testIntegration/java"),
+    }
+    assert set(checkstyles) == set(expected_checkstyles)
+    for name, (config, source) in expected_checkstyles.items():
+        execution = checkstyles[name]
+        assert execution.findtext(f"{ns}phase") == "verify"
+        assert execution.findtext(f"{ns}goals/{ns}goal") == "check"
+        location = execution.findtext(f"{ns}configuration/{ns}configLocation")
+        assert location.endswith(f"/.config/checkstyle/{config}")
+        directory = execution.findtext(f"{ns}configuration/{ns}sourceDirectories/{ns}sourceDirectory")
+        assert directory == "${project.basedir}/" + source
 
 
 def test_checkstyle_carries_the_family_maxima(generated):
@@ -955,6 +1005,8 @@ def test_lint_is_the_pre_push_set(generated):
             "./mvnw -B -q --no-transfer-progress test-compile"
             " checkstyle:check@checkstyle-main"
             " checkstyle:check@checkstyle-test"
+            " checkstyle:check@checkstyle-testFixtures"
+            " checkstyle:check@checkstyle-testIntegration"
             " spotbugs:check@spotbugs-check"
         )
         assert "lint:eslint" not in scripts
