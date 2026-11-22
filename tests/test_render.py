@@ -1103,8 +1103,9 @@ def test_lint_is_the_pre_push_set(generated):
     elif answers["template_type"] == "java":
         assert lint == "pnpm lint:prettier && pnpm lint:shellcheck && pnpm lint:maven && pnpm lint:reuse"
         assert scripts["check"] == "pnpm lint"
+        # package attaches the fixture jar before consumer test-compile
         assert scripts["lint:maven"] == (
-            "./mvnw -B -q --no-transfer-progress test-compile"
+            "./mvnw -B -q --no-transfer-progress package"
             " checkstyle:check@checkstyle-main"
             " checkstyle:check@checkstyle-test"
             " checkstyle:check@checkstyle-testFixtures"

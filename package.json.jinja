@@ -36,7 +36,7 @@
     "lint": "pnpm lint:eslint && pnpm lint:prettier && pnpm lint:shellcheck && pnpm lint:reuse",
     "typecheck": "tsc --noEmit -p tsconfig.eslint.json",
     "test": "vitest run --coverage"{% elif template_type == 'java' %},
-    "lint:maven": "./mvnw -B -q --no-transfer-progress test-compile checkstyle:check@checkstyle-main checkstyle:check@checkstyle-test checkstyle:check@checkstyle-testFixtures checkstyle:check@checkstyle-testIntegration spotbugs:check@spotbugs-check",
+    "lint:maven": "./mvnw -B -q --no-transfer-progress package checkstyle:check@checkstyle-main checkstyle:check@checkstyle-test checkstyle:check@checkstyle-testFixtures checkstyle:check@checkstyle-testIntegration spotbugs:check@spotbugs-check",
     "lint": "pnpm lint:prettier && pnpm lint:shellcheck && pnpm lint:maven && pnpm lint:reuse"{% else %},
     "lint": "pnpm lint:prettier && pnpm lint:shellcheck && pnpm lint:reuse"{% endif %}
   }
