@@ -360,6 +360,54 @@ def test_java_failsafe_runs_integration_tests(generated):
     assert set(helpers) == {"add-test-fixtures"}
 
 
+def test_java_publishes_test_fixtures(generated):
+    """Fixtures compile once and are attached as a classified jar."""
+    dst, answers = generated
+    if answers["template_type"] != "java":
+        pytest.skip()
+    ns = "{http://maven.apache.org/POM/4.0.0}"
+    root = ET.parse(dst / "pom.xml").getroot()
+
+    def plugins(path):
+        qualified = "/".join(f"{ns}{part}" for part in path.split("/"))
+        node = root.find(qualified)
+        return {p.findtext(f"{ns}artifactId"): p for p in node.findall(f"{ns}plugin")}
+
+    def executions(plugin):
+        return {e.findtext(f"{ns}id"): e for e in plugin.findall(f"{ns}executions/{ns}execution")}
+
+    jar = executions(plugins("build/pluginManagement/plugins")["maven-jar-plugin"])["test-fixtures-jar"]
+    assert jar.findtext(f"{ns}phase") == "package"
+    assert [g.text for g in jar.findall(f"{ns}goals/{ns}goal")] == ["jar"]
+    assert jar.findtext(f"{ns}configuration/{ns}classifier") == "test-fixtures"
+    assert jar.findtext(f"{ns}configuration/{ns}classesDirectory") == (
+        "${project.build.directory}/test-fixtures-classes"
+    )
+
+    fixture = executions(plugins("build/plugins")["maven-compiler-plugin"])["test-fixtures-compile"]
+    assert fixture.findtext(f"{ns}phase") == "generate-test-sources"
+    assert fixture.findtext(f"{ns}goals/{ns}goal") == "testCompile"
+    assert fixture.findtext(f"{ns}configuration/{ns}outputDirectory") == (
+        "${project.build.directory}/test-fixtures-classes"
+    )
+    assert fixture.findtext(f"{ns}configuration/{ns}generatedTestSourcesDirectory") == (
+        "${project.build.directory}/generated-test-sources/test-fixtures-annotations"
+    )
+    roots = fixture.findall(f"{ns}configuration/{ns}compileSourceRoots/{ns}compileSourceRoot")
+    assert [r.text for r in roots] == ["${project.basedir}/src/testFixtures/java"]
+
+    compiler_plugin = plugins("build/pluginManagement/plugins")["maven-compiler-plugin"]
+    args = [a.text for a in compiler_plugin.findall(f"{ns}configuration/{ns}compilerArgs/{ns}arg")]
+    assert any("NullAway:OFF" in a for a in args)
+    main = next(
+        e
+        for e in compiler_plugin.findall(f"{ns}executions/{ns}execution")
+        if e.findtext(f"{ns}id") == "default-compile"
+    )
+    main_args = [a.text for a in main.findall(f"{ns}configuration/{ns}compilerArgs/{ns}arg")]
+    assert any("JSpecifyMode=true" in a for a in main_args)
+
+
 def test_checkstyle_carries_the_family_maxima(generated):
     """The family's established values; a render flattened them once
     (semver adoption, 2026-11)."""
