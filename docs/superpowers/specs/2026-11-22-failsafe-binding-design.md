@@ -41,14 +41,13 @@ Selection:
 ## Decisions
 
 - Keep Failsafe's version and `useModulePath=true` in `pluginManagement`.
-- Add Failsafe to parent `<build><plugins>` with execution id `testIntegration`,
-  goals `integration-test` then `verify`. The id keeps Gradle's `test*` grouping
-  where Maven can hold it.
+- Add Failsafe to parent `<build><plugins>` with execution id `test-integration`,
+  goals `integration-test` then `verify`. The `test` prefix survives.
 - Leave the skeleton module's Failsafe declaration. Parent configuration merges
   into it. Add no Copier answers.
 - Drop build-helper's `add-integration-test-sources` execution. Keep
   `add-test-fixtures`.
-- Add a `maven-compiler-plugin` execution `testIntegration-compile` at
+- Add a `maven-compiler-plugin` execution `test-integration-compile` at
   `test-compile`. Set `compileSourceRoots` to
   `${project.basedir}/src/testIntegration/java` and `outputDirectory` to
   `${project.build.directory}/integration-test-classes`. Give it its own
@@ -86,7 +85,7 @@ Four Gradle suite names do not map to four Maven runners. Split them by axis.
   runner.
 
 Maven can add suites as executions with includes or JUnit `<groups>`. Keep the
-`testIntegration` execution named so a second Failsafe execution has a home.
+`test-integration` execution named so a second Failsafe execution has a home.
 Selection comes from the compiled directory, not from a suffix. Maven cannot
 reproduce Gradle's top-level task tree. Execution ids, source directories, and
 wrapper scripts are the closest it gets.
