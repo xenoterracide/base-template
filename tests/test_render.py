@@ -274,16 +274,13 @@ def test_java_extra_source_roots_are_wired(generated):
 
     build = plugins("build/plugins")
     helpers = executions(build["build-helper-maven-plugin"])
-    expected_helpers = {
-        "add-test-fixtures": "src/testFixtures/java",
-    }
-    assert set(helpers) == set(expected_helpers)
-    for name, source in expected_helpers.items():
-        execution = helpers[name]
-        assert execution.findtext(f"{ns}phase") == "generate-test-sources"
-        assert execution.findtext(f"{ns}goals/{ns}goal") == "add-test-source"
-        sources = execution.findall(f"{ns}configuration/{ns}sources/{ns}source")
-        assert [s.text for s in sources] == [source]
+    assert set(helpers) == {"stage-test-fixtures"}
+    staged = helpers["stage-test-fixtures"]
+    assert staged.findtext(f"{ns}phase") == "generate-test-resources"
+    assert staged.findtext(f"{ns}goals/{ns}goal") == "add-test-resource"
+    resource = staged.find(f"{ns}configuration/{ns}resources/{ns}resource")
+    assert resource.findtext(f"{ns}directory") == "${project.build.directory}/test-fixtures-classes"
+    assert [e.text for e in resource.findall(f"{ns}excludes/{ns}exclude")] == ["**/module-info.class"]
 
     checkstyles = executions(build["maven-checkstyle-plugin"])
     expected_checkstyles = {
@@ -324,7 +321,7 @@ def test_java_failsafe_runs_integration_tests(generated):
     assert managed.findtext(f"{ns}testClassesDirectory") == "${project.build.directory}/integration-test-classes"
     assert [i.text for i in managed.findall(f"{ns}includes/{ns}include")] == ["**/*Test.java", "**/*IT.java"]
     classpath = [c.text for c in managed.findall(f"{ns}additionalClasspathElements/{ns}additionalClasspathElement")]
-    assert classpath == ["${project.build.testOutputDirectory}"]
+    assert classpath == ["${project.build.directory}/test-fixtures-classes"]
 
     failsafe = executions(plugins("build/plugins")["maven-failsafe-plugin"])
     assert set(failsafe) == {"test-integration"}
@@ -357,7 +354,7 @@ def test_java_failsafe_runs_integration_tests(generated):
     assert any("JSpecifyMode=true" in a for a in main_args)
 
     helpers = executions(plugins("build/plugins")["build-helper-maven-plugin"])
-    assert set(helpers) == {"add-test-fixtures"}
+    assert set(helpers) == {"stage-test-fixtures"}
 
 
 def test_java_publishes_test_fixtures(generated):
@@ -406,6 +403,7 @@ def test_java_publishes_test_fixtures(generated):
     )
     main_args = [a.text for a in main.findall(f"{ns}configuration/{ns}compilerArgs/{ns}arg")]
     assert any("JSpecifyMode=true" in a for a in main_args)
+    assert "<classifier>test-fixtures</classifier>" in (dst / "README.md").read_text()
 
 
 def test_checkstyle_carries_the_family_maxima(generated):

@@ -26,6 +26,10 @@ Unit tests live in `src/test/java`; integration tests live in
 `src/testIntegration/java`. Both use `*Test` names. Failsafe runs the
 integration tests during `verify`.
 
+Fixture classes are published with the `test-fixtures` classifier. A module
+that uses another module's fixtures declares `<classifier>test-fixtures</classifier>`
+with `test` scope.
+
 This project is managed with [copier](https://copier.readthedocs.io). To
 refresh from the template:
 

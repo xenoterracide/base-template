@@ -169,7 +169,7 @@ SPDX-License-Identifier: CC0-1.0
               <include>**/*IT.java</include>
             </includes>
             <additionalClasspathElements>
-              <additionalClasspathElement>${project.build.testOutputDirectory}</additionalClasspathElement>
+              <additionalClasspathElement>${project.build.directory}/test-fixtures-classes</additionalClasspathElement>
             </additionalClasspathElements>
           </configuration>
         </plugin>
@@ -249,15 +249,20 @@ SPDX-License-Identifier: CC0-1.0
         <artifactId>build-helper-maven-plugin</artifactId>
         <executions>
           <execution>
-            <id>add-test-fixtures</id>
-            <phase>generate-test-sources</phase>
+            <id>stage-test-fixtures</id>
+            <phase>generate-test-resources</phase>
             <goals>
-              <goal>add-test-source</goal>
+              <goal>add-test-resource</goal>
             </goals>
             <configuration>
-              <sources>
-                <source>src/testFixtures/java</source>
-              </sources>
+              <resources>
+                <resource>
+                  <directory>${project.build.directory}/test-fixtures-classes</directory>
+                  <excludes>
+                    <exclude>**/module-info.class</exclude>
+                  </excludes>
+                </resource>
+              </resources>
             </configuration>
           </execution>
         </executions>
