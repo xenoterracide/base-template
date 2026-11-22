@@ -323,6 +323,8 @@ def test_java_failsafe_runs_integration_tests(generated):
     assert managed.findtext(f"{ns}useModulePath") == "true"
     assert managed.findtext(f"{ns}testClassesDirectory") == "${project.build.directory}/integration-test-classes"
     assert [i.text for i in managed.findall(f"{ns}includes/{ns}include")] == ["**/*Test.java", "**/*IT.java"]
+    classpath = [c.text for c in managed.findall(f"{ns}additionalClasspathElements/{ns}additionalClasspathElement")]
+    assert classpath == ["${project.build.testOutputDirectory}"]
 
     failsafe = executions(plugins("build/plugins")["maven-failsafe-plugin"])
     assert set(failsafe) == {"test-integration"}
