@@ -91,8 +91,8 @@ reproduce Gradle's top-level task tree. Execution ids, source directories, and
 wrapper scripts are the closest it gets.
 
 This change does not decide whitebox/blackbox module layout. That needs its own
-design. Take no shortcut here that closes the door: no classpath fallback, no
-merged test output, no anonymous executions.
+design. Take no shortcut here that closes the door: no `useModulePath=false`,
+no merged test output, no anonymous executions.
 
 ## Non-goals
 
