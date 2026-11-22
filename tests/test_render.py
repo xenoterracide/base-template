@@ -276,7 +276,6 @@ def test_java_extra_source_roots_are_wired(generated):
     helpers = executions(build["build-helper-maven-plugin"])
     expected_helpers = {
         "add-test-fixtures": "src/testFixtures/java",
-        "add-integration-test-sources": "src/testIntegration/java",
     }
     assert set(helpers) == set(expected_helpers)
     for name, source in expected_helpers.items():
@@ -302,6 +301,61 @@ def test_java_extra_source_roots_are_wired(generated):
         assert location.endswith(f"/.config/checkstyle/{config}")
         directory = execution.findtext(f"{ns}configuration/{ns}sourceDirectories/{ns}sourceDirectory")
         assert directory == "${project.basedir}/" + source
+
+
+def test_java_failsafe_runs_integration_tests(generated):
+    """Integration tests share the *Test name and get their own output."""
+    dst, answers = generated
+    if answers["template_type"] != "java":
+        pytest.skip()
+    ns = "{http://maven.apache.org/POM/4.0.0}"
+    root = ET.parse(dst / "pom.xml").getroot()
+
+    def plugins(path):
+        qualified = "/".join(f"{ns}{part}" for part in path.split("/"))
+        node = root.find(qualified)
+        return {p.findtext(f"{ns}artifactId"): p for p in node.findall(f"{ns}plugin")}
+
+    def executions(plugin):
+        return {e.findtext(f"{ns}id"): e for e in plugin.findall(f"{ns}executions/{ns}execution")}
+
+    managed = plugins("build/pluginManagement/plugins")["maven-failsafe-plugin"].find(f"{ns}configuration")
+    assert managed.findtext(f"{ns}useModulePath") == "true"
+    assert managed.findtext(f"{ns}testClassesDirectory") == "${project.build.directory}/integration-test-classes"
+    assert [i.text for i in managed.findall(f"{ns}includes/{ns}include")] == ["**/*Test.java", "**/*IT.java"]
+
+    failsafe = executions(plugins("build/plugins")["maven-failsafe-plugin"])
+    assert set(failsafe) == {"test-integration"}
+    assert [g.text for g in failsafe["test-integration"].findall(f"{ns}goals/{ns}goal")] == [
+        "integration-test",
+        "verify",
+    ]
+
+    compiler = executions(plugins("build/plugins")["maven-compiler-plugin"])
+    it = compiler["test-integration-compile"]
+    assert it.findtext(f"{ns}phase") == "test-compile"
+    assert it.findtext(f"{ns}goals/{ns}goal") == "testCompile"
+    assert it.findtext(f"{ns}configuration/{ns}outputDirectory") == (
+        "${project.build.directory}/integration-test-classes"
+    )
+    assert it.findtext(f"{ns}configuration/{ns}generatedTestSourcesDirectory") == (
+        "${project.build.directory}/generated-test-sources/test-integration-annotations"
+    )
+    roots = it.findall(f"{ns}configuration/{ns}compileSourceRoots/{ns}compileSourceRoot")
+    assert [r.text for r in roots] == ["${project.basedir}/src/testIntegration/java"]
+    assert it.findtext(f"{ns}configuration/{ns}useModulePath") is None
+
+    compiler_plugin = plugins("build/pluginManagement/plugins")["maven-compiler-plugin"]
+    args = [a.text for a in compiler_plugin.findall(f"{ns}configuration/{ns}compilerArgs/{ns}arg")]
+    assert any("NullAway:OFF" in a for a in args)
+    main_args = []
+    for execution in compiler_plugin.findall(f"{ns}executions/{ns}execution"):
+        if execution.findtext(f"{ns}id") == "default-compile":
+            main_args = [a.text for a in execution.findall(f"{ns}configuration/{ns}compilerArgs/{ns}arg")]
+    assert any("JSpecifyMode=true" in a for a in main_args)
+
+    helpers = executions(plugins("build/plugins")["build-helper-maven-plugin"])
+    assert set(helpers) == {"add-test-fixtures"}
 
 
 def test_checkstyle_carries_the_family_maxima(generated):
