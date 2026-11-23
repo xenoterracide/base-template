@@ -63,5 +63,6 @@ kinds, and the moved contributor content.
 Render all three variants and both artifact kinds. Assert purpose, use,
 install coordinates, license, copyright, and both development links in each
 README. Assert Use precedes Install. Assert no bootstrap, Renovate, Copier, or
-workflow text in the README. Assert that text in `CONTRIBUTING.md`. Render with
-the new answers omitted to prove the defaults that hosted Copier updates use.
+workflow text in the README. Assert that text in `CONTRIBUTING.md`. Simulate a
+hosted update from a template without the new answers. Use `skip_answered` and
+`defaults`, then assert the new answers land with direction-free prose.

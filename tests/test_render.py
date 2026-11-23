@@ -135,7 +135,7 @@ def test_readme_answers_have_defaults(tmp_path, variant):
     expected = {
         "java": (
             "Sample is a Java project.",
-            "Add the dependency below to your build, then call its public API.",
+            "Add the library to your build, then call its public API.",
             'implementation("com.example:sample:0.0.0")',
         ),
         "typescript": (

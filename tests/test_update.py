@@ -47,11 +47,11 @@ def template_repo(tmp_path):
     return tpl
 
 
-def render(tpl, dst):
+def render(tpl, dst, answers=JAVA_ANSWERS):
     copier.run_copy(
         src_path=str(tpl),
         dst_path=str(dst),
-        data=JAVA_ANSWERS,
+        data=answers,
         defaults=True,
         unsafe=True,
         quiet=True,
@@ -114,6 +114,49 @@ def test_fresh_copy_seeds_current_authoring_pins(template_repo, tmp_path):
     authoring.write_text(re.sub(r"nodejs \S+", "nodejs 99.0.0", authoring.read_text()))
     proj = render(template_repo, tmp_path / "proj")
     assert "nodejs 99.0.0" in (proj / ".tool-versions").read_text()
+
+
+def test_update_seeds_new_readme_answers_without_prompting(template_repo, tmp_path):
+    """Hosted updates accept new answers from defaults, then keep them."""
+    new_keys = ("project_purpose", "project_usage", "project_kind", "docs_license", "docs_license_url")
+    old_settings = yaml.safe_load((template_repo / "copier.yml").read_text())
+    for key in new_keys:
+        old_settings.pop(key, None)
+    (template_repo / "copier.yml").write_text(yaml.safe_dump(old_settings, sort_keys=False))
+    (template_repo / "README.md.jinja").write_text(
+        "<!--\nSPDX-License-Identifier: CC0-1.0\n-->\n\n# {{ project_title }}\n"
+    )
+    git("add", "-A", cwd=template_repo)
+    git("commit", "-qm", "template before README answers", cwd=template_repo)
+
+    old_answers = {key: value for key, value in JAVA_ANSWERS.items() if key not in new_keys}
+    proj = render(template_repo, tmp_path / "proj", old_answers)
+    answers_file = proj / ".copier-answers.yml"
+    assert "project_usage:" not in answers_file.read_text()
+
+    for name in ("copier.yml", "README.md.jinja"):
+        shutil.copy2(TEMPLATE / name, template_repo / name)
+    git("add", "-A", cwd=template_repo)
+    git("commit", "-qm", "template with README answers", cwd=template_repo)
+
+    copier.run_update(
+        dst_path=str(proj),
+        defaults=True,
+        unsafe=True,
+        quiet=True,
+        skip_tasks=True,
+        skip_answered=True,
+        overwrite=True,
+    )
+
+    text = answers_file.read_text()
+    assert "project_purpose:" in text
+    assert "project_usage: Add the library to your build, then call its public API." in text
+    assert "project_kind: library" in text
+    readme = (proj / "README.md").read_text()
+    assert "Add the library to your build, then call its public API." in readme
+    assert "above" not in readme
+    assert "below" not in readme
 
 
 def test_render_excludes_editor_junk(template_repo, tmp_path):
