@@ -83,6 +83,23 @@ def test_no_opencode_artifacts(generated):
     assert not [p for p in dst.rglob("*") if "opencode" in p.name.lower()]
 
 
+def test_superpowers_plans_are_not_tracked():
+    tracked = subprocess.run(
+        ["git", "ls-files", "docs/superpowers/plans"],
+        cwd=TEMPLATE,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.split()
+    assert tracked == []
+
+
+def test_superpowers_plans_are_ignored(generated):
+    dst, _ = generated
+    for path in (TEMPLATE / ".gitignore", dst / ".gitignore"):
+        assert "docs/superpowers/plans/" in path.read_text().splitlines()
+
+
 def test_shared_files_present(generated):
     dst, _ = generated
     for rel in SHARED_FILES:
