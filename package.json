@@ -1,6 +1,6 @@
 {
   "name": "@xenoterracide/share",
-  "packageManager": "pnpm@12.21.0",
+  "packageManager": "pnpm@12.22.0",
   "private": true,
   "license": "MIT",
   "devDependencies": {
