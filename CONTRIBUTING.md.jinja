@@ -12,6 +12,23 @@ SPDX-License-Identifier: CC-BY-NC-SA-4.0
     cd <project>
     npm run contribute
 
+`npm run contribute` installs tools and dependencies. It heals the toolchain
+through `.config/git/hooks/heal.sh`. Node 25+ drops corepack, so bootstrap
+starts from npm. With direnv, run `direnv allow` to load the environment.
+{%- if template_type == 'typescript' %}
+
+For TypeScript projects, stage the workflows:
+
+    cp -r staged/.github/workflows .github/workflows
+    git add .github/workflows
+{%- endif %}
+{%- if template_type == 'java' %}
+
+Verify the full Java build:
+
+    ./mvnw -q verify
+{%- endif %}
+
 ## Linting and testing
 
     pnpm check
@@ -26,7 +43,10 @@ before it runs.
 
     uvx copier update --trust
 
-Conflicts appear as `.rej` files; resolve and commit.
+Renovate opens an update PR whenever
+[base-template](https://github.com/xenoterracide/base-template) tags a release.
+Merge it like any other dependency update. Conflicts appear as `.rej` files;
+resolve and commit.
 
 ## License headers
 

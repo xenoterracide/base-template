@@ -54,6 +54,8 @@ def test_copier_answers(generated):
     text = (dst / ".copier-answers.yml").read_text()
     assert "_src_path:" in text
     assert "_commit:" in text
+    assert "project_purpose:" in text
+    assert "project_usage:" in text
     # the answers file carries its header from the template, so copier
     # updates never strip the consumer's coverage; the tag is split so
     # reuse cannot read this source as an SPDX expression
@@ -79,6 +81,63 @@ def test_shared_files_present(generated):
     dst, _ = generated
     for rel in SHARED_FILES:
         assert (dst / rel).exists(), f"missing shared file: {rel}"
+
+
+def test_readme_serves_project_readers(generated):
+    dst, answers = generated
+    readme = (dst / "README.md").read_text()
+    assert "# Sample" in readme
+    assert answers["project_purpose"] in readme
+    assert answers["project_usage"] in readme
+    assert "## Install" in readme
+    assert "## Use" in readme
+    assert "[CONTRIBUTING.md](CONTRIBUTING.md)" in readme
+    assert "[AGENTS.md](AGENTS.md)" in readme
+    assert answers["license"] in readme
+    assert "](https://www.gnu.org/licenses/gpl-3.0.txt)" in readme
+    assert "Copyright © 2015-2026 Caleb Cushing" in readme
+    assert "[LICENSES](LICENSES)" in readme
+    for text in (
+        "npm run contribute",
+        "direnv allow",
+        "staged/.github/workflows",
+        "./mvnw -q verify",
+        "uvx copier update",
+        "Renovate",
+        "src/testIntegration/java",
+        "test-fixtures",
+    ):
+        assert text not in readme, f"contributor detail in README: {text}"
+    if answers["template_type"] == "java":
+        assert "<groupId>com.example</groupId>" in readme
+        assert "<artifactId>sample</artifactId>" in readme
+        assert "<version>0.0.0</version>" in readme
+    elif answers["template_type"] == "typescript":
+        assert "pnpm add @example/sample" in readme
+    else:
+        assert "Copy the configuration files you need into your project." in readme
+
+
+def test_readme_answers_have_defaults(tmp_path):
+    answers = {
+        key: value for key, value in ANSWERS["config"].items() if key not in ("project_purpose", "project_usage")
+    }
+    readme = (copy_template(tmp_path, answers) / "README.md").read_text()
+    assert "Sample is a config project." in readme
+    assert "Copy the configuration files into your project and adjust the values." in readme
+
+
+def test_contributing_carries_contributor_work(generated):
+    dst, answers = generated
+    text = (dst / "CONTRIBUTING.md").read_text()
+    assert "npm run contribute" in text
+    assert "direnv allow" in text
+    assert "uvx copier update --trust" in text
+    assert "Renovate opens an update PR" in text
+    if answers["template_type"] == "typescript":
+        assert "staged/.github/workflows" in text
+    elif answers["template_type"] == "java":
+        assert "./mvnw -q verify" in text
 
 
 def test_old_hooks_absent(generated):
@@ -403,7 +462,6 @@ def test_java_publishes_test_fixtures(generated):
     )
     main_args = [a.text for a in main.findall(f"{ns}configuration/{ns}compilerArgs/{ns}arg")]
     assert any("JSpecifyMode=true" in a for a in main_args)
-    assert "<classifier>test-fixtures</classifier>" in (dst / "README.md").read_text()
 
 
 def test_checkstyle_carries_the_family_maxima(generated):

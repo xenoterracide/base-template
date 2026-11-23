@@ -70,6 +70,25 @@ project_title:
   default: "{{ project_name }}"
   help: Human-readable name for README/AGENTS
 
+project_purpose:
+  type: str
+  multiline: true
+  default: "{{ project_title }} is a {{ template_type }} project."
+  help: Why does this project exist? This text opens the README.
+
+project_usage:
+  type: str
+  multiline: true
+  default: >-
+    {%- if template_type == 'java' -%}
+    Add the dependency above to a Maven build, then call its public API.
+    {%- elif template_type == 'typescript' -%}
+    Import the package, then call its exported API.
+    {%- else -%}
+    Copy the configuration files into your project and adjust the values.
+    {%- endif -%}
+  help: How do people use this project? This text appears under Use in the README.
+
 npm_scope:
   type: str
   default: ""

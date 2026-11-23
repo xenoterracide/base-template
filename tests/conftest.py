@@ -13,6 +13,8 @@ TEMPLATE = Path(__file__).resolve().parent.parent
 COMMON = {
     "project_name": "sample",
     "project_title": "Sample",
+    "project_purpose": "Sample proves the template renders a useful README.",
+    "project_usage": "Read the source, then call the exported API.",
     "license": "GPL-3.0-or-later",
 }
 

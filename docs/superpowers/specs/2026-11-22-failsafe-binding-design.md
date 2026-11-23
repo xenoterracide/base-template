@@ -135,7 +135,8 @@ no merged test output, no anonymous executions.
 ## Non-goals
 
 - Whitebox and blackbox source sets.
-- A new Copier question or profile.
+- New Copier questions for this binding. The README redesign adds two prose
+  answers on 2026-11-23. No Maven profile.
 - Changing Checkstyle, SpotBugs, or JaCoCo wiring.
 - Migrating or renaming semver's ITs.
 
