@@ -13,23 +13,24 @@ authoring checkout and template source. Every shared file serves both.
 
 Read these files instead of trusting a copy of their contents here.
 
-| For                            | See                                |
-| ------------------------------ | ---------------------------------- |
-| Install, update, usage         | `README.md`                        |
-| Tool versions                  | `.tool-versions`                   |
-| pnpm version                   | `packageManager` in `package.json` |
-| Node dev dependencies          | `package.json`, `pnpm-lock.yaml`   |
-| pnpm settings, build rulings   | `pnpm-workspace.yaml`              |
-| Python dependencies            | `pyproject.toml`, `uv.lock`        |
-| Formatting rules               | `.editorconfig`, `.prettierrc.yml` |
-| Conventional commit types      | `git-conventional-commits.yaml`    |
-| Pre-commit rules               | `.lintstagedrc.cjs`                |
-| License headers                | `REUSE.toml`, `.lintstagedrc.cjs`  |
-| Git hooks                      | `.config/git/hooks`                |
-| Template questions and answers | `copier.yml`                       |
-| Design decisions               | `docs/superpowers/specs/`          |
-| CI workflows                   | `.github/workflows/`               |
-| Renovate config                | `.github/renovate.json5`           |
+| For                            | See                                          |
+| ------------------------------ | -------------------------------------------- |
+| Install, update, usage         | `README.md`                                  |
+| Tool versions                  | `.tool-versions`                             |
+| pnpm version                   | `packageManager` in `package.json`           |
+| Node dev dependencies          | `package.json`, `pnpm-lock.yaml`             |
+| pnpm settings, build rulings   | `pnpm-workspace.yaml`                        |
+| Python dependencies            | `pyproject.toml`, `uv.lock`                  |
+| Formatting rules               | `.editorconfig`, `.prettierrc.yml`           |
+| Conventional commit types      | `git-conventional-commits.yaml`              |
+| Pre-commit rules               | `.lintstagedrc.cjs`                          |
+| License headers                | `REUSE.toml`, `.lintstagedrc.cjs`            |
+| Git hooks                      | `.config/git/hooks`                          |
+| Agent project config           | `.config/agent/project.yaml` — tracker facts |
+| Template questions and answers | `copier.yml`                                 |
+| Design decisions               | `docs/superpowers/specs/`                    |
+| CI workflows                   | `.github/workflows/`                         |
+| Renovate config                | `.github/renovate.json5`                     |
 
 ## Build and Test
 

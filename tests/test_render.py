@@ -135,6 +135,19 @@ def test_agent_project_config_uses_shared_xtc_tracker():
         assert line in text
 
 
+def test_agents_points_at_project_config(generated):
+    dst, _ = generated
+    text = (dst / "AGENTS.md").read_text()
+    assert ".config/agent/project.yaml" in text
+    assert "tracker facts" in text
+
+
+def test_authoring_agents_points_at_project_config():
+    text = (TEMPLATE / "AGENTS.md").read_text()
+    assert ".config/agent/project.yaml" in text
+    assert "tracker facts" in text
+
+
 def test_readme_serves_project_readers(generated):
     dst, answers = generated
     readme = (dst / "README.md").read_text()
