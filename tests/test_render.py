@@ -31,6 +31,7 @@ SHARED_FILES = [
     "pnpm-workspace.yaml",
     "README.md",
     "AGENTS.md",
+    ".config/agent/project.yaml",
     "CONTRIBUTING.md",
     ".config/git/hooks/heal.sh",
     ".config/git/hooks/pre-commit",
@@ -86,6 +87,52 @@ def test_shared_files_present(generated):
     dst, _ = generated
     for rel in SHARED_FILES:
         assert (dst / rel).exists(), f"missing shared file: {rel}"
+
+
+def test_agent_project_config_matches_authoring(generated):
+    """The generated config differs from the authoring copy only in repo."""
+    dst, answers = generated
+    rendered = (dst / ".config/agent/project.yaml").read_text()
+    authoring = (TEMPLATE / ".config/agent/project.yaml").read_text()
+    expected = authoring.replace("repo: base-template", f"repo: {answers['project_name']}", 1)
+    assert rendered == expected
+    assert "{{" not in rendered
+    assert "{%" not in rendered
+
+
+def test_agent_project_config_template_uses_project_name():
+    source = (TEMPLATE / ".config/agent/project.yaml.jinja").read_text()
+    assert "repo: {{ project_name }}" in source
+
+
+def test_agent_project_config_carries_header(generated):
+    dst, _ = generated
+    text = (dst / ".config/agent/project.yaml").read_text()
+    copyright_line = "# SPDX-FileCopyright" + "Text: Copyright © 2026 Caleb Cushing"
+    license_line = "# SPDX-License" + "-Identifier: CC0-1.0"
+    assert text.startswith(copyright_line + "\n")
+    assert license_line in text
+    assert (
+        "# yaml-language-server: $schema=https://raw.githubusercontent.com/"
+        "xenoterracide/agent-skills/develop/schemas/project.schema.json"
+    ) in text
+
+
+def test_agent_project_config_uses_shared_xtc_tracker():
+    text = (TEMPLATE / ".config/agent/project.yaml").read_text()
+    for line in (
+        "  kind: jira",
+        "  skill: jira-workflow",
+        "  site: xenoterracide.atlassian.net",
+        "  project: XTC",
+        "  board: 3",
+        '    project_prefix: "project:"',
+        "    captured: Added to backlog",
+        "    dropped: Canceled",
+        "    reviewing_to_done: 41",
+        "    dropped_to_captured: 8",
+    ):
+        assert line in text
 
 
 def test_readme_serves_project_readers(generated):
