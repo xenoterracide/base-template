@@ -8,11 +8,23 @@ SPDX-License-Identifier: CC-BY-NC-SA-4.0
 
 {{ project_purpose }}
 
+## Use
+
+{{ project_usage }}
+
 ## Install
 
 {%- if template_type == 'java' %}
+{%- if project_kind == 'cli' %}
 
-Add the module to a Maven build:
+Download the runnable jar from the releases page. Run it with:
+
+    java -jar <jar-file>
+{%- else %}
+
+Add the library to your build.
+
+Maven:
 
 ```xml
 <dependency>
@@ -21,21 +33,36 @@ Add the module to a Maven build:
   <version>{{ java_version }}</version>
 </dependency>
 ```
+
+Gradle (Kotlin or Groovy DSL):
+
+```kotlin
+dependencies {
+    implementation("{{ java_group_id }}:{{ java_module }}:{{ java_version }}")
+}
+```
+{%- endif %}
 {%- elif template_type == 'typescript' %}
+{%- if project_kind == 'cli' %}
+
+Install globally with your package manager:
+
+```sh
+npm install --global {{ ts_scope }}/{{ first_package }}
+pnpm add --global {{ ts_scope }}/{{ first_package }}
+```
+{%- else %}
 
 Install the package:
 
 ```sh
 pnpm add {{ ts_scope }}/{{ first_package }}
 ```
+{%- endif %}
 {%- else %}
 
 Copy the configuration files you need into your project.
 {%- endif %}
-
-## Use
-
-{{ project_usage }}
 
 ## Development
 

@@ -21,6 +21,7 @@ COMMON = {
 JAVA_ANSWERS = {
     **COMMON,
     "template_type": "java",
+    "project_kind": "library",
     "java_group_id": "com.example",
     "java_module": "sample",
     "java_version": "0.0.0",
@@ -29,6 +30,7 @@ JAVA_ANSWERS = {
 TS_ANSWERS = {
     **COMMON,
     "template_type": "typescript",
+    "project_kind": "library",
     "ts_scope": "@example",
     "first_package": "sample",
 }

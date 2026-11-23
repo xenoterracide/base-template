@@ -50,12 +50,16 @@ def generated(request, tmp_path_factory):
 
 
 def test_copier_answers(generated):
-    dst, _ = generated
+    dst, answers = generated
     text = (dst / ".copier-answers.yml").read_text()
     assert "_src_path:" in text
     assert "_commit:" in text
     assert "project_purpose:" in text
     assert "project_usage:" in text
+    if answers["template_type"] == "config":
+        assert "project_kind:" not in text
+    else:
+        assert "project_kind:" in text
     # the answers file carries its header from the template, so copier
     # updates never strip the consumer's coverage; the tag is split so
     # reuse cannot read this source as an SPDX expression
@@ -91,10 +95,12 @@ def test_readme_serves_project_readers(generated):
     assert answers["project_usage"] in readme
     assert "## Install" in readme
     assert "## Use" in readme
+    assert readme.index("## Use") < readme.index("## Install")
     assert "[CONTRIBUTING.md](CONTRIBUTING.md)" in readme
     assert "[AGENTS.md](AGENTS.md)" in readme
     assert answers["license"] in readme
     assert "](https://www.gnu.org/licenses/gpl-3.0.txt)" in readme
+    assert "[CC-BY-NC-SA-4.0](LICENSES/CC-BY-NC-SA-4.0.txt)" in readme
     assert "Copyright © 2015-2026 Caleb Cushing" in readme
     assert "[LICENSES](LICENSES)" in readme
     for text in (
@@ -106,25 +112,58 @@ def test_readme_serves_project_readers(generated):
         "Renovate",
         "src/testIntegration/java",
         "test-fixtures",
+        "java -jar",
+        "npm install --global",
     ):
         assert text not in readme, f"contributor detail in README: {text}"
     if answers["template_type"] == "java":
         assert "<groupId>com.example</groupId>" in readme
         assert "<artifactId>sample</artifactId>" in readme
         assert "<version>0.0.0</version>" in readme
+        assert 'implementation("com.example:sample:0.0.0")' in readme
     elif answers["template_type"] == "typescript":
         assert "pnpm add @example/sample" in readme
     else:
         assert "Copy the configuration files you need into your project." in readme
 
 
-def test_readme_answers_have_defaults(tmp_path):
-    answers = {
-        key: value for key, value in ANSWERS["config"].items() if key not in ("project_purpose", "project_usage")
-    }
-    readme = (copy_template(tmp_path, answers) / "README.md").read_text()
-    assert "Sample is a config project." in readme
-    assert "Copy the configuration files into your project and adjust the values." in readme
+@pytest.mark.parametrize("variant", ["java", "typescript", "config"])
+def test_readme_answers_have_defaults(tmp_path, variant):
+    omitted = ("project_purpose", "project_usage", "project_kind")
+    answers = {key: value for key, value in ANSWERS[variant].items() if key not in omitted}
+    readme = (copy_template(tmp_path / variant, answers) / "README.md").read_text()
+    expected = {
+        "java": (
+            "Sample is a Java project.",
+            "Add the dependency below to your build, then call its public API.",
+            'implementation("com.example:sample:0.0.0")',
+        ),
+        "typescript": (
+            "Sample is a TypeScript project.",
+            "Import the package, then call its exported API.",
+            "pnpm add @example/sample",
+        ),
+        "config": (
+            "Sample is a config project.",
+            "Copy the configuration files into your project and adjust the values.",
+            "Copy the configuration files you need into your project.",
+        ),
+    }[variant]
+    for text in expected:
+        assert text in readme
+
+
+@pytest.mark.parametrize("variant", ["java", "typescript"])
+def test_readme_installs_cli_without_library_coordinates(tmp_path, variant):
+    readme = (copy_template(tmp_path / variant, {**ANSWERS[variant], "project_kind": "cli"}) / "README.md").read_text()
+    if variant == "java":
+        assert "java -jar <jar-file>" in readme
+        assert "<dependency>" not in readme
+        assert "implementation(" not in readme
+    else:
+        assert "npm install --global @example/sample" in readme
+        assert "pnpm add --global @example/sample" in readme
+        assert "pnpm add @example/sample" not in readme
 
 
 def test_contributing_carries_contributor_work(generated):

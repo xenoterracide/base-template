@@ -10,8 +10,8 @@ SPDX-License-Identifier: CC-BY-NC-SA-4.0
 
 The generated README reads like a template contributor's checklist. It lists
 bootstrap commands, staged workflows, Maven verification, and template updates.
-A generated project's reader needs the project's purpose, install steps, and
-use. Contributor work belongs in `CONTRIBUTING.md`.
+A generated project's reader needs the project's purpose, use, install steps,
+and licensing. Contributor work belongs in `CONTRIBUTING.md`.
 
 ## Approaches
 
@@ -27,14 +27,20 @@ human text from the REUSE comment in every template file.
 
 ## Decisions
 
-Add `project_purpose` and `project_usage` answers. Both take multiline input.
-Their defaults derive from earlier answers, so hosted Copier updates need no
-new prompt.
+Add `project_purpose`, `project_usage`, and `project_kind` answers. Purpose and
+use take multiline input. Their defaults derive from earlier answers.
+`project_kind` splits library from CLI on Java and TypeScript. Config ignores
+it.
 
-Render these README sections: title and purpose, install, use, development
-links, license. Derive install from `java_group_id`, `java_module`, and
-`java_version` on Java; from `ts_scope` and `first_package` on TypeScript; from
-a copy instruction on config.
+Render these README sections: title and purpose, use, install, development
+links, license. Use comes first. The reader needs the payoff before setup.
+
+Java library install shows Maven and Gradle coordinates. The Gradle line uses
+double quotes and parentheses, so Kotlin and Groovy DSL both accept it. Keep
+the Gradle block even where a project later drops Gradle; its consumers still
+use it. Java CLI install points to the release jar. TypeScript library install
+uses pnpm. TypeScript CLI install shows global npm and pnpm commands. Config
+install tells readers to copy the files.
 
 State the answered project license and its URL. State the README's own
 CC-BY-NC-SA-4.0 license and the fixed copyright line from its SPDX header. Link
@@ -43,8 +49,8 @@ to `LICENSES`.
 Move bootstrap, direnv, staged workflows, Maven verification, and Copier
 updates into `CONTRIBUTING.md`. Leave agent commands in `AGENTS.md`.
 
-Update render tests for the new answers, the README sections, and the moved
-contributor content.
+Update render tests for the new answers, the README sections, the artifact
+kinds, and the moved contributor content.
 
 ## Non-goals
 
@@ -54,7 +60,8 @@ contributor content.
 
 ## Verification
 
-Render all three variants. Assert purpose, use, install coordinates, license,
-copyright, and both development links in each README. Assert no bootstrap,
-Renovate, Copier, or workflow text in the README. Assert that text in
-`CONTRIBUTING.md`.
+Render all three variants and both artifact kinds. Assert purpose, use,
+install coordinates, license, copyright, and both development links in each
+README. Assert Use precedes Install. Assert no bootstrap, Renovate, Copier, or
+workflow text in the README. Assert that text in `CONTRIBUTING.md`. Render with
+the new answers omitted to prove the defaults that hosted Copier updates use.
