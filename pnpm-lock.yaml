@@ -198,7 +198,7 @@ importers:
         version: 4.1.0(prettier@3.10.1)
       renovate:
         specifier: ^44.227.2
-        version: 44.257.6(supports-color@7.2.0)(typanion@3.14.0)
+        version: 44.257.9(supports-color@7.2.0)(typanion@3.14.0)
 
 packages:
 
@@ -639,8 +639,8 @@ packages:
       '@opentelemetry/api':
         optional: true
 
-  '@renovatebot/base-image@13.174.3':
-    resolution: {integrity: sha512-JyYOEkVzMHlgplXTx5ZFvtNdPNpLkP9cFhLFADhYJ9mRQRfGcKtm3pIeU2jwruWoFleSNNDmCVd7/93YNsH4yg==}
+  '@renovatebot/base-image@13.174.5':
+    resolution: {integrity: sha512-thrcBRxIG45bv1QlVXweFd5CVULuTLJIrlXo0jbe1aueRlyJgNM1Lkvwfw7itf/pEMjDCfB/uuEg8YC8KyMb5Q==}
     engines: {node: '>=24.10.0'}
     peerDependencies:
       zod: ^4.0.0
@@ -969,8 +969,8 @@ packages:
     resolution: {integrity: sha512-WoxUM/Be4hfsX06FxsvpGgfYqwgivMV7/Ol7aFuSfSmY6rRaiju4QxOEe9RUS0iYcSHWl5i9AhB1cMoE0p+XiA==}
     engines: {node: '>=18.12.0'}
 
-  '@yarnpkg/shell@4.1.3':
-    resolution: {integrity: sha512-5igwsHbPtSAlLdmMdKqU3atXjwhtLFQXsYAG0sn1XcPb3yF8WxxtWxN6fycBoUvFyIHFz1G0KeRefnAy8n6gdw==}
+  '@yarnpkg/shell@4.1.4':
+    resolution: {integrity: sha512-J7HxhBNmdt79/CVmx1BPRmQgt7MLADW1SUHI0GHVids+WG2nH7b5qaZ2jUTTdTucLeRcIh2ALokQClRWxytnLw==}
     engines: {node: '>=18.12.0'}
     hasBin: true
 
@@ -1051,8 +1051,8 @@ packages:
     resolution: {integrity: sha512-d0II/GO9uf9lfUHH2BQsjxzRJZBdsjgsBiW4BvhWk/3qoKwQFjIDVN19PfX8F2D/r9PCMTtLWjYVCFrpeYUzsw==}
     deprecated: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
 
-  bowser@2.15.0:
-    resolution: {integrity: sha512-xic6KSZglg/I4ymp45fdM4GWfYpBK79Fxd/TOvJktlaPgQqqDxvmGwOPZl2V0dyeS3Lj5c180bLhXF43iyAjZQ==}
+  bowser@2.15.1:
+    resolution: {integrity: sha512-ma47ABeUiTsmG4McKDtGCgQSiTCatM97Mlbn13K42N1kPSFE14oN3WFMjtyL4KubhGvQTqYheKl4Qx2bJtMXLQ==}
 
   brace-expansion@1.1.22:
     resolution: {integrity: sha512-CKLDTuSsN0+r1ThM0WkzzBI7dnPI6xEGfa/JnVYIK9JNBA1N1NyPwXVHor//NKD/y3sDxp764sZdLhFK7pH8XQ==}
@@ -2302,8 +2302,8 @@ packages:
   remark@15.0.1:
     resolution: {integrity: sha512-Eht5w30ruCXgFmxVUSlNWQ9iiimq07URKeFS3hNc8cUWy1llX4KDWfyEDZRycMc+znsN9Ux5/tJ/BFdgdOwA3A==}
 
-  renovate@44.257.6:
-    resolution: {integrity: sha512-pPRUKOUQlx5UDL0ISRegEE9pxEahqiVxO0FJDS1DGSSGnb+kGx88BQK81IkU4w1eDJCWk0+7/oC3NLnPSpfSKw==}
+  renovate@44.257.9:
+    resolution: {integrity: sha512-qsIRIO/9k/flPb2nIJJX3YXxMVfQME1VFQChbxUw7NWYXT530ewHGiCqZYnMdQX+wnqu2kSrnpO9yEeeukeEZw==}
     engines: {node: ^24.11.0 || ^26.13.0, pnpm: ^11.0.0}
     hasBin: true
 
@@ -2472,9 +2472,9 @@ packages:
     resolution: {integrity: sha512-aulFJcD6YK8V1G7iRB5tigAP4TsHBZZrOV8pjV++zdUwmeV8uzbY7yn6h9MswN62adStNZFuCIx4haBnRuMDaw==}
     engines: {node: '>=18'}
 
-  strip-json-comments@5.0.3:
-    resolution: {integrity: sha512-1tB5mhVo7U+ETBKNf92xT4hrQa3pm0MZ0PQvuDnWgAAGHDsfp4lPSpiS6psrSiet87wyGPh9ft6wmhOMQ0hDiw==}
-    engines: {node: '>=14.16'}
+  strip-json-comments@5.1.0:
+    resolution: {integrity: sha512-ErcwpJBYr8EfX/Br7JauOIGXoRE92w0hVtuS9j92UFgbATxA+WRSIZksSUDzEeItfWB/0QCEprTZT55RSINUHQ==}
+    engines: {node: '>=22'}
 
   supports-color@7.2.0:
     resolution: {integrity: sha512-qpCAvRl9stuOHveKsn7HncJRvv501qIacKzQlO/+Lwxc9+0q2wLyv4Dfvt80/DPn2pqOBsJdDiogXGR9+OvwRw==}
@@ -2803,7 +2803,7 @@ snapshots:
       '@smithy/core': 3.41.0
       '@smithy/signature-v4': 5.7.5
       '@smithy/types': 4.20.0
-      bowser: 2.15.0
+      bowser: 2.15.1
       tslib: 2.9.1
 
   '@aws-sdk/credential-provider-cognito-identity@3.972.84':
@@ -3319,7 +3319,7 @@ snapshots:
     optionalDependencies:
       '@opentelemetry/api': 1.10.0
 
-  '@renovatebot/base-image@13.174.3(zod@4.6.7)':
+  '@renovatebot/base-image@13.174.5(zod@4.6.7)':
     dependencies:
       '@containerbase/base': 14.68.3(zod@4.6.7)
     optionalDependencies:
@@ -3573,7 +3573,7 @@ snapshots:
       '@yarnpkg/fslib': 3.1.5
       '@yarnpkg/libzip': 3.2.2(@yarnpkg/fslib@3.1.5)
       '@yarnpkg/parsers': 3.1.0
-      '@yarnpkg/shell': 4.1.3(typanion@3.14.0)
+      '@yarnpkg/shell': 4.1.4(typanion@3.14.0)
       camelcase: 5.3.1
       chalk: 4.1.2
       ci-info: 4.5.0
@@ -3611,7 +3611,7 @@ snapshots:
       js-yaml: 4.3.2
       tslib: 2.9.1
 
-  '@yarnpkg/shell@4.1.3(typanion@3.14.0)':
+  '@yarnpkg/shell@4.1.4(typanion@3.14.0)':
     dependencies:
       '@yarnpkg/fslib': 3.1.5
       '@yarnpkg/parsers': 3.1.0
@@ -3678,7 +3678,7 @@ snapshots:
 
   boolean@3.2.0: {}
 
-  bowser@2.15.0: {}
+  bowser@2.15.1: {}
 
   brace-expansion@1.1.22:
     dependencies:
@@ -5149,7 +5149,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  renovate@44.257.6(supports-color@7.2.0)(typanion@3.14.0):
+  renovate@44.257.9(supports-color@7.2.0)(typanion@3.14.0):
     dependencies:
       '@aws-sdk/client-codecommit': 3.1139.0
       '@aws-sdk/client-ec2': 3.1139.0
@@ -5182,7 +5182,7 @@ snapshots:
       '@pnpm/parse-overrides': 1001.0.4
       '@qnighy/marshal': 0.1.3
       '@redis/client': 6.3.1(@opentelemetry/api@1.10.0)
-      '@renovatebot/base-image': 13.174.3(zod@4.6.7)
+      '@renovatebot/base-image': 13.174.5(zod@4.6.7)
       '@renovatebot/detect-tools': 5.0.0
       '@renovatebot/good-enough-parser': 4.0.3
       '@renovatebot/osv-offline': 4.5.10(supports-color@7.2.0)(zod@4.6.7)
@@ -5263,7 +5263,7 @@ snapshots:
       simple-git: 4.0.2(supports-color@7.2.0)
       slugify: 1.6.9
       source-map-support: 0.5.21
-      strip-json-comments: 5.0.3
+      strip-json-comments: 5.1.0
       tar: 7.5.23
       toml-eslint-parser: 1.0.3
       upath: 3.0.8
@@ -5447,7 +5447,7 @@ snapshots:
 
   strip-final-newline@4.0.0: {}
 
-  strip-json-comments@5.0.3: {}
+  strip-json-comments@5.1.0: {}
 
   supports-color@7.2.0:
     dependencies:
