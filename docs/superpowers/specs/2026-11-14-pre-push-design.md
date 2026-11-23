@@ -94,10 +94,13 @@ New scripts:
   (the CI shellcheck job's pathspec, hardened). Sub-second, and the
   binary is pinned and healed.
 - `lint:maven`, java:
-  `./mvnw -B -q --no-transfer-progress test-compile checkstyle:check@checkstyle-main checkstyle:check@checkstyle-test spotbugs:check@spotbugs-check`.
-  The `@execution-id` forms pick up the per-execution `configLocation`s;
-  a bare `checkstyle:check` reads the default sun config. `test-compile`
-  runs first because spotbugs reads classes, not sources.
+  `./mvnw -B -q --no-transfer-progress package -DskipTests checkstyle:check@checkstyle-main checkstyle:check@checkstyle-test checkstyle:check@checkstyle-testFixtures checkstyle:check@checkstyle-testIntegration spotbugs:check@spotbugs-check`.
+  XTC-21 superseded the 2026-11-14 `test-compile` form on 2026-11-22 in
+  [base-template#354](https://github.com/xenoterracide/base-template/pull/354).
+  The `@execution-id` forms pick up the per-execution `configLocation`s; a
+  bare `checkstyle:check` reads the default sun config. `package` attaches
+  the classified fixture jar before consumer test compilation. `-DskipTests`
+  keeps Surefire out of pre-push. Compiled classes remain for SpotBugs.
 
 `lint:eslint` stays uncached (typescript): eslint's cache is a
 per-file skip-list whose entries never invalidate when a file's

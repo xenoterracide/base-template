@@ -1,32 +1,84 @@
+{# REUSE-IgnoreStart -#}
 <!--
 SPDX-FileCopyrightText: Copyright © 2015-2026 Caleb Cushing
 
-SPDX-License-Identifier: CC-BY-NC-SA-4.0
+SPDX-License-Identifier: {{ docs_license }}
 -->
+{#- REUSE-IgnoreEnd #}
 
 # {{ project_title }}
 
-## Getting started
+{{ project_purpose }}
 
-- `npm run contribute` installs tools and dependencies, and heals the
-  toolchain through `.config/git/hooks/heal.sh`. Node 25+ drops corepack,
-  so the bootstrap starts from npm.
-- `direnv allow` (if you use direnv) loads the environment.
+## Use
 
-For typescript projects, copy workflows into place:
+{{ project_usage }}
 
-    cp -r staged/.github/workflows .github/workflows
-    git add .github/workflows
+## Install
 
-For java projects:
+{%- if template_type == 'java' %}
+{%- if project_kind == 'cli' %}
 
-    ./mvnw -q verify
+Java CLI projects need a `Main-Class` in the jar manifest. Add it before
+publishing.
 
-This project is managed with [copier](https://copier.readthedocs.io). To
-refresh from the template:
+Download the runnable jar from the releases page. Run it with:
 
-    uvx copier update --trust
+    java -jar <jar-file>
+{%- else %}
 
-Renovate opens an update PR whenever
-[base-template](https://github.com/xenoterracide/base-template) tags a
-release. Merge it like any other dependency update.
+Add the library to your build.
+
+Maven:
+
+```xml
+<dependency>
+  <groupId>{{ java_group_id }}</groupId>
+  <artifactId>{{ java_module }}</artifactId>
+  <version>{{ java_version }}</version>
+</dependency>
+```
+
+Gradle (Kotlin or Groovy DSL):
+
+```kotlin
+dependencies {
+    implementation("{{ java_group_id }}:{{ java_module }}:{{ java_version }}")
+}
+```
+{%- endif %}
+{%- elif template_type == 'typescript' %}
+{%- if project_kind == 'cli' %}
+
+Add a `bin` field to `package.json` before publishing.
+
+Install globally with your package manager:
+
+```sh
+npm install --global {{ ts_scope }}/{{ first_package }}
+pnpm add --global {{ ts_scope }}/{{ first_package }}
+```
+{%- else %}
+
+Install the package:
+
+```sh
+pnpm add {{ ts_scope }}/{{ first_package }}
+```
+{%- endif %}
+{%- else %}
+
+Copy the configuration files you need into your project.
+{%- endif %}
+
+## Development
+
+- [CONTRIBUTING.md](CONTRIBUTING.md) — human contributor guide
+- [AGENTS.md](AGENTS.md) — guide for AI agents
+
+## License
+
+Project code: [{{ license }}]({{ license_url }}).
+Documentation: [{{ docs_license }}]({{ docs_license_url }}).
+Copyright © 2015-2026 Caleb Cushing. Full texts live in [LICENSES](LICENSES).
+Each file carries its own SPDX header. A file may use a different license.

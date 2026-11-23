@@ -50,10 +50,17 @@ def generated(request, tmp_path_factory):
 
 
 def test_copier_answers(generated):
-    dst, _ = generated
+    dst, answers = generated
     text = (dst / ".copier-answers.yml").read_text()
     assert "_src_path:" in text
     assert "_commit:" in text
+    assert "project_purpose:" in text
+    assert "project_usage:" in text
+    assert "docs_license:" in text
+    if answers["template_type"] == "config":
+        assert "project_kind:" not in text
+    else:
+        assert "project_kind:" in text
     # the answers file carries its header from the template, so copier
     # updates never strip the consumer's coverage; the tag is split so
     # reuse cannot read this source as an SPDX expression
@@ -79,6 +86,109 @@ def test_shared_files_present(generated):
     dst, _ = generated
     for rel in SHARED_FILES:
         assert (dst / rel).exists(), f"missing shared file: {rel}"
+
+
+def test_readme_serves_project_readers(generated):
+    dst, answers = generated
+    readme = (dst / "README.md").read_text()
+    assert "# Sample" in readme
+    assert answers["project_purpose"] in readme
+    assert answers["project_usage"] in readme
+    assert "## Install" in readme
+    assert "## Use" in readme
+    assert readme.index("## Use") < readme.index("## Install")
+    assert "[CONTRIBUTING.md](CONTRIBUTING.md)" in readme
+    assert "[AGENTS.md](AGENTS.md)" in readme
+    assert answers["license"] in readme
+    assert "](https://www.gnu.org/licenses/gpl-3.0.txt)" in readme
+    assert answers["docs_license"] in readme
+    assert "](https://creativecommons.org/licenses/by-nc-sa/4.0/)" in readme
+    assert "Each file carries its own SPDX header." in readme
+    assert "Copyright © 2015-2026 Caleb Cushing" in readme
+    assert "[LICENSES](LICENSES)" in readme
+    for text in (
+        "npm run contribute",
+        "direnv allow",
+        "staged/.github/workflows",
+        "./mvnw -q verify",
+        "uvx copier update",
+        "Renovate",
+        "src/testIntegration/java",
+        "test-fixtures",
+    ):
+        assert text not in readme, f"contributor detail in README: {text}"
+    other_kind = ("java -jar", "npm install --global", "pnpm add --global")
+    for text in other_kind:
+        assert text not in readme, f"other artifact kind in README: {text}"
+    if answers["template_type"] == "java":
+        assert "<groupId>com.example</groupId>" in readme
+        assert "<artifactId>sample</artifactId>" in readme
+        assert "<version>0.0.0</version>" in readme
+        assert 'implementation("com.example:sample:0.0.0")' in readme
+    elif answers["template_type"] == "typescript":
+        assert "pnpm add @example/sample" in readme
+    else:
+        assert "Copy the configuration files you need into your project." in readme
+
+
+def test_readme_uses_docs_license_answer(tmp_path):
+    answers = {**ANSWERS["config"], "docs_license": "MIT"}
+    readme = (copy_template(tmp_path, answers) / "README.md").read_text()
+    assert "SPDX-License" + "-Identifier: MIT" in readme
+    assert "Documentation: [MIT](https://opensource.org/licenses/MIT)" in readme
+    assert "CC-BY-NC-SA-4.0" not in readme
+
+
+@pytest.mark.parametrize("variant", ["java", "typescript", "config"])
+def test_readme_answers_have_defaults(tmp_path, variant):
+    omitted = ("project_purpose", "project_usage", "project_kind", "docs_license", "docs_license_url")
+    answers = {key: value for key, value in ANSWERS[variant].items() if key not in omitted}
+    readme = (copy_template(tmp_path / variant, answers) / "README.md").read_text()
+    expected = {
+        "java": (
+            "Sample is a Java project.",
+            "Add the library to your build, then call its public API.",
+            'implementation("com.example:sample:0.0.0")',
+        ),
+        "typescript": (
+            "Sample is a TypeScript project.",
+            "Import the package, then call its exported API.",
+            "pnpm add @example/sample",
+        ),
+        "config": (
+            "Sample is a config project.",
+            "Copy the configuration files into your project and adjust the values.",
+            "Copy the configuration files you need into your project.",
+        ),
+    }[variant]
+    for text in expected:
+        assert text in readme
+
+
+@pytest.mark.parametrize("variant", ["java", "typescript"])
+def test_readme_installs_cli_without_library_coordinates(tmp_path, variant):
+    readme = (copy_template(tmp_path / variant, {**ANSWERS[variant], "project_kind": "cli"}) / "README.md").read_text()
+    if variant == "java":
+        assert "`Main-Class` in the jar manifest" in readme
+        assert "java -jar <jar-file>" in readme
+        assert "<dependency>" not in readme
+        assert "implementation(" not in readme
+    else:
+        assert "Add a `bin` field to `package.json` before publishing." in readme
+        assert "npm install --global @example/sample" in readme
+        assert "pnpm add --global @example/sample" in readme
+        assert "pnpm add @example/sample" not in readme
+
+
+def test_contributing_carries_contributor_work(generated):
+    dst, _ = generated
+    text = (dst / "CONTRIBUTING.md").read_text()
+    assert "npm run contribute" in text
+    assert "direnv allow" in text
+    assert "pnpm verify" in text
+    assert "uvx copier update --trust" in text
+    assert "Renovate opens an update PR" in text
+    assert "staged/.github/workflows" not in text
 
 
 def test_old_hooks_absent(generated):
@@ -274,17 +384,13 @@ def test_java_extra_source_roots_are_wired(generated):
 
     build = plugins("build/plugins")
     helpers = executions(build["build-helper-maven-plugin"])
-    expected_helpers = {
-        "add-test-fixtures": "src/testFixtures/java",
-        "add-integration-test-sources": "src/testIntegration/java",
-    }
-    assert set(helpers) == set(expected_helpers)
-    for name, source in expected_helpers.items():
-        execution = helpers[name]
-        assert execution.findtext(f"{ns}phase") == "generate-test-sources"
-        assert execution.findtext(f"{ns}goals/{ns}goal") == "add-test-source"
-        sources = execution.findall(f"{ns}configuration/{ns}sources/{ns}source")
-        assert [s.text for s in sources] == [source]
+    assert set(helpers) == {"stage-test-fixtures"}
+    staged = helpers["stage-test-fixtures"]
+    assert staged.findtext(f"{ns}phase") == "generate-test-resources"
+    assert staged.findtext(f"{ns}goals/{ns}goal") == "add-test-resource"
+    resource = staged.find(f"{ns}configuration/{ns}resources/{ns}resource")
+    assert resource.findtext(f"{ns}directory") == "${project.build.directory}/test-fixtures-classes"
+    assert [e.text for e in resource.findall(f"{ns}excludes/{ns}exclude")] == ["**/module-info.class"]
 
     checkstyles = executions(build["maven-checkstyle-plugin"])
     expected_checkstyles = {
@@ -302,6 +408,111 @@ def test_java_extra_source_roots_are_wired(generated):
         assert location.endswith(f"/.config/checkstyle/{config}")
         directory = execution.findtext(f"{ns}configuration/{ns}sourceDirectories/{ns}sourceDirectory")
         assert directory == "${project.basedir}/" + source
+
+
+def test_java_failsafe_runs_integration_tests(generated):
+    """Integration tests share the *Test name and get their own output."""
+    dst, answers = generated
+    if answers["template_type"] != "java":
+        pytest.skip()
+    ns = "{http://maven.apache.org/POM/4.0.0}"
+    root = ET.parse(dst / "pom.xml").getroot()
+
+    def plugins(path):
+        qualified = "/".join(f"{ns}{part}" for part in path.split("/"))
+        node = root.find(qualified)
+        return {p.findtext(f"{ns}artifactId"): p for p in node.findall(f"{ns}plugin")}
+
+    def executions(plugin):
+        return {e.findtext(f"{ns}id"): e for e in plugin.findall(f"{ns}executions/{ns}execution")}
+
+    managed = plugins("build/pluginManagement/plugins")["maven-failsafe-plugin"].find(f"{ns}configuration")
+    assert managed.findtext(f"{ns}useModulePath") == "true"
+    assert managed.findtext(f"{ns}testClassesDirectory") == "${project.build.directory}/integration-test-classes"
+    assert [i.text for i in managed.findall(f"{ns}includes/{ns}include")] == ["**/*Test.java", "**/*IT.java"]
+    classpath = [c.text for c in managed.findall(f"{ns}additionalClasspathElements/{ns}additionalClasspathElement")]
+    assert classpath == ["${project.build.directory}/test-fixtures-classes"]
+
+    failsafe = executions(plugins("build/plugins")["maven-failsafe-plugin"])
+    assert set(failsafe) == {"test-integration"}
+    assert [g.text for g in failsafe["test-integration"].findall(f"{ns}goals/{ns}goal")] == [
+        "integration-test",
+        "verify",
+    ]
+
+    compiler = executions(plugins("build/plugins")["maven-compiler-plugin"])
+    it = compiler["test-integration-compile"]
+    assert it.findtext(f"{ns}phase") == "test-compile"
+    assert it.findtext(f"{ns}goals/{ns}goal") == "testCompile"
+    assert it.findtext(f"{ns}configuration/{ns}outputDirectory") == (
+        "${project.build.directory}/integration-test-classes"
+    )
+    assert it.findtext(f"{ns}configuration/{ns}generatedTestSourcesDirectory") == (
+        "${project.build.directory}/generated-test-sources/test-integration-annotations"
+    )
+    roots = it.findall(f"{ns}configuration/{ns}compileSourceRoots/{ns}compileSourceRoot")
+    assert [r.text for r in roots] == ["${project.basedir}/src/testIntegration/java"]
+    assert it.findtext(f"{ns}configuration/{ns}useModulePath") is None
+
+    compiler_plugin = plugins("build/pluginManagement/plugins")["maven-compiler-plugin"]
+    args = [a.text for a in compiler_plugin.findall(f"{ns}configuration/{ns}compilerArgs/{ns}arg")]
+    assert any("NullAway:OFF" in a for a in args)
+    main_args = []
+    for execution in compiler_plugin.findall(f"{ns}executions/{ns}execution"):
+        if execution.findtext(f"{ns}id") == "default-compile":
+            main_args = [a.text for a in execution.findall(f"{ns}configuration/{ns}compilerArgs/{ns}arg")]
+    assert any("JSpecifyMode=true" in a for a in main_args)
+
+    helpers = executions(plugins("build/plugins")["build-helper-maven-plugin"])
+    assert set(helpers) == {"stage-test-fixtures"}
+
+
+def test_java_publishes_test_fixtures(generated):
+    """Fixtures compile once and are attached as a classified jar."""
+    dst, answers = generated
+    if answers["template_type"] != "java":
+        pytest.skip()
+    ns = "{http://maven.apache.org/POM/4.0.0}"
+    root = ET.parse(dst / "pom.xml").getroot()
+
+    def plugins(path):
+        qualified = "/".join(f"{ns}{part}" for part in path.split("/"))
+        node = root.find(qualified)
+        return {p.findtext(f"{ns}artifactId"): p for p in node.findall(f"{ns}plugin")}
+
+    def executions(plugin):
+        return {e.findtext(f"{ns}id"): e for e in plugin.findall(f"{ns}executions/{ns}execution")}
+
+    jar = executions(plugins("build/pluginManagement/plugins")["maven-jar-plugin"])["test-fixtures-jar"]
+    assert jar.findtext(f"{ns}phase") == "package"
+    assert [g.text for g in jar.findall(f"{ns}goals/{ns}goal")] == ["jar"]
+    assert jar.findtext(f"{ns}configuration/{ns}classifier") == "test-fixtures"
+    assert jar.findtext(f"{ns}configuration/{ns}classesDirectory") == (
+        "${project.build.directory}/test-fixtures-classes"
+    )
+
+    fixture = executions(plugins("build/plugins")["maven-compiler-plugin"])["test-fixtures-compile"]
+    assert fixture.findtext(f"{ns}phase") == "generate-test-sources"
+    assert fixture.findtext(f"{ns}goals/{ns}goal") == "testCompile"
+    assert fixture.findtext(f"{ns}configuration/{ns}outputDirectory") == (
+        "${project.build.directory}/test-fixtures-classes"
+    )
+    assert fixture.findtext(f"{ns}configuration/{ns}generatedTestSourcesDirectory") == (
+        "${project.build.directory}/generated-test-sources/test-fixtures-annotations"
+    )
+    roots = fixture.findall(f"{ns}configuration/{ns}compileSourceRoots/{ns}compileSourceRoot")
+    assert [r.text for r in roots] == ["${project.basedir}/src/testFixtures/java"]
+
+    compiler_plugin = plugins("build/pluginManagement/plugins")["maven-compiler-plugin"]
+    args = [a.text for a in compiler_plugin.findall(f"{ns}configuration/{ns}compilerArgs/{ns}arg")]
+    assert any("NullAway:OFF" in a for a in args)
+    main = next(
+        e
+        for e in compiler_plugin.findall(f"{ns}executions/{ns}execution")
+        if e.findtext(f"{ns}id") == "default-compile"
+    )
+    main_args = [a.text for a in main.findall(f"{ns}configuration/{ns}compilerArgs/{ns}arg")]
+    assert any("JSpecifyMode=true" in a for a in main_args)
 
 
 def test_checkstyle_carries_the_family_maxima(generated):
@@ -996,13 +1207,16 @@ def test_lint_is_the_pre_push_set(generated):
         # check tracks lint: a linter added to lint must reach the CI set,
         # which omits reuse because the pnpm workflow installs no uv
         assert scripts["check"] == (lint.replace(" && pnpm lint:reuse", "") + " && pnpm typecheck && pnpm test")
+        assert scripts["verify"] == "pnpm -r build && pnpm check"
         assert "lint:reuse" not in scripts["check"]
         assert "lint:maven" not in scripts
     elif answers["template_type"] == "java":
         assert lint == "pnpm lint:prettier && pnpm lint:shellcheck && pnpm lint:maven && pnpm lint:reuse"
         assert scripts["check"] == "pnpm lint"
+        assert scripts["verify"] == "pnpm lint && ./mvnw -q verify"
+        # package attaches the fixture jar; skipTests keeps lint fast
         assert scripts["lint:maven"] == (
-            "./mvnw -B -q --no-transfer-progress test-compile"
+            "./mvnw -B -q --no-transfer-progress package -DskipTests"
             " checkstyle:check@checkstyle-main"
             " checkstyle:check@checkstyle-test"
             " checkstyle:check@checkstyle-testFixtures"
@@ -1013,6 +1227,7 @@ def test_lint_is_the_pre_push_set(generated):
     else:
         assert lint == "pnpm lint:prettier && pnpm lint:shellcheck && pnpm lint:reuse"
         assert scripts["check"] == "pnpm lint"
+        assert scripts["verify"] == "pnpm check"
         assert "lint:eslint" not in scripts
         assert "lint:maven" not in scripts
     # reuse lint lives in its own script; lint composes it. The download

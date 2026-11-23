@@ -76,6 +76,19 @@ SPDX-License-Identifier: CC0-1.0
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-jar-plugin</artifactId>
           <version>${maven-jar-plugin.version}</version>
+          <executions>
+            <execution>
+              <id>test-fixtures-jar</id>
+              <phase>package</phase>
+              <goals>
+                <goal>jar</goal>
+              </goals>
+              <configuration>
+                <classifier>test-fixtures</classifier>
+                <classesDirectory>${project.build.directory}/test-fixtures-classes</classesDirectory>
+              </configuration>
+            </execution>
+          </executions>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -106,15 +119,15 @@ SPDX-License-Identifier: CC0-1.0
               <arg>-XDcompilePolicy=simple</arg>
               <arg>-XDaddTypeAnnotationsToSymbol=true</arg>
               <!-- prettier-ignore-start -->
-              <arg>-Xplugin:ErrorProne -XepOpt:NullAway:JSpecifyMode=true -XepOpt:NullAway:OnlyNullMarked=true -XepOpt:NullAway:CheckOptionalEmptiness=true -XepOpt:NullAway:AcknowledgeRestrictiveAnnotations=true -XepDisableWarningsInGeneratedCode -XepExcludedPaths:.*/target/generated-sources/.* -Xep:InvalidInlineTag:OFF -Xep:MultipleNullnessAnnotations:OFF -Xep:AddNullMarkedToPackageInfo:ERROR -Xep:AmbiguousMethodReference:ERROR -Xep:ArgumentSelectionDefectChecker:ERROR -Xep:ArrayAsKeyOfSetOrMap:ERROR -Xep:AssertEqualsArgumentOrderChecker:ERROR -Xep:AssertFalse:ERROR -Xep:AssertThrowsMultipleStatements:ERROR -Xep:AssertionFailureIgnored:ERROR -Xep:BadComparable:ERROR -Xep:BadImport:ERROR -Xep:BadInstanceof:ERROR -Xep:BigDecimalEquals:ERROR -Xep:BigDecimalLiteralDouble:ERROR -Xep:ByteBufferBackingArray:ERROR -Xep:CacheLoaderNull:ERROR -Xep:CannotMockFinalClass:ERROR -Xep:CanonicalDuration:ERROR -Xep:CatchAndPrintStackTrace:ERROR -Xep:CatchFail:ERROR -Xep:CheckedExceptionNotThrown:ERROR -Xep:ClassCanBeStatic:ERROR -Xep:ClassName:ERROR -Xep:ClassNamedLikeTypeParameter:ERROR -Xep:ClassNewInstance:ERROR -Xep:CollectionUndefinedEquality:ERROR -Xep:CollectorShouldNotUseState:ERROR -Xep:ComparableAndComparator:ERROR -Xep:CompareToZero:ERROR -Xep:ComparisonContractViolated:ERROR -Xep:ComplexBooleanConstant:ERROR -Xep:ConstantField:ERROR -Xep:DateFormatConstant:ERROR -Xep:DeduplicateConstants:ERROR -Xep:DefaultCharset:ERROR -Xep:DefaultPackage:ERROR -Xep:DoubleCheckedLocking:ERROR -Xep:EmptyCatch:ERROR -Xep:EmptyIf:ERROR -Xep:EmptyTopLevelDeclaration:ERROR -Xep:EqualsBrokenForNull:ERROR -Xep:EqualsGetClass:ERROR -Xep:EqualsIncompatibleType:ERROR -Xep:EqualsUnsafeCast:ERROR -Xep:EqualsUsingHashCode:ERROR -Xep:ExpectedExceptionChecker:ERROR -Xep:ExtendingJUnitAssert:ERROR -Xep:FallThrough:ERROR -Xep:FieldCanBeLocal:ERROR -Xep:FieldCanBeStatic:ERROR -Xep:Finally:ERROR -Xep:FloatCast:ERROR -Xep:FloatingPointLiteralPrecision:ERROR -Xep:ForEachIterable:ERROR -Xep:FutureReturnValueIgnored:ERROR -Xep:FuzzyEqualsShouldNotBeUsedInEqualsMethod:ERROR -Xep:GetClassOnEnum:ERROR -Xep:HidingField:ERROR -Xep:ImmutableAnnotationChecker:ERROR -Xep:ImmutableEnumChecker:ERROR -Xep:InconsistentCapitalization:ERROR -Xep:InconsistentHashCode:ERROR -Xep:InconsistentOverloads:ERROR -Xep:IncrementInForLoopAndHeader:ERROR -Xep:InlineFormatString:ERROR -Xep:InputStreamSlowMultibyteRead:ERROR -Xep:InstanceOfAndCastMatchWrongType:ERROR -Xep:InterfaceWithOnlyStatics:ERROR -Xep:InterruptedExceptionSwallowed:ERROR -Xep:InvalidThrows:ERROR -Xep:IterableAndIterator:ERROR -Xep:IterablePathParameter:ERROR -Xep:JavaDurationGetSecondsGetNano:ERROR -Xep:JavaDurationWithNanos:ERROR -Xep:JavaDurationWithSeconds:ERROR -Xep:JavaInstantGetSecondsGetNano:ERROR -Xep:JavaLangClash:ERROR -Xep:JavaLocalDateTimeGetNano:ERROR -Xep:JavaLocalTimeGetNano:ERROR -Xep:JavaTimeDefaultTimeZone:ERROR -Xep:LockNotBeforeTry:ERROR -Xep:LockOnBoxedPrimitive:ERROR -Xep:LogicalAssignment:ERROR -Xep:LongLiteralLowerCaseSuffix:ERROR -Xep:MethodCanBeStatic:ERROR -Xep:MissingCasesInEnumSwitch:ERROR -Xep:MissingOverride:ERROR -Xep:MixedMutabilityReturnType:ERROR -Xep:ModifiedButNotUsed:ERROR -Xep:ModifyCollectionInEnhancedForLoop:ERROR -Xep:ModifySourceCollectionInStream:ERROR -Xep:MultiVariableDeclaration:ERROR -Xep:MultipleParallelOrSequentialCalls:ERROR -Xep:MultipleTopLevelClasses:ERROR -Xep:MultipleUnaryOperatorsInMethodCall:ERROR -Xep:MutableConstantField:ERROR -Xep:MutablePublicArray:ERROR -Xep:NestedInstanceOfConditions:ERROR -Xep:NonAtomicVolatileUpdate:ERROR -Xep:NonCanonicalStaticMemberImport:ERROR -Xep:NonOverridingEquals:ERROR -Xep:NullAway:ERROR -Xep:NullOptional:ERROR -Xep:NullableConstructor:ERROR -Xep:NullablePrimitive:ERROR -Xep:NullableVoid:ERROR -Xep:NumericEquality:ERROR -Xep:ObjectToString:ERROR -Xep:ObjectsHashCodePrimitive:ERROR -Xep:OperatorPrecedence:ERROR -Xep:OptionalMapToOptional:ERROR -Xep:OrphanedFormatString:ERROR -Xep:Overrides:ERROR -Xep:OverrideThrowableToString:ERROR -Xep:PackageLocation:ERROR -Xep:PreconditionsCheckNotNullRepeated:ERROR -Xep:PreferJavaTimeOverload:ERROR -Xep:PrimitiveAtomicReference:ERROR -Xep:ProtectedMembersInFinalClass:ERROR -Xep:ReferenceEquality:ERROR -Xep:RemoveUnusedImports:ERROR -Xep:ReturnFromVoid:ERROR -Xep:RxReturnValueIgnored:ERROR -Xep:SameNameButDifferent:ERROR -Xep:ShortCircuitBoolean:ERROR -Xep:StaticAssignmentInConstructor:ERROR -Xep:StaticGuardedByInstance:ERROR -Xep:StaticQualifiedUsingExpression:ERROR -Xep:StreamResourceLeak:ERROR -Xep:StringSplitter:ERROR -Xep:SynchronizeOnNonFinalField:ERROR -Xep:ThreadJoinLoop:ERROR -Xep:ThreadLocalUsage:ERROR -Xep:ThreeLetterTimeZoneID:ERROR -Xep:TimeUnitConversionChecker:ERROR -Xep:ToStringReturnsNull:ERROR -Xep:TreeToString:ERROR -Xep:TypeEquals:ERROR -Xep:TypeNameShadowing:ERROR -Xep:TypeParameterShadowing:ERROR -Xep:TypeParameterUnusedInFormals:ERROR -Xep:URLEqualsHashCode:ERROR -Xep:UndefinedEquals:ERROR -Xep:UnnecessaryAnonymousClass:ERROR -Xep:UnnecessaryLambda:ERROR -Xep:UnnecessaryMethodInvocationMatcher:ERROR -Xep:UnnecessaryParentheses:ERROR -Xep:UnsafeFinalization:ERROR -Xep:UnsafeReflectiveConstructionCast:ERROR -Xep:UnusedMethod:ERROR -Xep:UnusedNestedClass:ERROR -Xep:UnusedVariable:ERROR -Xep:UseCorrectAssertInTests:ERROR -Xep:Var:ERROR -Xep:VariableNameSameAsType:ERROR -Xep:WaitNotInLoop:ERROR -Xep:WildcardImport:ERROR</arg>
+              <arg>-Xplugin:ErrorProne -XepDisableWarningsInGeneratedCode -XepExcludedPaths:.*/target/generated-sources/.* -Xep:NullAway:OFF -Xep:JavaTimeDefaultTimeZone:OFF -Xep:AddNullMarkedToPackageInfo:ERROR -Xep:AmbiguousMethodReference:ERROR -Xep:ArgumentSelectionDefectChecker:ERROR -Xep:ArrayAsKeyOfSetOrMap:ERROR -Xep:AssertEqualsArgumentOrderChecker:ERROR -Xep:AssertFalse:ERROR -Xep:AssertThrowsMultipleStatements:ERROR -Xep:AssertionFailureIgnored:ERROR -Xep:BadComparable:ERROR -Xep:BadImport:ERROR -Xep:BadInstanceof:ERROR -Xep:BigDecimalEquals:ERROR -Xep:BigDecimalLiteralDouble:ERROR -Xep:ByteBufferBackingArray:ERROR -Xep:CacheLoaderNull:ERROR -Xep:CannotMockFinalClass:ERROR -Xep:CanonicalDuration:ERROR -Xep:CatchAndPrintStackTrace:ERROR -Xep:CatchFail:ERROR -Xep:CheckedExceptionNotThrown:ERROR -Xep:ClassCanBeStatic:ERROR -Xep:ClassName:ERROR -Xep:ClassNamedLikeTypeParameter:ERROR -Xep:ClassNewInstance:ERROR -Xep:CollectionUndefinedEquality:ERROR -Xep:CollectorShouldNotUseState:ERROR -Xep:ComparableAndComparator:ERROR -Xep:CompareToZero:ERROR -Xep:ComparisonContractViolated:ERROR -Xep:ComplexBooleanConstant:ERROR -Xep:ConstantField:ERROR -Xep:DateFormatConstant:ERROR -Xep:DeduplicateConstants:ERROR -Xep:DefaultCharset:ERROR -Xep:DefaultPackage:ERROR -Xep:DoubleBraceInitialization:ERROR -Xep:DoubleCheckedLocking:ERROR -Xep:EmptyCatch:ERROR -Xep:EmptyIf:ERROR -Xep:EmptyTopLevelDeclaration:ERROR -Xep:EqualsBrokenForNull:ERROR -Xep:EqualsGetClass:ERROR -Xep:EqualsIncompatibleType:ERROR -Xep:EqualsUnsafeCast:ERROR -Xep:EqualsUsingHashCode:ERROR -Xep:ExpectedExceptionChecker:ERROR -Xep:ExtendingJUnitAssert:ERROR -Xep:FallThrough:ERROR -Xep:FieldCanBeLocal:ERROR -Xep:FieldCanBeStatic:ERROR -Xep:Finally:ERROR -Xep:FloatCast:ERROR -Xep:FloatingPointLiteralPrecision:ERROR -Xep:ForEachIterable:ERROR -Xep:FutureReturnValueIgnored:ERROR -Xep:FuzzyEqualsShouldNotBeUsedInEqualsMethod:ERROR -Xep:GetClassOnEnum:ERROR -Xep:HidingField:ERROR -Xep:ImmutableAnnotationChecker:ERROR -Xep:ImmutableEnumChecker:ERROR -Xep:InconsistentCapitalization:ERROR -Xep:InconsistentHashCode:ERROR -Xep:InconsistentOverloads:ERROR -Xep:IncrementInForLoopAndHeader:ERROR -Xep:InlineFormatString:ERROR -Xep:InputStreamSlowMultibyteRead:ERROR -Xep:InstanceOfAndCastMatchWrongType:ERROR -Xep:InterfaceWithOnlyStatics:ERROR -Xep:InterruptedExceptionSwallowed:ERROR -Xep:InvalidInlineTag:OFF -Xep:InvalidThrows:ERROR -Xep:IterableAndIterator:ERROR -Xep:IterablePathParameter:ERROR -Xep:JavaDurationGetSecondsGetNano:ERROR -Xep:JavaDurationWithNanos:ERROR -Xep:JavaDurationWithSeconds:ERROR -Xep:JavaInstantGetSecondsGetNano:ERROR -Xep:JavaLangClash:ERROR -Xep:JavaLocalDateTimeGetNano:ERROR -Xep:JavaLocalTimeGetNano:ERROR -Xep:LockNotBeforeTry:ERROR -Xep:LockOnBoxedPrimitive:ERROR -Xep:LogicalAssignment:ERROR -Xep:LongLiteralLowerCaseSuffix:ERROR -Xep:MethodCanBeStatic:ERROR -Xep:MissingCasesInEnumSwitch:ERROR -Xep:MissingOverride:ERROR -Xep:MixedMutabilityReturnType:ERROR -Xep:ModifiedButNotUsed:ERROR -Xep:ModifyCollectionInEnhancedForLoop:ERROR -Xep:ModifySourceCollectionInStream:ERROR -Xep:MultiVariableDeclaration:ERROR -Xep:MultipleNullnessAnnotations:OFF -Xep:MultipleParallelOrSequentialCalls:ERROR -Xep:MultipleTopLevelClasses:ERROR -Xep:MultipleUnaryOperatorsInMethodCall:ERROR -Xep:MutableConstantField:ERROR -Xep:MutablePublicArray:ERROR -Xep:NestedInstanceOfConditions:ERROR -Xep:NonAtomicVolatileUpdate:ERROR -Xep:NonCanonicalStaticMemberImport:ERROR -Xep:NonOverridingEquals:ERROR -Xep:NullOptional:ERROR -Xep:NullableConstructor:ERROR -Xep:NullablePrimitive:ERROR -Xep:NullableVoid:ERROR -Xep:NumericEquality:ERROR -Xep:ObjectToString:ERROR -Xep:ObjectsHashCodePrimitive:ERROR -Xep:OperatorPrecedence:ERROR -Xep:OptionalMapToOptional:ERROR -Xep:OrphanedFormatString:ERROR -Xep:Overrides:ERROR -Xep:OverrideThrowableToString:ERROR -Xep:PackageLocation:ERROR -Xep:PreconditionsCheckNotNullRepeated:ERROR -Xep:PreferJavaTimeOverload:ERROR -Xep:PrimitiveAtomicReference:ERROR -Xep:ProtectedMembersInFinalClass:ERROR -Xep:ReferenceEquality:ERROR -Xep:RemoveUnusedImports:ERROR -Xep:ReturnFromVoid:ERROR -Xep:RxReturnValueIgnored:ERROR -Xep:SameNameButDifferent:ERROR -Xep:ShortCircuitBoolean:ERROR -Xep:StaticAssignmentInConstructor:ERROR -Xep:StaticGuardedByInstance:ERROR -Xep:StaticQualifiedUsingExpression:ERROR -Xep:StreamResourceLeak:ERROR -Xep:StringSplitter:ERROR -Xep:SynchronizeOnNonFinalField:ERROR -Xep:ThreadJoinLoop:ERROR -Xep:ThreadLocalUsage:ERROR -Xep:ThreeLetterTimeZoneID:ERROR -Xep:TimeUnitConversionChecker:ERROR -Xep:ToStringReturnsNull:ERROR -Xep:TreeToString:ERROR -Xep:TypeEquals:ERROR -Xep:TypeNameShadowing:ERROR -Xep:TypeParameterShadowing:ERROR -Xep:TypeParameterUnusedInFormals:ERROR -Xep:URLEqualsHashCode:ERROR -Xep:UndefinedEquals:ERROR -Xep:UnnecessaryAnonymousClass:ERROR -Xep:UnnecessaryLambda:ERROR -Xep:UnnecessaryMethodInvocationMatcher:ERROR -Xep:UnnecessaryParentheses:ERROR -Xep:UnsafeFinalization:ERROR -Xep:UnsafeReflectiveConstructionCast:ERROR -Xep:UnusedMethod:ERROR -Xep:UnusedNestedClass:ERROR -Xep:UnusedVariable:ERROR -Xep:UseCorrectAssertInTests:ERROR -Xep:Var:ERROR -Xep:VariableNameSameAsType:ERROR -Xep:WaitNotInLoop:ERROR -Xep:WildcardImport:ERROR</arg>
               <!-- prettier-ignore-end -->
             </compilerArgs>
           </configuration>
           <executions>
             <execution>
-              <id>default-testCompile</id>
+              <id>default-compile</id>
               <goals>
-                <goal>testCompile</goal>
+                <goal>compile</goal>
               </goals>
               <configuration>
                 <compilerArgs>
@@ -123,10 +136,16 @@ SPDX-License-Identifier: CC0-1.0
                   <arg>-XDcompilePolicy=simple</arg>
                   <arg>-XDaddTypeAnnotationsToSymbol=true</arg>
                   <!-- prettier-ignore-start -->
-                  <arg>-Xplugin:ErrorProne -XepDisableWarningsInGeneratedCode -XepExcludedPaths:.*/target/generated-sources/.* -Xep:NullAway:OFF -Xep:JavaTimeDefaultTimeZone:OFF -Xep:AddNullMarkedToPackageInfo:ERROR -Xep:AmbiguousMethodReference:ERROR -Xep:ArgumentSelectionDefectChecker:ERROR -Xep:ArrayAsKeyOfSetOrMap:ERROR -Xep:AssertEqualsArgumentOrderChecker:ERROR -Xep:AssertFalse:ERROR -Xep:AssertThrowsMultipleStatements:ERROR -Xep:AssertionFailureIgnored:ERROR -Xep:BadComparable:ERROR -Xep:BadImport:ERROR -Xep:BadInstanceof:ERROR -Xep:BigDecimalEquals:ERROR -Xep:BigDecimalLiteralDouble:ERROR -Xep:ByteBufferBackingArray:ERROR -Xep:CacheLoaderNull:ERROR -Xep:CannotMockFinalClass:ERROR -Xep:CanonicalDuration:ERROR -Xep:CatchAndPrintStackTrace:ERROR -Xep:CatchFail:ERROR -Xep:CheckedExceptionNotThrown:ERROR -Xep:ClassCanBeStatic:ERROR -Xep:ClassName:ERROR -Xep:ClassNamedLikeTypeParameter:ERROR -Xep:ClassNewInstance:ERROR -Xep:CollectionUndefinedEquality:ERROR -Xep:CollectorShouldNotUseState:ERROR -Xep:ComparableAndComparator:ERROR -Xep:CompareToZero:ERROR -Xep:ComparisonContractViolated:ERROR -Xep:ComplexBooleanConstant:ERROR -Xep:ConstantField:ERROR -Xep:DateFormatConstant:ERROR -Xep:DeduplicateConstants:ERROR -Xep:DefaultCharset:ERROR -Xep:DefaultPackage:ERROR -Xep:DoubleBraceInitialization:ERROR -Xep:DoubleCheckedLocking:ERROR -Xep:EmptyCatch:ERROR -Xep:EmptyIf:ERROR -Xep:EmptyTopLevelDeclaration:ERROR -Xep:EqualsBrokenForNull:ERROR -Xep:EqualsGetClass:ERROR -Xep:EqualsIncompatibleType:ERROR -Xep:EqualsUnsafeCast:ERROR -Xep:EqualsUsingHashCode:ERROR -Xep:ExpectedExceptionChecker:ERROR -Xep:ExtendingJUnitAssert:ERROR -Xep:FallThrough:ERROR -Xep:FieldCanBeLocal:ERROR -Xep:FieldCanBeStatic:ERROR -Xep:Finally:ERROR -Xep:FloatCast:ERROR -Xep:FloatingPointLiteralPrecision:ERROR -Xep:ForEachIterable:ERROR -Xep:FutureReturnValueIgnored:ERROR -Xep:FuzzyEqualsShouldNotBeUsedInEqualsMethod:ERROR -Xep:GetClassOnEnum:ERROR -Xep:HidingField:ERROR -Xep:ImmutableAnnotationChecker:ERROR -Xep:ImmutableEnumChecker:ERROR -Xep:InconsistentCapitalization:ERROR -Xep:InconsistentHashCode:ERROR -Xep:InconsistentOverloads:ERROR -Xep:IncrementInForLoopAndHeader:ERROR -Xep:InlineFormatString:ERROR -Xep:InputStreamSlowMultibyteRead:ERROR -Xep:InstanceOfAndCastMatchWrongType:ERROR -Xep:InterfaceWithOnlyStatics:ERROR -Xep:InterruptedExceptionSwallowed:ERROR -Xep:InvalidInlineTag:OFF -Xep:InvalidThrows:ERROR -Xep:IterableAndIterator:ERROR -Xep:IterablePathParameter:ERROR -Xep:JavaDurationGetSecondsGetNano:ERROR -Xep:JavaDurationWithNanos:ERROR -Xep:JavaDurationWithSeconds:ERROR -Xep:JavaInstantGetSecondsGetNano:ERROR -Xep:JavaLangClash:ERROR -Xep:JavaLocalDateTimeGetNano:ERROR -Xep:JavaLocalTimeGetNano:ERROR -Xep:LockNotBeforeTry:ERROR -Xep:LockOnBoxedPrimitive:ERROR -Xep:LogicalAssignment:ERROR -Xep:LongLiteralLowerCaseSuffix:ERROR -Xep:MethodCanBeStatic:ERROR -Xep:MissingCasesInEnumSwitch:ERROR -Xep:MissingOverride:ERROR -Xep:MixedMutabilityReturnType:ERROR -Xep:ModifiedButNotUsed:ERROR -Xep:ModifyCollectionInEnhancedForLoop:ERROR -Xep:ModifySourceCollectionInStream:ERROR -Xep:MultiVariableDeclaration:ERROR -Xep:MultipleNullnessAnnotations:OFF -Xep:MultipleParallelOrSequentialCalls:ERROR -Xep:MultipleTopLevelClasses:ERROR -Xep:MultipleUnaryOperatorsInMethodCall:ERROR -Xep:MutableConstantField:ERROR -Xep:MutablePublicArray:ERROR -Xep:NestedInstanceOfConditions:ERROR -Xep:NonAtomicVolatileUpdate:ERROR -Xep:NonCanonicalStaticMemberImport:ERROR -Xep:NonOverridingEquals:ERROR -Xep:NullOptional:ERROR -Xep:NullableConstructor:ERROR -Xep:NullablePrimitive:ERROR -Xep:NullableVoid:ERROR -Xep:NumericEquality:ERROR -Xep:ObjectToString:ERROR -Xep:ObjectsHashCodePrimitive:ERROR -Xep:OperatorPrecedence:ERROR -Xep:OptionalMapToOptional:ERROR -Xep:OrphanedFormatString:ERROR -Xep:Overrides:ERROR -Xep:OverrideThrowableToString:ERROR -Xep:PackageLocation:ERROR -Xep:PreconditionsCheckNotNullRepeated:ERROR -Xep:PreferJavaTimeOverload:ERROR -Xep:PrimitiveAtomicReference:ERROR -Xep:ProtectedMembersInFinalClass:ERROR -Xep:ReferenceEquality:ERROR -Xep:RemoveUnusedImports:ERROR -Xep:ReturnFromVoid:ERROR -Xep:RxReturnValueIgnored:ERROR -Xep:SameNameButDifferent:ERROR -Xep:ShortCircuitBoolean:ERROR -Xep:StaticAssignmentInConstructor:ERROR -Xep:StaticGuardedByInstance:ERROR -Xep:StaticQualifiedUsingExpression:ERROR -Xep:StreamResourceLeak:ERROR -Xep:StringSplitter:ERROR -Xep:SynchronizeOnNonFinalField:ERROR -Xep:ThreadJoinLoop:ERROR -Xep:ThreadLocalUsage:ERROR -Xep:ThreeLetterTimeZoneID:ERROR -Xep:TimeUnitConversionChecker:ERROR -Xep:ToStringReturnsNull:ERROR -Xep:TreeToString:ERROR -Xep:TypeEquals:ERROR -Xep:TypeNameShadowing:ERROR -Xep:TypeParameterShadowing:ERROR -Xep:TypeParameterUnusedInFormals:ERROR -Xep:URLEqualsHashCode:ERROR -Xep:UndefinedEquals:ERROR -Xep:UnnecessaryAnonymousClass:ERROR -Xep:UnnecessaryLambda:ERROR -Xep:UnnecessaryMethodInvocationMatcher:ERROR -Xep:UnnecessaryParentheses:ERROR -Xep:UnsafeFinalization:ERROR -Xep:UnsafeReflectiveConstructionCast:ERROR -Xep:UnusedMethod:ERROR -Xep:UnusedNestedClass:ERROR -Xep:UnusedVariable:ERROR -Xep:UseCorrectAssertInTests:ERROR -Xep:Var:ERROR -Xep:VariableNameSameAsType:ERROR -Xep:WaitNotInLoop:ERROR -Xep:WildcardImport:ERROR</arg>
+                  <arg>-Xplugin:ErrorProne -XepOpt:NullAway:JSpecifyMode=true -XepOpt:NullAway:OnlyNullMarked=true -XepOpt:NullAway:CheckOptionalEmptiness=true -XepOpt:NullAway:AcknowledgeRestrictiveAnnotations=true -XepDisableWarningsInGeneratedCode -XepExcludedPaths:.*/target/generated-sources/.* -Xep:InvalidInlineTag:OFF -Xep:MultipleNullnessAnnotations:OFF -Xep:AddNullMarkedToPackageInfo:ERROR -Xep:AmbiguousMethodReference:ERROR -Xep:ArgumentSelectionDefectChecker:ERROR -Xep:ArrayAsKeyOfSetOrMap:ERROR -Xep:AssertEqualsArgumentOrderChecker:ERROR -Xep:AssertFalse:ERROR -Xep:AssertThrowsMultipleStatements:ERROR -Xep:AssertionFailureIgnored:ERROR -Xep:BadComparable:ERROR -Xep:BadImport:ERROR -Xep:BadInstanceof:ERROR -Xep:BigDecimalEquals:ERROR -Xep:BigDecimalLiteralDouble:ERROR -Xep:ByteBufferBackingArray:ERROR -Xep:CacheLoaderNull:ERROR -Xep:CannotMockFinalClass:ERROR -Xep:CanonicalDuration:ERROR -Xep:CatchAndPrintStackTrace:ERROR -Xep:CatchFail:ERROR -Xep:CheckedExceptionNotThrown:ERROR -Xep:ClassCanBeStatic:ERROR -Xep:ClassName:ERROR -Xep:ClassNamedLikeTypeParameter:ERROR -Xep:ClassNewInstance:ERROR -Xep:CollectionUndefinedEquality:ERROR -Xep:CollectorShouldNotUseState:ERROR -Xep:ComparableAndComparator:ERROR -Xep:CompareToZero:ERROR -Xep:ComparisonContractViolated:ERROR -Xep:ComplexBooleanConstant:ERROR -Xep:ConstantField:ERROR -Xep:DateFormatConstant:ERROR -Xep:DeduplicateConstants:ERROR -Xep:DefaultCharset:ERROR -Xep:DefaultPackage:ERROR -Xep:DoubleCheckedLocking:ERROR -Xep:EmptyCatch:ERROR -Xep:EmptyIf:ERROR -Xep:EmptyTopLevelDeclaration:ERROR -Xep:EqualsBrokenForNull:ERROR -Xep:EqualsGetClass:ERROR -Xep:EqualsIncompatibleType:ERROR -Xep:EqualsUnsafeCast:ERROR -Xep:EqualsUsingHashCode:ERROR -Xep:ExpectedExceptionChecker:ERROR -Xep:ExtendingJUnitAssert:ERROR -Xep:FallThrough:ERROR -Xep:FieldCanBeLocal:ERROR -Xep:FieldCanBeStatic:ERROR -Xep:Finally:ERROR -Xep:FloatCast:ERROR -Xep:FloatingPointLiteralPrecision:ERROR -Xep:ForEachIterable:ERROR -Xep:FutureReturnValueIgnored:ERROR -Xep:FuzzyEqualsShouldNotBeUsedInEqualsMethod:ERROR -Xep:GetClassOnEnum:ERROR -Xep:HidingField:ERROR -Xep:ImmutableAnnotationChecker:ERROR -Xep:ImmutableEnumChecker:ERROR -Xep:InconsistentCapitalization:ERROR -Xep:InconsistentHashCode:ERROR -Xep:InconsistentOverloads:ERROR -Xep:IncrementInForLoopAndHeader:ERROR -Xep:InlineFormatString:ERROR -Xep:InputStreamSlowMultibyteRead:ERROR -Xep:InstanceOfAndCastMatchWrongType:ERROR -Xep:InterfaceWithOnlyStatics:ERROR -Xep:InterruptedExceptionSwallowed:ERROR -Xep:InvalidThrows:ERROR -Xep:IterableAndIterator:ERROR -Xep:IterablePathParameter:ERROR -Xep:JavaDurationGetSecondsGetNano:ERROR -Xep:JavaDurationWithNanos:ERROR -Xep:JavaDurationWithSeconds:ERROR -Xep:JavaInstantGetSecondsGetNano:ERROR -Xep:JavaLangClash:ERROR -Xep:JavaLocalDateTimeGetNano:ERROR -Xep:JavaLocalTimeGetNano:ERROR -Xep:JavaTimeDefaultTimeZone:ERROR -Xep:LockNotBeforeTry:ERROR -Xep:LockOnBoxedPrimitive:ERROR -Xep:LogicalAssignment:ERROR -Xep:LongLiteralLowerCaseSuffix:ERROR -Xep:MethodCanBeStatic:ERROR -Xep:MissingCasesInEnumSwitch:ERROR -Xep:MissingOverride:ERROR -Xep:MixedMutabilityReturnType:ERROR -Xep:ModifiedButNotUsed:ERROR -Xep:ModifyCollectionInEnhancedForLoop:ERROR -Xep:ModifySourceCollectionInStream:ERROR -Xep:MultiVariableDeclaration:ERROR -Xep:MultipleParallelOrSequentialCalls:ERROR -Xep:MultipleTopLevelClasses:ERROR -Xep:MultipleUnaryOperatorsInMethodCall:ERROR -Xep:MutableConstantField:ERROR -Xep:MutablePublicArray:ERROR -Xep:NestedInstanceOfConditions:ERROR -Xep:NonAtomicVolatileUpdate:ERROR -Xep:NonCanonicalStaticMemberImport:ERROR -Xep:NonOverridingEquals:ERROR -Xep:NullAway:ERROR -Xep:NullOptional:ERROR -Xep:NullableConstructor:ERROR -Xep:NullablePrimitive:ERROR -Xep:NullableVoid:ERROR -Xep:NumericEquality:ERROR -Xep:ObjectToString:ERROR -Xep:ObjectsHashCodePrimitive:ERROR -Xep:OperatorPrecedence:ERROR -Xep:OptionalMapToOptional:ERROR -Xep:OrphanedFormatString:ERROR -Xep:Overrides:ERROR -Xep:OverrideThrowableToString:ERROR -Xep:PackageLocation:ERROR -Xep:PreconditionsCheckNotNullRepeated:ERROR -Xep:PreferJavaTimeOverload:ERROR -Xep:PrimitiveAtomicReference:ERROR -Xep:ProtectedMembersInFinalClass:ERROR -Xep:ReferenceEquality:ERROR -Xep:RemoveUnusedImports:ERROR -Xep:ReturnFromVoid:ERROR -Xep:RxReturnValueIgnored:ERROR -Xep:SameNameButDifferent:ERROR -Xep:ShortCircuitBoolean:ERROR -Xep:StaticAssignmentInConstructor:ERROR -Xep:StaticGuardedByInstance:ERROR -Xep:StaticQualifiedUsingExpression:ERROR -Xep:StreamResourceLeak:ERROR -Xep:StringSplitter:ERROR -Xep:SynchronizeOnNonFinalField:ERROR -Xep:ThreadJoinLoop:ERROR -Xep:ThreadLocalUsage:ERROR -Xep:ThreeLetterTimeZoneID:ERROR -Xep:TimeUnitConversionChecker:ERROR -Xep:ToStringReturnsNull:ERROR -Xep:TreeToString:ERROR -Xep:TypeEquals:ERROR -Xep:TypeNameShadowing:ERROR -Xep:TypeParameterShadowing:ERROR -Xep:TypeParameterUnusedInFormals:ERROR -Xep:URLEqualsHashCode:ERROR -Xep:UndefinedEquals:ERROR -Xep:UnnecessaryAnonymousClass:ERROR -Xep:UnnecessaryLambda:ERROR -Xep:UnnecessaryMethodInvocationMatcher:ERROR -Xep:UnnecessaryParentheses:ERROR -Xep:UnsafeFinalization:ERROR -Xep:UnsafeReflectiveConstructionCast:ERROR -Xep:UnusedMethod:ERROR -Xep:UnusedNestedClass:ERROR -Xep:UnusedVariable:ERROR -Xep:UseCorrectAssertInTests:ERROR -Xep:Var:ERROR -Xep:VariableNameSameAsType:ERROR -Xep:WaitNotInLoop:ERROR -Xep:WildcardImport:ERROR</arg>
                   <!-- prettier-ignore-end -->
                 </compilerArgs>
               </configuration>
+            </execution>
+            <execution>
+              <id>default-testCompile</id>
+              <goals>
+                <goal>testCompile</goal>
+              </goals>
             </execution>
           </executions>
         </plugin>
@@ -144,6 +163,14 @@ SPDX-License-Identifier: CC0-1.0
           <version>${maven-failsafe-plugin.version}</version>
           <configuration>
             <useModulePath>true</useModulePath>
+            <testClassesDirectory>${project.build.directory}/integration-test-classes</testClassesDirectory>
+            <includes>
+              <include>**/*Test.java</include>
+              <include>**/*IT.java</include>
+            </includes>
+            <additionalClasspathElements>
+              <additionalClasspathElement>${project.build.directory}/test-fixtures-classes</additionalClasspathElement>
+            </additionalClasspathElements>
           </configuration>
         </plugin>
         <plugin>
@@ -222,28 +249,68 @@ SPDX-License-Identifier: CC0-1.0
         <artifactId>build-helper-maven-plugin</artifactId>
         <executions>
           <execution>
-            <id>add-test-fixtures</id>
-            <phase>generate-test-sources</phase>
+            <id>stage-test-fixtures</id>
+            <phase>generate-test-resources</phase>
             <goals>
-              <goal>add-test-source</goal>
+              <goal>add-test-resource</goal>
             </goals>
             <configuration>
-              <sources>
-                <source>src/testFixtures/java</source>
-              </sources>
+              <resources>
+                <resource>
+                  <directory>${project.build.directory}/test-fixtures-classes</directory>
+                  <excludes>
+                    <exclude>**/module-info.class</exclude>
+                  </excludes>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>test-fixtures-compile</id>
+            <phase>generate-test-sources</phase>
+            <goals>
+              <goal>testCompile</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${project.build.directory}/test-fixtures-classes</outputDirectory>
+              <generatedTestSourcesDirectory>${project.build.directory}/generated-test-sources/test-fixtures-annotations</generatedTestSourcesDirectory>
+              <compileSourceRoots>
+                <compileSourceRoot>${project.basedir}/src/testFixtures/java</compileSourceRoot>
+              </compileSourceRoots>
             </configuration>
           </execution>
           <execution>
-            <id>add-integration-test-sources</id>
-            <phase>generate-test-sources</phase>
+            <id>test-integration-compile</id>
+            <phase>test-compile</phase>
             <goals>
-              <goal>add-test-source</goal>
+              <goal>testCompile</goal>
             </goals>
             <configuration>
-              <sources>
-                <source>src/testIntegration/java</source>
-              </sources>
+              <outputDirectory>${project.build.directory}/integration-test-classes</outputDirectory>
+              <generatedTestSourcesDirectory>${project.build.directory}/generated-test-sources/test-integration-annotations</generatedTestSourcesDirectory>
+              <compileSourceRoots>
+                <compileSourceRoot>${project.basedir}/src/testIntegration/java</compileSourceRoot>
+              </compileSourceRoots>
             </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>test-integration</id>
+            <goals>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
           </execution>
         </executions>
       </plugin>

@@ -12,23 +12,31 @@ SPDX-License-Identifier: CC-BY-NC-SA-4.0
     cd <project>
     npm run contribute
 
-## Linting and testing
+`npm run contribute` installs tools and dependencies. It heals the toolchain
+through `.config/git/hooks/heal.sh`. Node 25+ drops corepack, so bootstrap
+starts from npm. With direnv, run `direnv allow` to load the environment.
 
-    pnpm check
+## Verify
 
-`pnpm check` runs the CI set; on TypeScript it skips reuse, which the
-license CI job runs. `git push` runs `pnpm lint` first (pre-push hook),
-reuse included; `git push --no-verify` bypasses it. The first commit's
-pre-commit hook stamps headers and seeds `LICENSES`; reuse checks fail
-before it runs.
+    pnpm verify
+
+`pnpm verify` runs the checks and tests. Java runs Maven verify. TypeScript
+builds before checking. Config runs the checks.
+
+`git push` runs `pnpm lint` first (pre-push hook), reuse included;
+`git push --no-verify` bypasses it. The first commit's pre-commit hook stamps
+headers and seeds `LICENSES`; reuse checks fail before it runs.
 
 ## Updating from the template
 
     uvx copier update --trust
 
-Conflicts appear as `.rej` files; resolve and commit.
+Renovate opens an update PR whenever
+[base-template](https://github.com/xenoterracide/base-template) tags a release.
+Merge it like any other dependency update. Conflicts appear as `.rej` files;
+resolve and commit.
 
 ## License headers
 
-The template renders no SPDX headers. `reuse annotate`, run at the first
+Most renders carry no SPDX headers. `reuse annotate`, run at the first
 commit, stamps each file's license.

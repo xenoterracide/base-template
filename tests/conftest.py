@@ -13,12 +13,16 @@ TEMPLATE = Path(__file__).resolve().parent.parent
 COMMON = {
     "project_name": "sample",
     "project_title": "Sample",
+    "project_purpose": "Sample proves the template renders a useful README.",
+    "project_usage": "Read the source, then call the exported API.",
     "license": "GPL-3.0-or-later",
+    "docs_license": "CC-BY-NC-SA-4.0",
 }
 
 JAVA_ANSWERS = {
     **COMMON,
     "template_type": "java",
+    "project_kind": "library",
     "java_group_id": "com.example",
     "java_module": "sample",
     "java_version": "0.0.0",
@@ -27,6 +31,7 @@ JAVA_ANSWERS = {
 TS_ANSWERS = {
     **COMMON,
     "template_type": "typescript",
+    "project_kind": "library",
     "ts_scope": "@example",
     "first_package": "sample",
 }
