@@ -1,8 +1,10 @@
+{# REUSE-IgnoreStart #}
 <!--
 SPDX-FileCopyrightText: Copyright © 2015-2026 Caleb Cushing
 
-SPDX-License-Identifier: CC-BY-NC-SA-4.0
+SPDX-License-Identifier: {{ docs_license }}
 -->
+{# REUSE-IgnoreEnd #}
 
 # {{ project_title }}
 
@@ -16,6 +18,9 @@ SPDX-License-Identifier: CC-BY-NC-SA-4.0
 
 {%- if template_type == 'java' %}
 {%- if project_kind == 'cli' %}
+
+Java CLI projects need a `Main-Class` in the jar manifest. Add it before
+publishing.
 
 Download the runnable jar from the releases page. Run it with:
 
@@ -45,6 +50,8 @@ dependencies {
 {%- elif template_type == 'typescript' %}
 {%- if project_kind == 'cli' %}
 
+Add a `bin` field to `package.json` before publishing.
+
 Install globally with your package manager:
 
 ```sh
@@ -72,5 +79,6 @@ Copy the configuration files you need into your project.
 ## License
 
 Project code: [{{ license }}]({{ license_url }}).
-This document: [CC-BY-NC-SA-4.0](LICENSES/CC-BY-NC-SA-4.0.txt).
+Documentation: [{{ docs_license }}]({{ docs_license_url }}).
 Copyright © 2015-2026 Caleb Cushing. Full texts live in [LICENSES](LICENSES).
+Each file carries its own SPDX header. A file may use a different license.

@@ -56,6 +56,7 @@ def test_copier_answers(generated):
     assert "_commit:" in text
     assert "project_purpose:" in text
     assert "project_usage:" in text
+    assert "docs_license:" in text
     if answers["template_type"] == "config":
         assert "project_kind:" not in text
     else:
@@ -100,7 +101,9 @@ def test_readme_serves_project_readers(generated):
     assert "[AGENTS.md](AGENTS.md)" in readme
     assert answers["license"] in readme
     assert "](https://www.gnu.org/licenses/gpl-3.0.txt)" in readme
-    assert "[CC-BY-NC-SA-4.0](LICENSES/CC-BY-NC-SA-4.0.txt)" in readme
+    assert answers["docs_license"] in readme
+    assert "](https://creativecommons.org/licenses/by-nc-sa/4.0/)" in readme
+    assert "Each file carries its own SPDX header." in readme
     assert "Copyright © 2015-2026 Caleb Cushing" in readme
     assert "[LICENSES](LICENSES)" in readme
     for text in (
@@ -112,10 +115,11 @@ def test_readme_serves_project_readers(generated):
         "Renovate",
         "src/testIntegration/java",
         "test-fixtures",
-        "java -jar",
-        "npm install --global",
     ):
         assert text not in readme, f"contributor detail in README: {text}"
+    other_kind = ("java -jar", "npm install --global", "pnpm add --global")
+    for text in other_kind:
+        assert text not in readme, f"other artifact kind in README: {text}"
     if answers["template_type"] == "java":
         assert "<groupId>com.example</groupId>" in readme
         assert "<artifactId>sample</artifactId>" in readme
@@ -127,9 +131,17 @@ def test_readme_serves_project_readers(generated):
         assert "Copy the configuration files you need into your project." in readme
 
 
+def test_readme_uses_docs_license_answer(tmp_path):
+    answers = {**ANSWERS["config"], "docs_license": "MIT"}
+    readme = (copy_template(tmp_path, answers) / "README.md").read_text()
+    assert "SPDX-License" + "-Identifier: MIT" in readme
+    assert "Documentation: [MIT](https://opensource.org/licenses/MIT)" in readme
+    assert "CC-BY-NC-SA-4.0" not in readme
+
+
 @pytest.mark.parametrize("variant", ["java", "typescript", "config"])
 def test_readme_answers_have_defaults(tmp_path, variant):
-    omitted = ("project_purpose", "project_usage", "project_kind")
+    omitted = ("project_purpose", "project_usage", "project_kind", "docs_license", "docs_license_url")
     answers = {key: value for key, value in ANSWERS[variant].items() if key not in omitted}
     readme = (copy_template(tmp_path / variant, answers) / "README.md").read_text()
     expected = {
@@ -157,26 +169,26 @@ def test_readme_answers_have_defaults(tmp_path, variant):
 def test_readme_installs_cli_without_library_coordinates(tmp_path, variant):
     readme = (copy_template(tmp_path / variant, {**ANSWERS[variant], "project_kind": "cli"}) / "README.md").read_text()
     if variant == "java":
+        assert "`Main-Class` in the jar manifest" in readme
         assert "java -jar <jar-file>" in readme
         assert "<dependency>" not in readme
         assert "implementation(" not in readme
     else:
+        assert "Add a `bin` field to `package.json` before publishing." in readme
         assert "npm install --global @example/sample" in readme
         assert "pnpm add --global @example/sample" in readme
         assert "pnpm add @example/sample" not in readme
 
 
 def test_contributing_carries_contributor_work(generated):
-    dst, answers = generated
+    dst, _ = generated
     text = (dst / "CONTRIBUTING.md").read_text()
     assert "npm run contribute" in text
     assert "direnv allow" in text
+    assert "pnpm verify" in text
     assert "uvx copier update --trust" in text
     assert "Renovate opens an update PR" in text
-    if answers["template_type"] == "typescript":
-        assert "staged/.github/workflows" in text
-    elif answers["template_type"] == "java":
-        assert "./mvnw -q verify" in text
+    assert "staged/.github/workflows" not in text
 
 
 def test_old_hooks_absent(generated):
@@ -1195,11 +1207,13 @@ def test_lint_is_the_pre_push_set(generated):
         # check tracks lint: a linter added to lint must reach the CI set,
         # which omits reuse because the pnpm workflow installs no uv
         assert scripts["check"] == (lint.replace(" && pnpm lint:reuse", "") + " && pnpm typecheck && pnpm test")
+        assert scripts["verify"] == "pnpm -r build && pnpm check"
         assert "lint:reuse" not in scripts["check"]
         assert "lint:maven" not in scripts
     elif answers["template_type"] == "java":
         assert lint == "pnpm lint:prettier && pnpm lint:shellcheck && pnpm lint:maven && pnpm lint:reuse"
         assert scripts["check"] == "pnpm lint"
+        assert scripts["verify"] == "pnpm lint && ./mvnw -q verify"
         # package attaches the fixture jar; skipTests keeps lint fast
         assert scripts["lint:maven"] == (
             "./mvnw -B -q --no-transfer-progress package -DskipTests"
@@ -1213,6 +1227,7 @@ def test_lint_is_the_pre_push_set(generated):
     else:
         assert lint == "pnpm lint:prettier && pnpm lint:shellcheck && pnpm lint:reuse"
         assert scripts["check"] == "pnpm lint"
+        assert scripts["verify"] == "pnpm check"
         assert "lint:eslint" not in scripts
         assert "lint:maven" not in scripts
     # reuse lint lives in its own script; lint composes it. The download

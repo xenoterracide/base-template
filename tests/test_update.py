@@ -124,7 +124,7 @@ def test_update_seeds_new_readme_answers_without_prompting(template_repo, tmp_pa
         old_settings.pop(key, None)
     (template_repo / "copier.yml").write_text(yaml.safe_dump(old_settings, sort_keys=False))
     (template_repo / "README.md.jinja").write_text(
-        "<!--\nSPDX-License-Identifier: CC0-1.0\n-->\n\n# {{ project_title }}\n"
+        "<!--\nSPDX-License" + "-Identifier: CC0-1.0\n-->\n\n# {{ project_title }}\n"
     )
     git("add", "-A", cwd=template_repo)
     git("commit", "-qm", "template before README answers", cwd=template_repo)

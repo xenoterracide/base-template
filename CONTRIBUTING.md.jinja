@@ -15,29 +15,17 @@ SPDX-License-Identifier: CC-BY-NC-SA-4.0
 `npm run contribute` installs tools and dependencies. It heals the toolchain
 through `.config/git/hooks/heal.sh`. Node 25+ drops corepack, so bootstrap
 starts from npm. With direnv, run `direnv allow` to load the environment.
-{%- if template_type == 'typescript' %}
 
-For TypeScript projects, stage the workflows:
+## Verify
 
-    cp -r staged/.github/workflows .github/workflows
-    git add .github/workflows
-{%- endif %}
-{%- if template_type == 'java' %}
+    pnpm verify
 
-Verify the full Java build:
+`pnpm verify` runs the checks and tests. Java runs Maven verify. TypeScript
+builds before checking. Config runs the checks.
 
-    ./mvnw -q verify
-{%- endif %}
-
-## Linting and testing
-
-    pnpm check
-
-`pnpm check` runs the CI set; on TypeScript it skips reuse, which the
-license CI job runs. `git push` runs `pnpm lint` first (pre-push hook),
-reuse included; `git push --no-verify` bypasses it. The first commit's
-pre-commit hook stamps headers and seeds `LICENSES`; reuse checks fail
-before it runs.
+`git push` runs `pnpm lint` first (pre-push hook), reuse included;
+`git push --no-verify` bypasses it. The first commit's pre-commit hook stamps
+headers and seeds `LICENSES`; reuse checks fail before it runs.
 
 ## Updating from the template
 
@@ -50,5 +38,5 @@ resolve and commit.
 
 ## License headers
 
-The template renders no SPDX headers. `reuse annotate`, run at the first
+Most renders carry no SPDX headers. `reuse annotate`, run at the first
 commit, stamps each file's license.
