@@ -20,7 +20,7 @@ SHARED_FILES = [
     ".gitattributes",
     ".gitignore",
     ".prettierignore",
-    ".prettierrc.yml",
+    ".prettierrc.yaml",
     "package.json",
     "pyproject.toml",
     "REUSE.toml",
@@ -73,9 +73,10 @@ def test_no_jinja_leak(generated):
     assert not [p for p in dst.rglob("*") if p.suffix == ".jinja"]
 
 
-def test_no_copier_yml_leak(generated):
+def test_no_copier_config_leak(generated):
     dst, _ = generated
     assert not (dst / "copier.yml").exists()
+    assert not (dst / "copier.yaml").exists()
 
 
 def test_no_opencode_artifacts(generated):
@@ -275,19 +276,26 @@ def test_old_hooks_absent(generated):
         assert not (dst / ".config/git/hooks" / name).exists()
 
 
-def test_old_prettierrc_cjs_absent(generated):
-    """The yml config replaced the yarn-era cjs; the cjs must never render."""
+def test_prettierrc_config_is_yaml_cc0(generated):
+    """The yaml config replaces the cjs and yml names; it carries CC0."""
     dst, _ = generated
     assert not (dst / ".prettierrc.cjs").exists()
+    assert not (dst / ".prettierrc.yml").exists()
+    assert "# SPDX-License-Identifier: CC0-1.0" in (dst / ".prettierrc.yaml").read_text()
+
+
+def test_copier_config_is_yaml_cc0():
+    """Copier accepts copier.yaml; the authoring copy carries CC0."""
+    assert "# SPDX-License-Identifier: CC0-1.0" in (TEMPLATE / "copier.yaml").read_text()
 
 
 def test_prettierrc_plugins_are_dev_dependencies(generated):
     """Lint passes --ignore-unknown, so a plugin missing from devDependencies
     would silently skip its file type; every named plugin must ship."""
     dst, _ = generated
-    plugins = re.findall(r'^\s+- "?([\w@/.-]+)"?$', (dst / ".prettierrc.yml").read_text(), re.MULTILINE)
+    plugins = re.findall(r'^\s+- "?([\w@/.-]+)"?$', (dst / ".prettierrc.yaml").read_text(), re.MULTILINE)
     dev_deps = json.loads((dst / "package.json").read_text())["devDependencies"]
-    assert plugins, "no plugin list in .prettierrc.yml"
+    assert plugins, "no plugin list in .prettierrc.yaml"
     for plugin in plugins:
         assert plugin in dev_deps, f"prettier plugin not installed: {plugin}"
 
@@ -790,7 +798,7 @@ def test_renders_carry_baked_lineage_headers(generated):
         ".editorconfig": "2013",
         ".gitattributes": "2013",
         ".prettierignore": "2021",
-        ".prettierrc.yml": "2020",
+        ".prettierrc.yaml": "2020",
         ".lintstagedrc.cjs": "2023",
         ".envrc": "2024",
         "git-conventional-commits.yaml": "2024",
@@ -1064,7 +1072,7 @@ def test_reuse_lint(tmp_path, variant):
 
 def test_copier_runs_no_tasks():
     """The hosted Renovate app never runs trusted tasks; _tasks block it."""
-    assert "\n_tasks:" not in (TEMPLATE / "copier.yml").read_text()
+    assert "\n_tasks:" not in (TEMPLATE / "copier.yaml").read_text()
 
 
 def test_contribute_runs_heal_only(generated):
