@@ -281,12 +281,14 @@ def test_prettierrc_config_is_yaml_cc0(generated):
     dst, _ = generated
     assert not (dst / ".prettierrc.cjs").exists()
     assert not (dst / ".prettierrc.yml").exists()
-    assert "# SPDX-License-Identifier: CC0-1.0" in (dst / ".prettierrc.yaml").read_text()
+    license_line = "# SPDX-License" + "-Identifier: CC0-1.0"
+    assert license_line in (dst / ".prettierrc.yaml").read_text()
 
 
 def test_copier_config_is_yaml_cc0():
     """Copier accepts copier.yaml; the authoring copy carries CC0."""
-    assert "# SPDX-License-Identifier: CC0-1.0" in (TEMPLATE / "copier.yaml").read_text()
+    license_line = "# SPDX-License" + "-Identifier: CC0-1.0"
+    assert license_line in (TEMPLATE / "copier.yaml").read_text()
 
 
 def test_prettierrc_plugins_are_dev_dependencies(generated):
