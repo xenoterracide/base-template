@@ -26,6 +26,19 @@ IGNORE = shutil.ignore_patterns(
     "pnpm-lock.yaml",
 )
 
+CONSUMER_README = """<!--
+SPDX-License-Identifier: CC0-1.0
+-->
+
+# Sample
+
+This README belongs to the consumer.
+
+## Use
+
+Call the public API.
+"""
+
 
 def git(*args, cwd):
     subprocess.run(
@@ -63,10 +76,11 @@ def render(tpl, dst, answers=JAVA_ANSWERS):
     return dst
 
 
-def test_copier_skips_consumer_version_files():
-    """copier update must never rewrite a consumer-owned version file."""
+def test_copier_skips_consumer_files():
+    """Copier update must never rewrite a consumer-owned file."""
     data = yaml.safe_load((TEMPLATE / "copier.yml").read_text())
     assert set(data["_skip_if_exists"]) == {
+        "README.md",
         ".tool-versions",
         "mvnw",
         "mvnw.cmd",
@@ -154,9 +168,8 @@ def test_update_seeds_new_readme_answers_without_prompting(template_repo, tmp_pa
     assert "project_usage: Add the library to your build, then call its public API." in text
     assert "project_kind: library" in text
     readme = (proj / "README.md").read_text()
-    assert "Add the library to your build, then call its public API." in readme
-    assert "above" not in readme
-    assert "below" not in readme
+    assert "# Sample" in readme
+    assert "Add the library to your build, then call its public API." not in readme
 
 
 def test_render_excludes_editor_junk(template_repo, tmp_path):
@@ -174,6 +187,7 @@ def test_update_recreates_deleted_seeds(template_repo, tmp_path):
     """Deleted seeds come back; only skip-listed files do."""
     proj = render(template_repo, tmp_path / "proj")
     seeds = (
+        "README.md",
         ".tool-versions",
         "mvnw",
         "mvnw.cmd",
@@ -195,3 +209,49 @@ def test_update_recreates_deleted_seeds(template_repo, tmp_path):
 
     for rel in seeds:
         assert (proj / rel).exists(), f"deleted seed not recreated: {rel}"
+
+
+def test_update_keeps_consumer_readme(template_repo, tmp_path):
+    """Hosted updates must leave a consumer's README unchanged."""
+    new_keys = (
+        "project_purpose",
+        "project_usage",
+        "project_kind",
+        "docs_license",
+        "docs_license_url",
+    )
+    old_settings = yaml.safe_load((template_repo / "copier.yml").read_text())
+    for key in new_keys:
+        old_settings.pop(key, None)
+    (template_repo / "copier.yml").write_text(yaml.safe_dump(old_settings, sort_keys=False))
+    (template_repo / "README.md.jinja").write_text("# {{ project_title }}\n")
+    git("add", "-A", cwd=template_repo)
+    git("commit", "-qm", "template before README answers", cwd=template_repo)
+
+    old_answers = {key: value for key, value in JAVA_ANSWERS.items() if key not in new_keys}
+    proj = render(template_repo, tmp_path / "proj", old_answers)
+    readme = proj / "README.md"
+    readme.write_text(CONSUMER_README)
+    git("add", "-A", cwd=proj)
+    git("commit", "-qm", "consumer README", cwd=proj)
+
+    for name in ("copier.yml", "README.md.jinja"):
+        shutil.copy2(TEMPLATE / name, template_repo / name)
+    git("add", "-A", cwd=template_repo)
+    git("commit", "-qm", "template with README answers", cwd=template_repo)
+
+    copier.run_update(
+        dst_path=str(proj),
+        defaults=True,
+        unsafe=True,
+        quiet=True,
+        skip_tasks=True,
+        skip_answered=True,
+        overwrite=True,
+    )
+
+    text = readme.read_text()
+    assert text == CONSUMER_README
+    for marker in ("<<<<<<<", "=======", ">>>>>>>", "Gradle (Kotlin or Groovy DSL):"):
+        assert marker not in text
+    assert "uvx copier update --trust" in (proj / "AGENTS.md").read_text()

@@ -24,10 +24,10 @@ _exclude:
   - copier.yml
   - .python-version
 
-# Seed once, then the consumer owns them: their Renovate updates .tool-versions
-# and the Maven wrapper from then on. Copier leaves existing files alone and
-# recreates deleted ones.
+# Seed once, then the consumer owns README.md, version pins, and the Maven
+# wrapper. Copier leaves existing files alone and recreates deleted ones.
 _skip_if_exists:
+  - README.md
   - .tool-versions
   - mvnw
   - mvnw.cmd
