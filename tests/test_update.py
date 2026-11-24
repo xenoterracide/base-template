@@ -76,10 +76,11 @@ def render(tpl, dst, answers=JAVA_ANSWERS):
     return dst
 
 
-def test_copier_skips_consumer_version_files():
-    """copier update must never rewrite a consumer-owned version file."""
+def test_copier_skips_consumer_files():
+    """Copier update must never rewrite a consumer-owned file."""
     data = yaml.safe_load((TEMPLATE / "copier.yml").read_text())
     assert set(data["_skip_if_exists"]) == {
+        "README.md",
         ".tool-versions",
         "mvnw",
         "mvnw.cmd",
@@ -167,9 +168,8 @@ def test_update_seeds_new_readme_answers_without_prompting(template_repo, tmp_pa
     assert "project_usage: Add the library to your build, then call its public API." in text
     assert "project_kind: library" in text
     readme = (proj / "README.md").read_text()
-    assert "Add the library to your build, then call its public API." in readme
-    assert "above" not in readme
-    assert "below" not in readme
+    assert "# Sample" in readme
+    assert "Add the library to your build, then call its public API." not in readme
 
 
 def test_render_excludes_editor_junk(template_repo, tmp_path):
@@ -187,6 +187,7 @@ def test_update_recreates_deleted_seeds(template_repo, tmp_path):
     """Deleted seeds come back; only skip-listed files do."""
     proj = render(template_repo, tmp_path / "proj")
     seeds = (
+        "README.md",
         ".tool-versions",
         "mvnw",
         "mvnw.cmd",
