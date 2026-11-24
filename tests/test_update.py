@@ -88,6 +88,44 @@ def test_copier_skips_consumer_files():
     }
 
 
+def test_update_replaces_old_prettierrc_name(template_repo, tmp_path):
+    """An update from yml names drops the stale config Prettier would prefer."""
+    tpl = template_repo
+    names = (
+        ("copier.yml", "copier.yaml"),
+        (".prettierrc.yml", ".prettierrc.yaml"),
+        (".prettierrc.yml.jinja", ".prettierrc.yaml.jinja"),
+    )
+    for old, new in names:
+        (tpl / old).write_text((tpl / new).read_text())
+        (tpl / new).unlink()
+    git("add", "-A", cwd=tpl)
+    git("commit", "-qm", "template with yml names", cwd=tpl)
+
+    proj = render(tpl, tmp_path / "proj")
+    assert (proj / ".prettierrc.yml").exists()
+    assert not (proj / ".prettierrc.yaml").exists()
+
+    for old, new in names:
+        shutil.copy2(TEMPLATE / new, tpl / new)
+        (tpl / old).unlink()
+    git("add", "-A", cwd=tpl)
+    git("commit", "-qm", "template with yaml names", cwd=tpl)
+
+    copier.run_update(
+        dst_path=str(proj),
+        defaults=True,
+        unsafe=True,
+        quiet=True,
+        skip_tasks=True,
+        overwrite=True,
+    )
+
+    assert not (proj / ".prettierrc.yml").exists()
+    assert (proj / ".prettierrc.yaml").exists()
+    assert (proj / ".copier-answers.yml").exists()
+
+
 def test_update_leaves_consumer_versions_alone(template_repo, tmp_path):
     """Consumer bumps survive an update; template version bumps do not land."""
     proj = render(template_repo, tmp_path / "proj")

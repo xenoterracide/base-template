@@ -46,7 +46,7 @@ CC-BY-NC-SA-4.0`) are the single home for which file gets which license.
 - **`.license` sidecars are annotate's output, not template renders.** Remove
   the `.license.jinja` templates; lint-staged creates the sidecars for files
   that cannot carry a header (JSON, JVM flags).
-- **Remove the header machinery from `copier.yml`.** Drop the `spdx_copyright_line`,
+- **Remove the header machinery from `copier.yaml`.** Drop the `spdx_copyright_line`,
   `spdx_license_line`, and `project_license_line` computed answers, and the
   `copyright_year` question. Keep `copyright_holder` (lint-staged passes it to
   `reuse annotate` as `--copyright`), `license` (the answered code license and the
