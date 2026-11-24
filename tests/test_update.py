@@ -78,7 +78,7 @@ def render(tpl, dst, answers=JAVA_ANSWERS):
 
 def test_copier_skips_consumer_files():
     """Copier update must never rewrite a consumer-owned file."""
-    data = yaml.safe_load((TEMPLATE / "copier.yml").read_text())
+    data = yaml.safe_load((TEMPLATE / "copier.yaml").read_text())
     assert set(data["_skip_if_exists"]) == {
         "README.md",
         ".tool-versions",
@@ -86,6 +86,44 @@ def test_copier_skips_consumer_files():
         "mvnw.cmd",
         ".mvn/wrapper/maven-wrapper.properties",
     }
+
+
+def test_update_replaces_old_prettierrc_name(template_repo, tmp_path):
+    """An update from yml names drops the stale config Prettier would prefer."""
+    tpl = template_repo
+    names = (
+        ("copier.yml", "copier.yaml"),
+        (".prettierrc.yml", ".prettierrc.yaml"),
+        (".prettierrc.yml.jinja", ".prettierrc.yaml.jinja"),
+    )
+    for old, new in names:
+        (tpl / old).write_text((tpl / new).read_text())
+        (tpl / new).unlink()
+    git("add", "-A", cwd=tpl)
+    git("commit", "-qm", "template with yml names", cwd=tpl)
+
+    proj = render(tpl, tmp_path / "proj")
+    assert (proj / ".prettierrc.yml").exists()
+    assert not (proj / ".prettierrc.yaml").exists()
+
+    for old, new in names:
+        shutil.copy2(TEMPLATE / new, tpl / new)
+        (tpl / old).unlink()
+    git("add", "-A", cwd=tpl)
+    git("commit", "-qm", "template with yaml names", cwd=tpl)
+
+    copier.run_update(
+        dst_path=str(proj),
+        defaults=True,
+        unsafe=True,
+        quiet=True,
+        skip_tasks=True,
+        overwrite=True,
+    )
+
+    assert not (proj / ".prettierrc.yml").exists()
+    assert (proj / ".prettierrc.yaml").exists()
+    assert (proj / ".copier-answers.yml").exists()
 
 
 def test_update_leaves_consumer_versions_alone(template_repo, tmp_path):
@@ -133,10 +171,10 @@ def test_fresh_copy_seeds_current_authoring_pins(template_repo, tmp_path):
 def test_update_seeds_new_readme_answers_without_prompting(template_repo, tmp_path):
     """Hosted updates accept new answers from defaults, then keep them."""
     new_keys = ("project_purpose", "project_usage", "project_kind", "docs_license", "docs_license_url")
-    old_settings = yaml.safe_load((template_repo / "copier.yml").read_text())
+    old_settings = yaml.safe_load((template_repo / "copier.yaml").read_text())
     for key in new_keys:
         old_settings.pop(key, None)
-    (template_repo / "copier.yml").write_text(yaml.safe_dump(old_settings, sort_keys=False))
+    (template_repo / "copier.yaml").write_text(yaml.safe_dump(old_settings, sort_keys=False))
     (template_repo / "README.md.jinja").write_text(
         "<!--\nSPDX-License" + "-Identifier: CC0-1.0\n-->\n\n# {{ project_title }}\n"
     )
@@ -148,7 +186,7 @@ def test_update_seeds_new_readme_answers_without_prompting(template_repo, tmp_pa
     answers_file = proj / ".copier-answers.yml"
     assert "project_usage:" not in answers_file.read_text()
 
-    for name in ("copier.yml", "README.md.jinja"):
+    for name in ("copier.yaml", "README.md.jinja"):
         shutil.copy2(TEMPLATE / name, template_repo / name)
     git("add", "-A", cwd=template_repo)
     git("commit", "-qm", "template with README answers", cwd=template_repo)
@@ -220,10 +258,10 @@ def test_update_keeps_consumer_readme(template_repo, tmp_path):
         "docs_license",
         "docs_license_url",
     )
-    old_settings = yaml.safe_load((template_repo / "copier.yml").read_text())
+    old_settings = yaml.safe_load((template_repo / "copier.yaml").read_text())
     for key in new_keys:
         old_settings.pop(key, None)
-    (template_repo / "copier.yml").write_text(yaml.safe_dump(old_settings, sort_keys=False))
+    (template_repo / "copier.yaml").write_text(yaml.safe_dump(old_settings, sort_keys=False))
     (template_repo / "README.md.jinja").write_text("# {{ project_title }}\n")
     git("add", "-A", cwd=template_repo)
     git("commit", "-qm", "template before README answers", cwd=template_repo)
@@ -235,7 +273,7 @@ def test_update_keeps_consumer_readme(template_repo, tmp_path):
     git("add", "-A", cwd=proj)
     git("commit", "-qm", "consumer README", cwd=proj)
 
-    for name in ("copier.yml", "README.md.jinja"):
+    for name in ("copier.yaml", "README.md.jinja"):
         shutil.copy2(TEMPLATE / name, template_repo / name)
     git("add", "-A", cwd=template_repo)
     git("commit", "-qm", "template with README answers", cwd=template_repo)
