@@ -949,6 +949,7 @@ def test_lintstagedrc_licenses_by_file_class(generated):
     assert "const licenseConfiguration = \"--license 'CC0-1.0' --fallback-dot-license\";" in content
     assert '"*.ts": run([`${reuse} ${copyright} ${symbol} ${licenseCode}`, prettier])' in content
     assert '"*.java": run([`${reuse} ${copyright} ${symbol} ${licenseCode}`, prettier])' in content
+    assert '"*.{js,cjs,mjs,yml}": run([`${reuse} ${copyright} ${symbol} ${licenseScripts}`, prettier])' in content
 
 
 def test_lintstagedrc_never_writes_sidecars(generated):
