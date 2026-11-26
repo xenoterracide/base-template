@@ -15,7 +15,7 @@ COMMON = {
     "project_title": "Sample",
     "project_purpose": "Sample proves the template renders a useful README.",
     "project_usage": "Read the source, then call the exported API.",
-    "license": "GPL-3.0-or-later",
+    "license": "PolyForm-Small-Business-1.0.0 OR PolyForm-Noncommercial-1.0.0",
     "docs_license": "CC-BY-NC-SA-4.0",
 }
 

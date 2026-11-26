@@ -8,7 +8,7 @@ const reuse = "uv run --frozen --group dev reuse annotate";
 const copyright = "--copyright 'Caleb Cushing' --merge-copyrights";
 const symbol = "--copyright-prefix spdx-string-symbol";
 
-const licenseCode = "--license 'GPL-3.0-or-later'";
+const licenseCode = "--license 'PolyForm-Small-Business-1.0.0 OR PolyForm-Noncommercial-1.0.0'";
 const licenseConfiguration = "--license 'CC0-1.0' --fallback-dot-license";
 const licenseDocumentation = "--license 'CC-BY-NC-SA-4.0'";
 const licenseScripts = "--license 'MIT' --fallback-dot-license";
