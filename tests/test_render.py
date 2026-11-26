@@ -177,15 +177,18 @@ def test_readme_serves_project_readers(generated):
     assert readme.index("## Use") < readme.index("## Install")
     assert "[CONTRIBUTING.md](CONTRIBUTING.md)" in readme
     assert "[AGENTS.md](AGENTS.md)" in readme
-    assert answers["license"] in readme
+    assert answers["license"] in readme or "PolyForm-Small-Business-1.0.0" in readme
     license_urls = {
-        "PolyForm-Small-Business-1.0.0 OR PolyForm-Noncommercial-1.0.0": "https://spdx.org/licenses/PolyForm-Small-Business-1.0.0.html",
         "GPL-3.0-or-later": "https://www.gnu.org/licenses/gpl-3.0.txt",
         "Apache-2.0": "https://www.apache.org/licenses/LICENSE-2.0.txt",
         "CC0-1.0": "https://creativecommons.org/publicdomain/zero/1.0/legalcode",
         "MIT": "https://opensource.org/licenses/MIT",
     }
-    assert f"]({license_urls[answers['license']]})" in readme
+    if answers["license"] == "PolyForm-Small-Business-1.0.0 OR PolyForm-Noncommercial-1.0.0":
+        assert "[PolyForm-Small-Business-1.0.0](https://polyformproject.org/licenses/small-business/1.0.0/)" in readme
+        assert "[PolyForm-Noncommercial-1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0/)" in readme
+    else:
+        assert f"]({license_urls[answers['license']]})" in readme
     assert answers["docs_license"] in readme
     assert "](https://creativecommons.org/licenses/by-nc-sa/4.0/)" in readme
     assert "Each file carries its own SPDX header." in readme
