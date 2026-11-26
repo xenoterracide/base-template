@@ -78,7 +78,11 @@ Copy the configuration files you need into your project.
 
 ## License
 
+{%- if license == 'PolyForm-Small-Business-1.0.0 OR PolyForm-Noncommercial-1.0.0' %}
+Project code: [PolyForm-Small-Business-1.0.0](https://polyformproject.org/licenses/small-business/1.0.0/) OR [PolyForm-Noncommercial-1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0/).
+{%- else %}
 Project code: [{{ license }}]({{ license_url }}).
+{%- endif %}
 Documentation: [{{ docs_license }}]({{ docs_license_url }}).
 Copyright © 2015-2026 Caleb Cushing. Full texts live in [LICENSES](LICENSES).
 Each file carries its own SPDX header. A file may use a different license.
