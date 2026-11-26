@@ -634,6 +634,7 @@ def test_java_attaches_the_sources_jar(generated):
     ns = "{http://maven.apache.org/POM/4.0.0}"
     root = ET.parse(dst / "pom.xml").getroot()
     plugins = root.find(f"{ns}build/{ns}plugins")
+    assert plugins is not None
     plugin = plugins.find(f"{ns}plugin[{ns}artifactId='maven-source-plugin']")
     assert plugin is not None
     assert plugin.findtext(f"{ns}groupId") == "org.apache.maven.plugins"
