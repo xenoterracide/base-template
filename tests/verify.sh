@@ -55,6 +55,14 @@ pnpm lint:reuse
 if [ "$VARIANT" = java ]; then
   echo "Running maven verify..."
   ./mvnw -q verify
+  found=false
+  for jar in module/sample/target/*-sources.jar; do
+    if [ -f "$jar" ]; then
+      found=true
+      break
+    fi
+  done
+  [ "$found" = true ]
 elif [ "$VARIANT" = typescript ]; then
   echo "Running eslint..."
   pnpm lint:eslint

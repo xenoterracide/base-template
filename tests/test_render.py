@@ -612,6 +612,38 @@ def test_java_publishes_test_fixtures(generated):
     assert any("JSpecifyMode=true" in a for a in main_args)
 
 
+def test_java_pins_the_source_plugin(generated):
+    """Every render resolves the source jar goal through one pinned version."""
+    dst, answers = generated
+    if answers["template_type"] != "java":
+        pytest.skip()
+    ns = "{http://maven.apache.org/POM/4.0.0}"
+    root = ET.parse(dst / "pom.xml").getroot()
+    assert root.findtext(f"{ns}properties/{ns}maven-source-plugin.version") == "3.4.0"
+    plugin = root.find(f"{ns}build/{ns}pluginManagement/{ns}plugins/{ns}plugin[{ns}artifactId='maven-source-plugin']")
+    assert plugin is not None
+    assert plugin.findtext(f"{ns}groupId") == "org.apache.maven.plugins"
+    assert plugin.findtext(f"{ns}version") == "${maven-source-plugin.version}"
+
+
+def test_java_attaches_the_sources_jar(generated):
+    """Every module attaches sources at package without a module POM edit."""
+    dst, answers = generated
+    if answers["template_type"] != "java":
+        pytest.skip()
+    ns = "{http://maven.apache.org/POM/4.0.0}"
+    root = ET.parse(dst / "pom.xml").getroot()
+    plugins = root.find(f"{ns}build/{ns}plugins")
+    assert plugins is not None
+    plugin = plugins.find(f"{ns}plugin[{ns}artifactId='maven-source-plugin']")
+    assert plugin is not None
+    assert plugin.findtext(f"{ns}groupId") == "org.apache.maven.plugins"
+    executions = plugin.findall(f"{ns}executions/{ns}execution")
+    assert [execution.findtext(f"{ns}id") for execution in executions] == ["attach-sources"]
+    assert executions[0].findtext(f"{ns}phase") == "package"
+    assert [goal.text for goal in executions[0].findall(f"{ns}goals/{ns}goal")] == ["jar-no-fork"]
+
+
 def test_checkstyle_carries_the_family_maxima(generated):
     """The family's established values; a render flattened them once
     (semver adoption, 2026-11)."""
